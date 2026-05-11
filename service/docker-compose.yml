@@ -1,13 +1,57 @@
 services:
-  n0t3b00k:
-    build: .
-    # The code should be copied into the container using COPY.
-    # Mount the data folder writable, so that information can be persisted across restarts.
-    volumes:
-      - ./data/:/data:rw
-    # Define the port mapping (external:internal port)
+  # n0t3b00k:
+  #   build: .
+  #   # The code should be copied into the container using COPY.
+  #   # Mount the data folder writable, so that information can be persisted across restarts.
+  #   volumes:
+  #     - ./data/:/data:rwz
+  #   # Define the port mapping (external:internal port)
+  #   ports:
+  #     - "2323:8000"
+  #   restart: unless-stopped
+  #   mem_limit: 1g
+  #   cpus: 1
+
+  funsplash:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
     ports:
-      - "2323:8000"
+      - "1337:1337"
+    neworks:
+      - funsplash
     restart: unless-stopped
     mem_limit: 1g
     cpus: 1
+    # volumes:
+    #   - "build:/code:ro,z"
+    # data etc
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: felix
+      POSTGRES_PASSWORD: felix
+      POSTGRES_DB: funsplash_db
+    networks:
+      - funsplash
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql:z
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U felix -d funsplash_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  funsplash:
+    driver: bridge
+      
+volumes:
+  postgres_data:
