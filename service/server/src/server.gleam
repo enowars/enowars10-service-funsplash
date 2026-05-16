@@ -1,9 +1,11 @@
 import gleam/erlang/process
+import gleam/http/request
 import gleam/option
 import mist
 import pog
-import server/router
+import server/censor
 import server/context
+import server/router
 import wisp
 import wisp/wisp_mist
 
@@ -26,9 +28,17 @@ pub fn main() -> Nil {
   let context = context.Context(pog.named_connection(db_proc), "/public")
   wisp.configure_logger()
 
+  let wisp_app = wisp_mist.handler(router.wisp_handler(_, context), "secret")
+
+  let mist_handler = fn(req: request.Request(mist.Connection)) {
+    case request.path_segments(req) {
+      ["censor"] -> censor.upgrade(req)
+      _ -> wisp_app(req)
+    }
+  }
+
   let assert Ok(_) =
-    router.handle_request(_, context)
-    |> wisp_mist.handler("secret")
+    mist_handler
     |> mist.new
     |> mist.port(1337)
     |> mist.start

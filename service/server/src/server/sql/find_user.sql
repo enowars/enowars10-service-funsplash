@@ -1,4 +1,4 @@
-SELECT id, name, password
+SELECT *
 FROM users
-WHERE name = $1
+WHERE username = $1
 LIMIT 1;

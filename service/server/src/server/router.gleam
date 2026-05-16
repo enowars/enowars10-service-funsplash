@@ -1,14 +1,18 @@
 import gleam/http
+import gleam/http/request
+import gleam/http/response
+import mist
+import server/collection
 import server/context
 import server/photo
 import server/user
 import wisp
 
 pub fn middleware(
-  req,
+  req: wisp.Request,
   context: context.Context,
   handle_request: fn(wisp.Request) -> wisp.Response,
-) {
+) -> wisp.Response {
   use <- wisp.log_request(req)
   use <- wisp.serve_static(req, under: "/static", from: context.static_dir)
   use <- wisp.rescue_crashes
@@ -16,7 +20,7 @@ pub fn middleware(
   handle_request(req)
 }
 
-pub fn handle_request(
+pub fn wisp_handler(
   request: wisp.Request,
   context: context.Context,
 ) -> wisp.Response {
@@ -26,9 +30,11 @@ pub fn handle_request(
     [] -> todo
     ["@" <> user] -> user.get(request, context, user)
     ["photos", photo] -> photo.get(request, context, photo)
+    ["collections", collection] -> collection.get(request, context, collection)
     ["login"] -> user.login(request, context)
-    ["signup"] -> user.signup(request, context)
-    [username] -> wisp.redirect("@" <> username)
+    ["join"] -> user.join(request, context)
+    ["upload"] -> photo.upload(request, context)
+
     _ -> wisp.redirect("/")
   }
 }

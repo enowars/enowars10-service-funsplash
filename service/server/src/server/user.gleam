@@ -21,3 +21,7 @@ pub fn login(request: wisp.Request, context: context.Context) -> wisp.Response {
     _ -> wisp.method_not_allowed([http.Get, http.Post])
   }
 }
+
+pub fn join(request: wisp.Request, context: context.Context) -> wisp.Response {
+  todo
+}
