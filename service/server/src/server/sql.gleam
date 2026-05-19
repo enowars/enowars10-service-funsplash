@@ -10,6 +10,16 @@ import gleam/time/timestamp.{type Timestamp}
 import pog
 import youid/uuid.{type Uuid}
 
+/// A row you get from running the `create_photo` query
+/// defined in `./src/server/sql/create_photo.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CreatePhotoRow {
+  CreatePhotoRow(id: Uuid)
+}
+
 /// Runs the `create_photo` query
 /// defined in `./src/server/sql/create_photo.sql`.
 ///
@@ -25,8 +35,11 @@ pub fn create_photo(
   arg_5: Bool,
   arg_6: String,
   arg_7: String,
-) -> Result(pog.Returned(Nil), pog.QueryError) {
-  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+) -> Result(pog.Returned(CreatePhotoRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    decode.success(CreatePhotoRow(id:))
+  }
 
   "INSERT INTO photos (description, creator, photo, premium, private, location, camera)
 VALUES (nullif($1,''),
@@ -35,7 +48,8 @@ VALUES (nullif($1,''),
 	$4,
 	$5,
 	nullif($6,''),
-	nullif($7,''));
+	nullif($7,''))
+RETURNING id;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
@@ -120,14 +134,14 @@ RETURNING id, username;
   |> pog.execute(db)
 }
 
-/// A row you get from running the `find_photo` query
-/// defined in `./src/server/sql/find_photo.sql`.
+/// A row you get from running the `find_photo_by_id` query
+/// defined in `./src/server/sql/find_photo_by_id.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v4.6.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type FindPhotoRow {
-  FindPhotoRow(
+pub type FindPhotoByIdRow {
+  FindPhotoByIdRow(
     id: Uuid,
     description: Option(String),
     title: Option(String),
@@ -146,16 +160,16 @@ pub type FindPhotoRow {
   )
 }
 
-/// Runs the `find_photo` query
-/// defined in `./src/server/sql/find_photo.sql`.
+/// Runs the `find_photo_by_id` query
+/// defined in `./src/server/sql/find_photo_by_id.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn find_photo(
+pub fn find_photo_by_id(
   db: pog.Connection,
   arg_1: Uuid,
-) -> Result(pog.Returned(FindPhotoRow), pog.QueryError) {
+) -> Result(pog.Returned(FindPhotoByIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use description <- decode.field(1, decode.optional(decode.string))
@@ -172,7 +186,7 @@ pub fn find_photo(
     use downloads <- decode.field(12, decode.int)
     use created_at <- decode.field(13, pog.timestamp_decoder())
     use updated_at <- decode.field(14, pog.timestamp_decoder())
-    decode.success(FindPhotoRow(
+    decode.success(FindPhotoByIdRow(
       id:,
       description:,
       title:,
@@ -202,36 +216,37 @@ LIMIT 1;
   |> pog.execute(db)
 }
 
-/// A row you get from running the `find_user` query
-/// defined in `./src/server/sql/find_user.sql`.
+/// A row you get from running the `find_user_by_name` query
+/// defined in `./src/server/sql/find_user_by_name.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v4.6.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type FindUserRow {
-  FindUserRow(
+pub type FindUserByNameRow {
+  FindUserByNameRow(
     id: Uuid,
     username: String,
     first_name: String,
     last_name: Option(String),
     bio: Option(String),
     available_for_hire: Bool,
+    premium: Bool,
     password: String,
     created_at: Timestamp,
     updated_at: Timestamp,
   )
 }
 
-/// Runs the `find_user` query
-/// defined in `./src/server/sql/find_user.sql`.
+/// Runs the `find_user_by_name` query
+/// defined in `./src/server/sql/find_user_by_name.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn find_user(
+pub fn find_user_by_name(
   db: pog.Connection,
   arg_1: String,
-) -> Result(pog.Returned(FindUserRow), pog.QueryError) {
+) -> Result(pog.Returned(FindUserByNameRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use username <- decode.field(1, decode.string)
@@ -239,16 +254,18 @@ pub fn find_user(
     use last_name <- decode.field(3, decode.optional(decode.string))
     use bio <- decode.field(4, decode.optional(decode.string))
     use available_for_hire <- decode.field(5, decode.bool)
-    use password <- decode.field(6, decode.string)
-    use created_at <- decode.field(7, pog.timestamp_decoder())
-    use updated_at <- decode.field(8, pog.timestamp_decoder())
-    decode.success(FindUserRow(
+    use premium <- decode.field(6, decode.bool)
+    use password <- decode.field(7, decode.string)
+    use created_at <- decode.field(8, pog.timestamp_decoder())
+    use updated_at <- decode.field(9, pog.timestamp_decoder())
+    decode.success(FindUserByNameRow(
       id:,
       username:,
       first_name:,
       last_name:,
       bio:,
       available_for_hire:,
+      premium:,
       password:,
       created_at:,
       updated_at:,

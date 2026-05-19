@@ -8,6 +8,7 @@ first_name TEXT NOT NULL,
 last_name TEXT,
 bio TEXT,
 available_for_hire BOOLEAN NOT NULL DEFAULT false,
+premium BOOLEAN NOT NULL DEFAULT false,
 password TEXT NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT now(),
 updated_at TIMESTAMP NOT NULL DEFAULT now()
