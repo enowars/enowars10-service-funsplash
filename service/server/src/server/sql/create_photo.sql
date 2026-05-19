@@ -5,4 +5,5 @@ VALUES (nullif($1,''),
 	$4,
 	$5,
 	nullif($6,''),
-	nullif($7,''));
+	nullif($7,''))
+RETURNING id;

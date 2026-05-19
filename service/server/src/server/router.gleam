@@ -1,38 +1,23 @@
-import gleam/http
-import gleam/http/request
-import gleam/http/response
-import mist
 import server/collection
-import server/context
 import server/photo
 import server/user
+import server/web
+import server/web/auth
 import wisp
 
-pub fn middleware(
-  req: wisp.Request,
-  context: context.Context,
-  handle_request: fn(wisp.Request) -> wisp.Response,
-) -> wisp.Response {
-  use <- wisp.log_request(req)
-  use <- wisp.serve_static(req, under: "/static", from: context.static_dir)
-  use <- wisp.rescue_crashes
-  use req <- wisp.handle_head(req)
-  handle_request(req)
-}
-
-pub fn wisp_handler(
+pub fn handle_request(
   request: wisp.Request,
-  context: context.Context,
+  context: web.Context,
 ) -> wisp.Response {
-  use req <- middleware(request, context)
+  use request <- web.middleware(request, context)
 
-  case wisp.path_segments(req) {
+  case wisp.path_segments(request) {
     [] -> todo
-    ["@" <> user] -> user.get(request, context, user)
+    ["@" <> user] -> user.get(request, user)
     ["photos", photo] -> photo.get(request, context, photo)
     ["collections", collection] -> collection.get(request, context, collection)
-    ["login"] -> user.login(request, context)
-    ["join"] -> user.join(request, context)
+    ["login"] -> auth.login(request, context)
+    ["join"] -> auth.sign_up(request, context)
     ["upload"] -> photo.upload(request, context)
 
     _ -> wisp.redirect("/")
