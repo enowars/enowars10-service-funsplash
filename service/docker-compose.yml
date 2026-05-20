@@ -14,7 +14,6 @@ services:
 
   funsplash:
     build:
-      context: ./server
       dockerfile: Dockerfile
     depends_on:
       postgres:
