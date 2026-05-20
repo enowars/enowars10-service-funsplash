@@ -216,6 +216,42 @@ LIMIT 1;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `find_photo_creator` query
+/// defined in `./src/server/sql/find_photo_creator.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type FindPhotoCreatorRow {
+  FindPhotoCreatorRow(creator: Uuid)
+}
+
+/// Runs the `find_photo_creator` query
+/// defined in `./src/server/sql/find_photo_creator.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn find_photo_creator(
+  db: pog.Connection,
+  arg_1: Uuid,
+) -> Result(pog.Returned(FindPhotoCreatorRow), pog.QueryError) {
+  let decoder = {
+    use creator <- decode.field(0, uuid_decoder())
+    decode.success(FindPhotoCreatorRow(creator:))
+  }
+
+  "SELECT creator
+FROM photos
+WHERE id = $1
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `find_user_by_name` query
 /// defined in `./src/server/sql/find_user_by_name.sql`.
 ///

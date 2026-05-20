@@ -4,14 +4,14 @@ import gleam/option
 import mist
 import pog
 import server/censor
-import server/config
+import server/config.{type Config}
 import server/router
 import server/web
 import server/web/auth
 import wisp
 import wisp/wisp_mist
 
-fn server(db: pog.Connection, config: config.Config) -> Nil {
+fn server(db: pog.Connection, config: Config) -> Nil {
   wisp.configure_logger()
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
@@ -20,7 +20,7 @@ fn server(db: pog.Connection, config: config.Config) -> Nil {
     router.handle_request(request, context)
   }
 
-  let wisp_app = wisp_mist.handler(handle_request, config.secret)
+  let wisp_app = wisp_mist.handler(handle_request, config.server_secret)
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
     case request.path_segments(request) {
@@ -32,24 +32,25 @@ fn server(db: pog.Connection, config: config.Config) -> Nil {
   let assert Ok(_) =
     mist_handler
     |> mist.new
-    |> mist.port(1337)
+    |> mist.port(config.server_port)
+    |> mist.bind("0.0.0.0")
     |> mist.start
 
   process.sleep_forever()
 }
 
-fn db(_config) {
+fn db(config: Config) {
   let db_proc = process.new_name("db")
 
   let assert Ok(_) =
     db_proc
     |> pog.default_config()
-    |> pog.user("felix")
-    |> pog.password(option.Some("felix"))
-    |> pog.host("localhost")
-    |> pog.port(5432)
-    |> pog.database("funsplash_db")
-    |> pog.pool_size(15)
+    |> pog.user(config.db_user)
+    |> pog.password(option.Some(config.db_password))
+    |> pog.host(config.db_host)
+    |> pog.port(config.db_port)
+    |> pog.database(config.db_database)
+    |> pog.pool_size(config.db_pool_size)
     |> pog.start
 
   pog.named_connection(db_proc)

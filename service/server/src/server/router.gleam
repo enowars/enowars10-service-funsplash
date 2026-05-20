@@ -12,7 +12,9 @@ pub fn handle_request(
   use request <- web.middleware(request, context)
 
   case wisp.path_segments(request) {
-    [] -> todo
+    [] ->
+      wisp.ok()
+      |> wisp.html_body("<h1>funsplash is running</h1>")
     ["@" <> user] -> user.get(request, user)
     ["photos", photo] -> photo.get(request, context, photo)
     ["collections", collection] -> collection.get(request, context, collection)

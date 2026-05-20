@@ -10,6 +10,9 @@ import simplifile
 import wisp
 import youid/uuid
 
+pub type Photo =
+  sql.FindPhotoByIdRow
+
 pub fn get(
   request: wisp.Request,
   context: web.Context,
