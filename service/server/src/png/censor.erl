@@ -1,13 +1,14 @@
 -module(censor).
 -export([apply_mask/3]).
 
-%% Bitwise AND the 841 bytes, then chunk into 29-byte rows with a 0x00 filter byte
+%% bitwise and the 841 bytes, then chunk into 29-byte rows with a 0x00 filter byte
 apply_mask(Target, Mask, Width) when is_integer(Width), Width > 0 ->
-    Redacted = << <<(T band M)>> || <<T>> <= Target, <<M>> <= Mask >>,
+    Redacted = << <<(T band M)>> || <<T>> <= Target && <<M>> <= Mask >>,
     add_filters(Redacted, Width, []);
-apply_mask_and_filter(_, _, _) ->
+apply_mask(_, _, _) ->
     [].
 
+%% TODO: check if length is bytes, not bits
 add_filters(Data, Width, Acc) ->
     case Data of
 	<<Row:Width/binary, Rest/binary>> ->

@@ -1,7 +1,7 @@
 -module(compression).
 -export([compress/1, init_compressor/0, close_compressor/1, compress_stream/2]).
 
-%% zlib Level 1 for maximum speed
+%% zlib level 1 for maximum speed
 compress(Data) ->
     Z = zlib:open(),
     ok = zlib:deflateInit(Z, 1),
