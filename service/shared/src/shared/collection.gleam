@@ -4,8 +4,8 @@ import gleam/option.{type Option}
 import gleam/time/timestamp.{type Timestamp}
 import youid/uuid
 
-pub type Collection {
-  Collection(
+pub type SharedCollection {
+  SharedCollection(
     id: uuid.Uuid,
     name: String,
     creator_username: String,
@@ -17,8 +17,8 @@ pub type Collection {
   )
 }
 
-pub fn collection_to_json(collection: Collection) -> json.Json {
-  let Collection(
+pub fn collection_to_json(collection: SharedCollection) -> json.Json {
+  let SharedCollection(
     id:,
     name:,
     creator_username:,
@@ -43,7 +43,7 @@ pub fn collection_to_json(collection: Collection) -> json.Json {
   ])
 }
 
-pub fn collection_decoder() -> decode.Decoder(Collection) {
+pub fn collection_decoder() -> decode.Decoder(SharedCollection) {
   use id <- decode.field("id", todo as "Decoder for uuid.Uuid")
   use name <- decode.field("name", decode.string)
   use creator_username <- decode.field("creator_username", decode.string)
@@ -58,7 +58,7 @@ pub fn collection_decoder() -> decode.Decoder(Collection) {
   )
   use created_at <- decode.field("created_at", todo as "Decoder for Timestamp")
   use private <- decode.field("private", decode.bool)
-  decode.success(Collection(
+  decode.success(SharedCollection(
     id:,
     name:,
     creator_username:,

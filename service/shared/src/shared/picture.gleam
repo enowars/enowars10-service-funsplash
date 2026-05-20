@@ -4,8 +4,8 @@ import gleam/option.{type Option}
 import gleam/time/timestamp.{type Timestamp}
 import youid/uuid
 
-pub type Image {
-  Image(
+pub type SharedPicture {
+  SharedPicture(
     id: uuid.Uuid,
     description: Option(String),
     creator_username: String,
@@ -23,8 +23,8 @@ pub type Image {
   )
 }
 
-pub fn image_to_json(image: Image) -> json.Json {
-  let Image(
+fn picture_to_json(picture: SharedPicture) -> json.Json {
+  let SharedPicture(
     id:,
     description:,
     creator_username:,
@@ -39,7 +39,7 @@ pub fn image_to_json(image: Image) -> json.Json {
     private:,
     tags:,
     created_at:,
-  ) = image
+  ) = picture
   json.object([
     #("id", todo as "Encoder for uuid.Uuid"),
     #("description", case description {
@@ -64,7 +64,7 @@ pub fn image_to_json(image: Image) -> json.Json {
   ])
 }
 
-pub fn image_decoder() -> decode.Decoder(Image) {
+fn picture_decoder() -> decode.Decoder(SharedPicture) {
   use id <- decode.field("id", todo as "Decoder for uuid.Uuid")
   use description <- decode.field("description", decode.optional(decode.string))
   use creator_username <- decode.field("creator_username", decode.string)
@@ -82,7 +82,7 @@ pub fn image_decoder() -> decode.Decoder(Image) {
   use private <- decode.field("private", decode.bool)
   use tags <- decode.field("tags", decode.list(decode.string))
   use created_at <- decode.field("created_at", todo as "Decoder for Timestamp")
-  decode.success(Image(
+  decode.success(SharedPicture(
     id:,
     description:,
     creator_username:,
