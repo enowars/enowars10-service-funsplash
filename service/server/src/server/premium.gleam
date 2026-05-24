@@ -1,6 +1,8 @@
 import gleam/bit_array
+import gleam/bool
 import png/censor
 import png/png
+import youid/uuid
 
 pub fn censor_mask(width: Int, height: Int) -> BitArray {
   let x_start = width / 3
@@ -64,39 +66,9 @@ fn build_pixels(
   }
 }
 
-// pub fn censor(photo_data: BitArray) -> BitArray {
-//   let photo = png.parse_photo(photo_data)
-//   let mask = censor_mask()
-
-//   // We initialize a temporary compressor just to recompress the single masked image
-//   let z_stream = png.init_compressor()
-
-//   let result = censor.censor_raw(photo, mask, z_stream)
-
-//   // Clean up the zlib compressor properly to prevent Erlang data_error crashes
-//   png.close_compressor(z_stream)
-
-//   case result {
-//     Ok(censored_photo) -> png.pack(censored_photo)
-//     Error(_) -> photo_data
-//     // Fallback to original if masking fails
-//   }
-// }
-
 pub fn censor(photo: BitArray) -> BitArray {
   let photo = png.parse_photo(photo)
-  echo #(
-    "CTF Target Format -> Depth:",
-    photo.meta.bit_depth,
-    "ColorType:",
-    photo.meta.color_type,
-  )
   let mask = censor_mask(photo.meta.width, photo.meta.height)
-
-  // use <- bool.guard(
-  //   mask.meta.width != photo.meta.width || mask.meta.height != photo.meta.height,
-  //   <<>>,
-  // )
 
   png.Photo(
     ..photo,

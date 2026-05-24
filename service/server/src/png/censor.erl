@@ -37,7 +37,7 @@ process_rows(PhotoRowBytes, MaskRowBytes, Width, BitDepth, ColorType, Bpp,
                 BitDepth =:= 8, ColorType =:= 0 -> merge_gray(RawRow, MaskRow, <<>>);
                 BitDepth =:= 8, ColorType =:= 3 -> merge_gray(RawRow, MaskRow, <<>>);
                 BitDepth =:= 8, ColorType =:= 4 -> merge_gray_alpha(RawRow, MaskRow, <<>>);
-                BitDepth =:= 1 -> smash_1bit(RawRow, MaskRow);
+                BitDepth =:= 1 -> merge_bw(RawRow, MaskRow);
                 true -> RawRow 
             end,
             
@@ -101,9 +101,10 @@ paeth_predictor(A, B, C) ->
     end.
 
 %% --- 1-BIT MASKING ---
-smash_1bit(<<>>, _Mask) -> <<>>;
-smash_1bit(<<PhotoByte:8, PRest/binary>>, Mask) ->
-    {M1A, M2A, M3A, M4A, M5A, M6A, M7A, M8A, MRest} = get_mask_8(Mask),
+merge_bw(<<>>, _Mask) -> <<>>;
+merge_bw(<<PhotoByte:8, PRest/binary>>,
+           <<_R1:24, M1A:8, _R2:24, M2A:8, _R3:24, M3A:8, _R4:24, M4A:8,
+             _R5:24, M5A:8, _R6:24, M6A:8, _R7:24, M7A:8, _R8:24, M8A:8, MRest/binary>>) ->
     
     B1 = if M1A > 127 -> 0; true -> (PhotoByte band 128) end,
     B2 = if M2A > 127 -> 0; true -> (PhotoByte band 64) end,
@@ -115,18 +116,11 @@ smash_1bit(<<PhotoByte:8, PRest/binary>>, Mask) ->
     B8 = if M8A > 127 -> 0; true -> (PhotoByte band 1) end,
     
     NewByte = B1 bor B2 bor B3 bor B4 bor B5 bor B6 bor B7 bor B8,
-    <<NewByte:8, (smash_1bit(PRest, MRest))/binary>>.
-
-get_mask_8(<<M1:32, M2:32, M3:32, M4:32, M5:32, M6:32, M7:32, M8:32, Rest/binary>>) ->
-    {M1 band 255, M2 band 255, M3 band 255, M4 band 255, M5 band 255, M6 band 255, M7 band 255, M8 band 255, Rest};
-get_mask_8(Mask) ->
-    Padded = pad_mask(Mask, 32),
-    get_mask_8(Padded).
-
-pad_mask(Bin, Size) when byte_size(Bin) < Size ->
-    pad_mask(<<Bin/binary, 0:32>>, Size);
-pad_mask(Bin, _Size) ->
-    Bin.
+    <<NewByte:8, (merge_bw(PRest, MRest))/binary>>;
+merge_bw(<<LastPhotoByte:8>>, TrailingMask) ->
+    MissingBytes = 32 - byte_size(TrailingMask),
+    PaddedMask = <<TrailingMask/binary, 0:(MissingBytes*8)>>,
+    merge_bw(<<LastPhotoByte:8>>, PaddedMask).
 
 %% --- 8-BIT MERGING LOGIC ---
 merge_rgba(<<>>, <<>>, Acc) -> Acc;
