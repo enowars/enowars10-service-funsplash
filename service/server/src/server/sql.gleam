@@ -180,7 +180,24 @@ LIMIT 1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoFindDataByAssetIdRow {
-  PhotoFindDataByAssetIdRow(data: BitArray)
+  PhotoFindDataByAssetIdRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    title: Option(String),
+    creator: Uuid,
+    data: BitArray,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
 }
 
 /// Runs the `photo_find_data_by_asset_id` query
@@ -195,11 +212,43 @@ pub fn photo_find_data_by_asset_id(
   arg_2: Bool,
 ) -> Result(pog.Returned(PhotoFindDataByAssetIdRow), pog.QueryError) {
   let decoder = {
-    use data <- decode.field(0, decode.bit_array)
-    decode.success(PhotoFindDataByAssetIdRow(data:))
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use title <- decode.field(4, decode.optional(decode.string))
+    use creator <- decode.field(5, uuid_decoder())
+    use data <- decode.field(6, decode.bit_array)
+    use premium <- decode.field(7, decode.bool)
+    use private <- decode.field(8, decode.bool)
+    use show_on_profile <- decode.field(9, decode.bool)
+    use location <- decode.field(10, decode.optional(decode.string))
+    use camera <- decode.field(11, decode.optional(decode.string))
+    use likes_count <- decode.field(12, decode.int)
+    use views <- decode.field(13, decode.int)
+    use downloads <- decode.field(14, decode.int)
+    use created_at <- decode.field(15, pog.timestamp_decoder())
+    decode.success(PhotoFindDataByAssetIdRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      title:,
+      creator:,
+      data:,
+      premium:,
+      private:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
   }
 
-  "SELECT data
+  "SELECT *
 FROM photos
 WHERE asset_id = $1
 AND premium = $2

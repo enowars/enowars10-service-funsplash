@@ -18,33 +18,36 @@ import wisp
 import youid/uuid
 
 fn get_data(
-  photo: String,
+  asset_id: String,
   db: pog.Connection,
   premium: Bool,
-) -> Result(BitArray, Nil) {
-  use id <- result.try(uuid.from_string(photo))
+) -> Result(sql.PhotoFindDataByAssetIdRow, Nil) {
+  use id <- result.try(uuid.from_string(asset_id))
   use res <- result.try(
     sql.photo_find_data_by_asset_id(db, id, premium)
     |> result.replace_error(Nil),
   )
   use photo <- result.try(res.rows |> list.first)
-  Ok(photo.data)
+  Ok(photo)
 }
 
 pub fn get_data_premium(
   request: wisp.Request,
   context: web.Context,
-  photo: String,
+  asset_id: String,
 ) -> wisp.Response {
   use user <- auth.get_user_from_session(request, context.db)
-  io.println("yup")
-  case get_data(photo, context.db, True) {
+
+  case get_data(asset_id, context.db, True) {
     Ok(photo) -> {
       io.println("yup")
       let body = case user {
         Some(user) if user.premium == True ->
-          wisp.Bytes(photo |> bytes_tree.from_bit_array)
-        _ -> wisp.Bytes(photo |> premium.censor |> bytes_tree.from_bit_array)
+          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
+        Some(user) if user.id == photo.creator ->
+          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
+        _ ->
+          wisp.Bytes(photo.data |> premium.censor |> bytes_tree.from_bit_array)
       }
       wisp.ok()
       |> wisp.set_header("content-type", "image/png")
@@ -57,13 +60,13 @@ pub fn get_data_premium(
 pub fn get_data_public(
   request: wisp.Request,
   context: web.Context,
-  photo: String,
+  asset_id: String,
 ) -> wisp.Response {
-  case get_data(photo, context.db, False) {
+  case get_data(asset_id, context.db, False) {
     Ok(photo) -> {
       wisp.ok()
       |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(wisp.Bytes(photo |> bytes_tree.from_bit_array))
+      |> wisp.set_body(wisp.Bytes(photo.data |> bytes_tree.from_bit_array))
     }
     Error(_) -> wisp.not_found()
   }

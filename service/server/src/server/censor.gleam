@@ -8,7 +8,7 @@ import gleam/list
 import gleam/option.{type Option, None}
 import mist
 import png/censor
-import png/png
+import png/png.{type Compressed, type Uncompressed}
 import pog
 import server/sql
 import youid/uuid
@@ -16,14 +16,14 @@ import youid/uuid
 pub type State {
   State(
     id: uuid.Uuid,
-    in_photo: png.Photo(BitArray),
-    out_photo: Option(png.Photo(BytesTree)),
+    in_photo: png.Photo(BitArray, Uncompressed),
+    out_photo: Option(png.Photo(BytesTree, Compressed)),
     z_stream: png.ZStream,
     owner: uuid.Uuid,
   )
 }
 
-// fake TODO: use websocket for collaborative editing
+// use websocket for future collaborative real-time editing
 pub fn upgrade(
   request: request.Request(mist.Connection),
   id: String,
@@ -51,9 +51,10 @@ pub fn upgrade(
   )
 }
 
-fn close_socket(_state: State) -> Nil {
+fn close_socket(state: State) -> Nil {
   // TODO: check if user is allowed and write picture to db
   // copy prev
+  png.close_compressor(state.z_stream)
   io.println("Disconnected")
 }
 
@@ -68,6 +69,7 @@ fn handler(
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
           let state = State(..state, out_photo: option.Some(censored_png))
+          // TODO: remove only here for debugging
           let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
           let _ =
             mist.send_text_frame(

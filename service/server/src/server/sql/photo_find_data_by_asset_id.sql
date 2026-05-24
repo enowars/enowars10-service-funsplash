@@ -1,4 +1,4 @@
-SELECT data
+SELECT *
 FROM photos
 WHERE asset_id = $1
 AND premium = $2
