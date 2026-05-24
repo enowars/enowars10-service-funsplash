@@ -14,7 +14,7 @@ pub fn middleware(
 ) -> wisp.Response {
   use <- wisp.log_request(req)
   use <- wisp.serve_static(req, under: "/static", from: context.static_dir)
-  use <- wisp.rescue_crashes
+  //  use <- wisp.rescue_crashes
   use req <- wisp.handle_head(req)
   handle_request(req)
 }

@@ -3,102 +3,33 @@
 
 apply_mask(PhotoPixels, MaskPixels, Width, BitDepth, ColorType) ->
     Channels = case ColorType of
-        0 -> 1;
-        2 -> 3;
-        3 -> 1;
-        4 -> 2;
-        6 -> 4 
+        0 -> 1; 2 -> 3; 3 -> 1; 4 -> 2; 6 -> 4
     end,
     
     BitsPerRow = Width * Channels * BitDepth,
     PhotoRowBytes = (BitsPerRow + 7) div 8,
     MaskRowBytes = Width * 4,
-    Bpp = lists:max([1, (Channels * BitDepth) div 8]),
-    
-    %% Initialize previous row with zeros for the first row's defiltering
-    PrevRow = <<0:(PhotoRowBytes*8)>>,
-    
-    process_rows(PhotoRowBytes, MaskRowBytes, Width, BitDepth, ColorType, Bpp,
-                 PhotoPixels, MaskPixels, 0, [], PrevRow).
 
-process_rows(PhotoRowBytes, MaskRowBytes, Width, BitDepth, ColorType, Bpp,
-             Photo, Mask, Y, Acc, PrevRawRow) ->
-    case {Photo, Mask} of
-        {<<Filter:8, PhotoRow:PhotoRowBytes/binary, PhotoRest/binary>>,
-         <<_MaskFilter:8, MaskRow:MaskRowBytes/binary, MaskRest/binary>>} ->
+    process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, PhotoPixels, MaskPixels, []).
+
+process_rows(_PRB, _MRB, _Depth, _Type, <<>>, <<>>, Acc) ->
+    lists:reverse(Acc);
+process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, RawPhoto, Mask, Acc) ->
+    <<RawRow:PhotoRowBytes/binary, PhotoRest/binary>> = RawPhoto,
+    <<_MaskFilter:8, MaskRow:MaskRowBytes/binary, MaskRest/binary>> = Mask,
             
-            %% 1. Defilter the incoming row to get raw pixels
-            RawRow = defilter(Filter, PhotoRow, PrevRawRow, Bpp),
+    NewRow = if
+        BitDepth =:= 8, ColorType =:= 6 -> merge_rgba(RawRow, MaskRow, <<>>);
+        BitDepth =:= 8, ColorType =:= 2 -> merge_rgb(RawRow, MaskRow, <<>>);
+        BitDepth =:= 8, ColorType =:= 0 -> merge_gray(RawRow, MaskRow, <<>>);
+        BitDepth =:= 8, ColorType =:= 3 -> merge_gray(RawRow, MaskRow, <<>>);
+        BitDepth =:= 8, ColorType =:= 4 -> merge_gray_alpha(RawRow, MaskRow, <<>>);
+        BitDepth =:= 1 -> merge_bw(RawRow, MaskRow);
+        true -> RawRow 
+    end,
             
-            %% 2. Apply the mask to the raw pixels
-            NewRawRow = if
-                BitDepth =:= 8, ColorType =:= 6 -> merge_rgba(RawRow, MaskRow, <<>>);
-                BitDepth =:= 8, ColorType =:= 2 -> merge_rgb(RawRow, MaskRow, <<>>);
-                BitDepth =:= 8, ColorType =:= 0 -> merge_gray(RawRow, MaskRow, <<>>);
-                BitDepth =:= 8, ColorType =:= 3 -> merge_gray(RawRow, MaskRow, <<>>);
-                BitDepth =:= 8, ColorType =:= 4 -> merge_gray_alpha(RawRow, MaskRow, <<>>);
-                BitDepth =:= 1 -> merge_bw(RawRow, MaskRow);
-                true -> RawRow 
-            end,
-            
-            %% 3. Output with Filter 0 (None) and recurse, using the NEW raw row for next row's defiltering
-            process_rows(PhotoRowBytes, MaskRowBytes, Width, BitDepth, ColorType, Bpp,
-                         PhotoRest, MaskRest, Y + 1, [[0, NewRawRow] | Acc], RawRow);
-        _ ->
-            lists:reverse(Acc)
-    end.
-
-%% --- DEFILTERING LOGIC ---
-defilter(0, Row, _PrevRow, _Bpp) -> Row;
-defilter(1, Row, _PrevRow, Bpp) -> defilter_sub(Row, Bpp, <<>>);
-defilter(2, Row, PrevRow, _Bpp) -> defilter_up(Row, PrevRow, <<>>);
-defilter(3, Row, PrevRow, Bpp) -> defilter_avg(Row, PrevRow, Bpp, <<>>);
-defilter(4, Row, PrevRow, Bpp) -> defilter_paeth(Row, PrevRow, Bpp, <<>>).
-
-defilter_sub(Row, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
-    Raw = (F + P) band 255,
-    defilter_sub(Row, Bpp, <<Acc/binary, Raw:8>>);
-defilter_sub(_, _, Acc) -> Acc.
-
-defilter_up(Row, PrevRow, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
-    Raw = (F + U) band 255,
-    defilter_up(Row, PrevRow, <<Acc/binary, Raw:8>>);
-defilter_up(_, _, Acc) -> Acc.
-
-defilter_avg(Row, PrevRow, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
-    Raw = (F + (P + U) div 2) band 255,
-    defilter_avg(Row, PrevRow, Bpp, <<Acc/binary, Raw:8>>);
-defilter_avg(_, _, _, Acc) -> Acc.
-
-defilter_paeth(Row, PrevRow, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
-    UP = if I < Bpp -> 0; true -> binary:at(PrevRow, I - Bpp) end,
-    Raw = (F + paeth_predictor(P, U, UP)) band 255,
-    defilter_paeth(Row, PrevRow, Bpp, <<Acc/binary, Raw:8>>);
-defilter_paeth(_, _, _, Acc) -> Acc.
-
-paeth_predictor(A, B, C) ->
-    P = A + B - C,
-    Pa = abs(P - A),
-    Pb = abs(P - B),
-    Pc = abs(P - C),
-    if (Pa =< Pb) and (Pa =< Pc) -> A;
-       Pb =< Pc -> B;
-       true -> C
-    end.
+    %% 3. Output with Filter 0 (None) and recurse, using the NEW raw row for next row's defiltering
+    process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, PhotoRest, MaskRest, [[0, NewRow] | Acc]).
 
 %% --- 1-BIT MASKING ---
 merge_bw(<<>>, _Mask) -> <<>>;

@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
+import gleam/int
 
 pub type ZStream
 
@@ -19,17 +20,35 @@ pub type Photo(idat_type) {
   )
 }
 
-pub fn parse_photo(raw: BitArray) -> Photo(BitArray) {
+fn calculate_bpp(color_type: Int, bit_depth: Int) -> Int {
+  let channels = case color_type {
+    0 -> 1
+    2 -> 3
+    3 -> 1
+    4 -> 2
+    6 -> 4
+    _ -> 1
+  }
+
+  int.max(1, { channels * bit_depth } / 8)
+}
+
+pub fn parse_photo(photo: BitArray) -> Photo(BitArray) {
   let #(
     #(width, height, bit_depth, color_type),
     header_envelope,
     idat,
     footer_envelope,
-  ) = parse_png(raw)
+  ) = parse_png(photo)
+
+  let bpp = calculate_bpp(color_type, bit_depth)
+
+  let defiltered_idat = defilter_image(idat, width, bit_depth, color_type, bpp)
+
   Photo(
     Meta(width:, height:, bit_depth:, color_type:),
     header_envelope:,
-    idat:,
+    idat: defiltered_idat,
     footer_envelope:,
   )
 }
@@ -69,3 +88,12 @@ pub fn close_compressor(z: ZStream) -> Nil
 
 @external(erlang, "compression", "compress")
 pub fn compress(data: BytesTree) -> BytesTree
+
+@external(erlang, "png", "defilter_image")
+fn defilter_image(
+  photo_pixels: BitArray,
+  width: Int,
+  bit_depth: Int,
+  color_type: Int,
+  bpp: Int,
+) -> BitArray
