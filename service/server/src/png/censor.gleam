@@ -14,39 +14,40 @@ pub fn apply_mask(
 ) -> BytesTree
 
 pub fn censor_raw(
-  photo: png.Photo(png.Uncompressed),
+  photo: png.Photo(BitArray),
   mask: BitArray,
   z_stream: png.ZStream,
-) -> Result(png.Photo(png.Compressed), String) {
-  let photo_size = bit_array.byte_size(photo.idat)
-  let mask_size = bit_array.byte_size(mask)
+) -> Result(png.Photo(BytesTree), String) {
+  todo
+  // let photo_size = bit_array.byte_size(photo.idat)
+  // let mask_size = bit_array.byte_size(mask)
 
-  case photo_size {
-    ps if ps > 5120 -> Error("image too large")
-    ps if ps != mask_size -> {
-      io.println(
-        "Wrong size! Photo IDAT: "
-        <> int.to_string(ps)
-        <> ", Mask: "
-        <> int.to_string(mask_size),
-      )
-      Error("mask is wrong size")
-    }
-    _ if photo.meta.width <= 0 -> Error("invalid width")
-    _ -> {
-      let redacted =
-        apply_mask(
-          photo.idat,
-          mask,
-          photo.meta.width,
-          photo.meta.bit_depth,
-          photo.meta.color_type,
-        )
-      let compressed = png.compress_stream(z_stream, redacted)
-      let compressed = bytes_tree.to_bit_array(compressed)
-      let idat = png.build_idat(compressed)
+  // case photo_size {
+  //   ps if ps > 5120 -> Error("image too large")
+  //   ps if ps != mask_size -> {
+  //     io.println(
+  //       "Wrong size! Photo IDAT: "
+  //       <> int.to_string(ps)
+  //       <> ", Mask: "
+  //       <> int.to_string(mask_size),
+  //     )
+  //     Error("mask is wrong size")
+  //   }
+  //   _ if photo.meta.width <= 0 -> Error("invalid width")
+  //   _ -> {
+  //     let redacted =
+  //       apply_mask(
+  //         photo.idat,
+  //         mask,
+  //         photo.meta.width,
+  //         photo.meta.bit_depth,
+  //         photo.meta.color_type,
+  //       )
+  //     let compressed = png.compress_stream(z_stream, redacted)
+  //     // let compressed = bytes_tree.to_bit_array(compressed)
+  //     let idat = png.build_idat(compressed)
 
-      Ok(png.Photo(..photo, idat: idat))
-    }
-  }
+  //     Ok(png.Photo(..photo, idat: idat))
+  //   }
+  // }
 }

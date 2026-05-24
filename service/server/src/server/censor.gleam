@@ -1,4 +1,4 @@
-import gleam/bytes_tree
+import gleam/bytes_tree.{type BytesTree}
 import gleam/erlang/process
 import gleam/http/request
 import gleam/http/response
@@ -16,8 +16,8 @@ import youid/uuid
 pub type State {
   State(
     id: uuid.Uuid,
-    in_photo: png.Photo(png.Uncompressed),
-    out_photo: Option(png.Photo(png.Compressed)),
+    in_photo: png.Photo(BitArray),
+    out_photo: Option(png.Photo(BytesTree)),
     z_stream: png.ZStream,
     owner: uuid.Uuid,
   )

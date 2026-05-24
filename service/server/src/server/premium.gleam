@@ -107,8 +107,8 @@ pub fn censor(photo: BitArray) -> BitArray {
         photo.meta.bit_depth,
         photo.meta.color_type,
       )
-      |> png.compress()
-      |> png.build_idat(),
+      |> png.compress
+      |> png.build_idat,
   )
   |> png.pack
 }

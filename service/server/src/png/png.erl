@@ -7,19 +7,19 @@
 %%     CRC = erlang:crc32(CRCData),
 %%     <<Length:32, CRCData/binary, CRC:32>>.
 
-build_idat(CompressedPixels0) ->
+build_idat(CompressedIoList) ->
     %% 1. Force a flat binary. This safely resolves iolists, BitBuilders, 
     %% and ensures byte-alignment before we try to measure or append it.
-    CompressedPixels = iolist_to_binary(CompressedPixels0),
+    %% CompressedPixels = iolist_to_binary(CompressedIoList),
     
-    Length = byte_size(CompressedPixels),
+    Length = byte_size(CompressedIoList),
     
     %% 2. erlang:crc32/1 natively accepts iodata (lists). 
     %% We can compute the CRC without allocating a massive CRCData binary.
-    CRC = erlang:crc32(["IDAT", CompressedPixels]),
+    CRC = erlang:crc32(["IDAT", CompressedIoList]),
     
     %% 3. Safely pack the final chunk.
-    <<Length:32, "IDAT", CompressedPixels/binary, CRC:32>>.
+    [<<Length:32, "IDAT">>, CompressedIoList, <<CRC:32>>].
 
 %% uncompresses
 parse_png(<<137, 80, 78, 71, 13, 10, 26, 10, Rest/binary>>) ->

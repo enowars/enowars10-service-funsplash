@@ -16,7 +16,8 @@ init_compressor() ->
     Z.
 
 compress_stream(Z, Data) ->
-    zlib:deflate(Z, Data, full).
+    ok = zlib:deflate(Z, Data, full),
+    zlib:deflate(Z, Data, finish).
 
 close_compressor(Z) ->
     %% Must finish the stream before ending it

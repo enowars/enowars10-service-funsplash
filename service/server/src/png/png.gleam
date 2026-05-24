@@ -6,24 +6,20 @@ pub type ZStream
 pub type Bytes =
   Int
 
-pub type Compressed
-
-pub type Uncompressed
-
 pub type Meta {
   Meta(width: Int, height: Int, bit_depth: Int, color_type: Int)
 }
 
-pub type Photo(compression_state) {
+pub type Photo(idat_type) {
   Photo(
     meta: Meta,
     header_envelope: BitArray,
-    idat: BitArray,
+    idat: idat_type,
     footer_envelope: BitArray,
   )
 }
 
-pub fn parse_photo(raw: BitArray) -> Photo(Uncompressed) {
+pub fn parse_photo(raw: BitArray) -> Photo(BitArray) {
   let #(
     #(width, height, bit_depth, color_type),
     header_envelope,
@@ -38,22 +34,24 @@ pub fn parse_photo(raw: BitArray) -> Photo(Uncompressed) {
   )
 }
 
-pub fn size(photo: Photo(Compressed)) -> Bytes {
+pub fn size(photo: Photo(BytesTree)) -> Bytes {
   bit_array.byte_size(photo.header_envelope)
-  + bit_array.byte_size(photo.idat)
+  + bytes_tree.byte_size(photo.idat)
   + bit_array.byte_size(photo.footer_envelope)
 }
 
-pub fn pack(photo: Photo(Compressed)) -> BitArray {
-  <<
-    photo.header_envelope:bits,
-    photo.idat:bits,
-    photo.footer_envelope:bits,
-  >>
+pub fn pack(photo: Photo(BytesTree)) -> BitArray {
+  bytes_tree.from_bit_array(photo.header_envelope)
+  |> bytes_tree.append_tree(photo.idat)
+  |> bytes_tree.append(photo.footer_envelope)
+  |> smuggle_tree
 }
 
+@external(erlang, "erlang", "iolist_to_binary")
+fn smuggle_tree(tree: BytesTree) -> BitArray
+
 @external(erlang, "png", "build_idat")
-pub fn build_idat(compressed_data: BitArray) -> BitArray
+pub fn build_idat(compressed_data: BytesTree) -> BytesTree
 
 @external(erlang, "png", "parse_png")
 fn parse_png(
@@ -70,4 +68,4 @@ pub fn compress_stream(z: ZStream, data: BytesTree) -> BytesTree
 pub fn close_compressor(z: ZStream) -> Nil
 
 @external(erlang, "compression", "compress")
-pub fn compress(data: BytesTree) -> BitArray
+pub fn compress(data: BytesTree) -> BytesTree
