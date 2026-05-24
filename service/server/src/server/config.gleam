@@ -5,6 +5,7 @@ import gleam/result
 pub type Config {
   Config(
     server_secret: String,
+    server_host: String,
     server_port: Int,
     db_user: String,
     db_host: String,
@@ -17,6 +18,7 @@ pub type Config {
 
 pub fn config() -> Config {
   let assert Ok(server_secret) = envoy.get("SERVER_SECRET")
+  let assert Ok(server_host) = envoy.get("SERVER_HOST")
   let assert Ok(server_port) =
     result.unwrap(envoy.get("SERVER_PORT"), "a") |> int.parse
   let assert Ok(db_user) = envoy.get("PGUSER")
@@ -28,6 +30,7 @@ pub fn config() -> Config {
     result.unwrap(envoy.get("PGPOOL"), "a") |> int.parse
   Config(
     server_secret:,
+    server_host:,
     server_port:,
     db_user:,
     db_host:,

@@ -38,17 +38,20 @@ pub fn pack(photo: Photo(Compressed)) -> BitArray {
   >>
 }
 
-@external(erlang, "png.erl", "build_idat")
+@external(erlang, "png", "build_idat")
 pub fn build_idat(compressed_data: BitArray) -> BitArray
 
-@external(erlang, "png.erl", "parse_png")
+@external(erlang, "png", "parse_png")
 pub fn parse_png(raw: BitArray) -> #(Int, BitArray, BitArray, BitArray)
 
-@external(erlang, "compression.erl", "init_compressor")
+@external(erlang, "compression", "init_compressor")
 pub fn init_compressor() -> ZStream
 
-@external(erlang, "compression.erl", "compress_stream")
+@external(erlang, "compression", "compress_stream")
 pub fn compress_stream(z: ZStream, data: BytesTree) -> BytesTree
 
-@external(erlang, "compression.erl", "close_compressor")
+@external(erlang, "compression", "close_compressor")
 pub fn close_compressor(z: ZStream) -> Nil
+
+@external(erlang, "compression", "compress")
+pub fn compress(data: BytesTree) -> BitArray

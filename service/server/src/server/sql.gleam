@@ -10,23 +10,48 @@ import gleam/time/timestamp.{type Timestamp}
 import pog
 import youid/uuid.{type Uuid}
 
-/// A row you get from running the `create_photo` query
-/// defined in `./src/server/sql/create_photo.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type CreatePhotoRow {
-  CreatePhotoRow(id: Uuid)
-}
-
-/// Runs the `create_photo` query
-/// defined in `./src/server/sql/create_photo.sql`.
+/// Runs the `photo_add_tag` query
+/// defined in `./src/server/sql/photo_add_tag.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn create_photo(
+pub fn photo_add_tag(
+  db: pog.Connection,
+  arg_1: String,
+  arg_2: Uuid,
+) -> Result(pog.Returned(Nil), pog.QueryError) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "WITH inserted_tag AS (
+    INSERT INTO tags (tag) VALUES ($1) ON CONFLICT DO NOTHING
+)
+INSERT INTO photos_tags (tag, photo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_create` query
+/// defined in `./src/server/sql/photo_create.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoCreateRow {
+  PhotoCreateRow(id: Uuid)
+}
+
+/// Runs the `photo_create` query
+/// defined in `./src/server/sql/photo_create.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_create(
   db: pog.Connection,
   arg_1: String,
   arg_2: Uuid,
@@ -35,13 +60,13 @@ pub fn create_photo(
   arg_5: Bool,
   arg_6: String,
   arg_7: String,
-) -> Result(pog.Returned(CreatePhotoRow), pog.QueryError) {
+) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    decode.success(CreatePhotoRow(id:))
+    decode.success(PhotoCreateRow(id:))
   }
 
-  "INSERT INTO photos (description, creator, photo, premium, private, location, camera)
+  "INSERT INTO photos (description, creator, data, premium, private, location, camera)
 VALUES (nullif($1,''),
 	$2,
 	$3,
@@ -63,23 +88,242 @@ RETURNING id;
   |> pog.execute(db)
 }
 
-/// Runs the `create_photo_tag` query
-/// defined in `./src/server/sql/create_photo_tag.sql`.
+/// A row you get from running the `photo_find_by_public_id` query
+/// defined in `./src/server/sql/photo_find_by_public_id.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoFindByPublicIdRow {
+  PhotoFindByPublicIdRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    title: Option(String),
+    creator: Uuid,
+    data: BitArray,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photo_find_by_public_id` query
+/// defined in `./src/server/sql/photo_find_by_public_id.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn create_photo_tag(
+pub fn photo_find_by_public_id(
+  db: pog.Connection,
+  arg_1: String,
+) -> Result(pog.Returned(PhotoFindByPublicIdRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use title <- decode.field(4, decode.optional(decode.string))
+    use creator <- decode.field(5, uuid_decoder())
+    use data <- decode.field(6, decode.bit_array)
+    use premium <- decode.field(7, decode.bool)
+    use private <- decode.field(8, decode.bool)
+    use show_on_profile <- decode.field(9, decode.bool)
+    use location <- decode.field(10, decode.optional(decode.string))
+    use camera <- decode.field(11, decode.optional(decode.string))
+    use likes_count <- decode.field(12, decode.int)
+    use views <- decode.field(13, decode.int)
+    use downloads <- decode.field(14, decode.int)
+    use created_at <- decode.field(15, pog.timestamp_decoder())
+    decode.success(PhotoFindByPublicIdRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      title:,
+      creator:,
+      data:,
+      premium:,
+      private:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT *
+FROM photos
+WHERE public_id = $1
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_find_data_by_asset_id` query
+/// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoFindDataByAssetIdRow {
+  PhotoFindDataByAssetIdRow(data: BitArray)
+}
+
+/// Runs the `photo_find_data_by_asset_id` query
+/// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_find_data_by_asset_id(
+  db: pog.Connection,
+  arg_1: Uuid,
+  arg_2: Bool,
+) -> Result(pog.Returned(PhotoFindDataByAssetIdRow), pog.QueryError) {
+  let decoder = {
+    use data <- decode.field(0, decode.bit_array)
+    decode.success(PhotoFindDataByAssetIdRow(data:))
+  }
+
+  "SELECT data
+FROM photos
+WHERE asset_id = $1
+AND premium = $2
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.bool(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_find_meta_by_public_id` query
+/// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoFindMetaByPublicIdRow {
+  PhotoFindMetaByPublicIdRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    title: Option(String),
+    description: Option(String),
+    creator: Uuid,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photo_find_meta_by_public_id` query
+/// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_find_meta_by_public_id(
+  db: pog.Connection,
+  arg_1: String,
+) -> Result(pog.Returned(PhotoFindMetaByPublicIdRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use title <- decode.field(3, decode.optional(decode.string))
+    use description <- decode.field(4, decode.optional(decode.string))
+    use creator <- decode.field(5, uuid_decoder())
+    use premium <- decode.field(6, decode.bool)
+    use private <- decode.field(7, decode.bool)
+    use show_on_profile <- decode.field(8, decode.bool)
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
+    decode.success(PhotoFindMetaByPublicIdRow(
+      id:,
+      public_id:,
+      asset_id:,
+      title:,
+      description:,
+      creator:,
+      premium:,
+      private:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT
+    id,
+    public_id,
+    asset_id,
+    title,
+    description,
+    creator,
+    premium,
+    private,
+    show_on_profile,
+    location,
+    camera,
+    likes_count,
+    views,
+    downloads,
+    created_at
+FROM photos
+WHERE public_id = $1
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `photo_remove_tag` query
+/// defined in `./src/server/sql/photo_remove_tag.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_remove_tag(
   db: pog.Connection,
   arg_1: String,
   arg_2: Uuid,
 ) -> Result(pog.Returned(Nil), pog.QueryError) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
 
-  "WITH inserted_tag AS (
-    INSERT INTO tags (tag) VALUES ($1) ON CONFLICT DO NOTHING
-)
-INSERT INTO photos_tags (tag, photo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
+  "DELETE FROM photos_tags
+WHERE tag = $1 AND photo_id = $2;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
@@ -88,33 +332,303 @@ INSERT INTO photos_tags (tag, photo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
   |> pog.execute(db)
 }
 
-/// A row you get from running the `create_user` query
-/// defined in `./src/server/sql/create_user.sql`.
+/// A row you get from running the `photos_list_by_tag` query
+/// defined in `./src/server/sql/photos_list_by_tag.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v4.6.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type CreateUserRow {
-  CreateUserRow(id: Uuid, username: String)
+pub type PhotosListByTagRow {
+  PhotosListByTagRow(public_id: String)
 }
 
-/// Runs the `create_user` query
-/// defined in `./src/server/sql/create_user.sql`.
+/// Runs the `photos_list_by_tag` query
+/// defined in `./src/server/sql/photos_list_by_tag.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn create_user(
+pub fn photos_list_by_tag(
+  db: pog.Connection,
+  arg_1: String,
+) -> Result(pog.Returned(PhotosListByTagRow), pog.QueryError) {
+  let decoder = {
+    use public_id <- decode.field(0, decode.string)
+    decode.success(PhotosListByTagRow(public_id:))
+  }
+
+  "SELECT photos.public_id
+FROM photos
+JOIN photos_tags ON photos.id = photos_tags.photo_id
+WHERE photos_tags.tag = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photos_list_by_user` query
+/// defined in `./src/server/sql/photos_list_by_user.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotosListByUserRow {
+  PhotosListByUserRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    title: Option(String),
+    description: Option(String),
+    creator: Uuid,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photos_list_by_user` query
+/// defined in `./src/server/sql/photos_list_by_user.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photos_list_by_user(
+  db: pog.Connection,
+  arg_1: Uuid,
+  arg_2: Bool,
+) -> Result(pog.Returned(PhotosListByUserRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use title <- decode.field(3, decode.optional(decode.string))
+    use description <- decode.field(4, decode.optional(decode.string))
+    use creator <- decode.field(5, uuid_decoder())
+    use premium <- decode.field(6, decode.bool)
+    use private <- decode.field(7, decode.bool)
+    use show_on_profile <- decode.field(8, decode.bool)
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
+    decode.success(PhotosListByUserRow(
+      id:,
+      public_id:,
+      asset_id:,
+      title:,
+      description:,
+      creator:,
+      premium:,
+      private:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT
+	id,
+    public_id,
+    asset_id,
+    title,
+    description,
+    creator,
+    premium,
+    private,
+    show_on_profile,
+    location,
+    camera,
+    likes_count,
+    views,
+    downloads,
+    created_at
+FROM photos
+WHERE creator = $1
+AND show_on_profile = $2;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.bool(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photos_list_by_user_cursor_date` query
+/// defined in `./src/server/sql/photos_list_by_user_cursor_date.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotosListByUserCursorDateRow {
+  PhotosListByUserCursorDateRow(
+    public_id: String,
+    asset_id: Uuid,
+    title: Option(String),
+    description: Option(String),
+    creator: Uuid,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photos_list_by_user_cursor_date` query
+/// defined in `./src/server/sql/photos_list_by_user_cursor_date.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photos_list_by_user_cursor_date(
+  db: pog.Connection,
+  arg_1: Uuid,
+  arg_2: Bool,
+  arg_3: Timestamp,
+) -> Result(pog.Returned(PhotosListByUserCursorDateRow), pog.QueryError) {
+  let decoder = {
+    use public_id <- decode.field(0, decode.string)
+    use asset_id <- decode.field(1, uuid_decoder())
+    use title <- decode.field(2, decode.optional(decode.string))
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use premium <- decode.field(5, decode.bool)
+    use private <- decode.field(6, decode.bool)
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
+    decode.success(PhotosListByUserCursorDateRow(
+      public_id:,
+      asset_id:,
+      title:,
+      description:,
+      creator:,
+      premium:,
+      private:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT 
+    public_id,
+    asset_id,
+    title,
+    description,
+    creator,
+    premium,
+    private,
+    show_on_profile,
+    location,
+    camera,
+    likes_count,
+    views,
+    downloads,
+    created_at
+FROM photos
+WHERE creator = $1 
+  AND show_on_profile = $2
+  AND created_at < $3 -- $3 is the timestamp of the last photo they saw
+ORDER BY created_at DESC
+LIMIT 50;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.bool(arg_2))
+  |> pog.parameter(pog.timestamp(arg_3))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `tags_list_by_photo` query
+/// defined in `./src/server/sql/tags_list_by_photo.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type TagsListByPhotoRow {
+  TagsListByPhotoRow(tag: String)
+}
+
+/// Runs the `tags_list_by_photo` query
+/// defined in `./src/server/sql/tags_list_by_photo.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn tags_list_by_photo(
+  db: pog.Connection,
+  arg_1: Uuid,
+) -> Result(pog.Returned(TagsListByPhotoRow), pog.QueryError) {
+  let decoder = {
+    use tag <- decode.field(0, decode.string)
+    decode.success(TagsListByPhotoRow(tag:))
+  }
+
+  "SELECT tag
+FROM photos_tags
+WHERE photo_id = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `user_create` query
+/// defined in `./src/server/sql/user_create.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type UserCreateRow {
+  UserCreateRow(id: Uuid, username: String)
+}
+
+/// Runs the `user_create` query
+/// defined in `./src/server/sql/user_create.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_create(
   db: pog.Connection,
   arg_1: String,
   arg_2: String,
   arg_3: String,
   arg_4: String,
-) -> Result(pog.Returned(CreateUserRow), pog.QueryError) {
+) -> Result(pog.Returned(UserCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use username <- decode.field(1, decode.string)
-    decode.success(CreateUserRow(id:, username:))
+    decode.success(UserCreateRow(id:, username:))
   }
 
   "INSERT INTO users (username, first_name, last_name, password)
@@ -134,132 +648,14 @@ RETURNING id, username;
   |> pog.execute(db)
 }
 
-/// A row you get from running the `find_photo_by_id` query
-/// defined in `./src/server/sql/find_photo_by_id.sql`.
+/// A row you get from running the `user_find_by_id` query
+/// defined in `./src/server/sql/user_find_by_id.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v4.6.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type FindPhotoByIdRow {
-  FindPhotoByIdRow(
-    id: Uuid,
-    description: Option(String),
-    title: Option(String),
-    creator: Uuid,
-    photo: BitArray,
-    premium: Bool,
-    private: Bool,
-    show_on_profile: Bool,
-    location: Option(String),
-    camera: Option(String),
-    likes_count: Int,
-    views: Int,
-    downloads: Int,
-    created_at: Timestamp,
-    updated_at: Timestamp,
-  )
-}
-
-/// Runs the `find_photo_by_id` query
-/// defined in `./src/server/sql/find_photo_by_id.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn find_photo_by_id(
-  db: pog.Connection,
-  arg_1: Uuid,
-) -> Result(pog.Returned(FindPhotoByIdRow), pog.QueryError) {
-  let decoder = {
-    use id <- decode.field(0, uuid_decoder())
-    use description <- decode.field(1, decode.optional(decode.string))
-    use title <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use photo <- decode.field(4, decode.bit_array)
-    use premium <- decode.field(5, decode.bool)
-    use private <- decode.field(6, decode.bool)
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
-    use updated_at <- decode.field(14, pog.timestamp_decoder())
-    decode.success(FindPhotoByIdRow(
-      id:,
-      description:,
-      title:,
-      creator:,
-      photo:,
-      premium:,
-      private:,
-      show_on_profile:,
-      location:,
-      camera:,
-      likes_count:,
-      views:,
-      downloads:,
-      created_at:,
-      updated_at:,
-    ))
-  }
-
-  "SELECT *
-FROM photos
-WHERE id = $1
-LIMIT 1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `find_photo_creator` query
-/// defined in `./src/server/sql/find_photo_creator.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type FindPhotoCreatorRow {
-  FindPhotoCreatorRow(creator: Uuid)
-}
-
-/// Runs the `find_photo_creator` query
-/// defined in `./src/server/sql/find_photo_creator.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn find_photo_creator(
-  db: pog.Connection,
-  arg_1: Uuid,
-) -> Result(pog.Returned(FindPhotoCreatorRow), pog.QueryError) {
-  let decoder = {
-    use creator <- decode.field(0, uuid_decoder())
-    decode.success(FindPhotoCreatorRow(creator:))
-  }
-
-  "SELECT creator
-FROM photos
-WHERE id = $1
-LIMIT 1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `find_user_by_name` query
-/// defined in `./src/server/sql/find_user_by_name.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type FindUserByNameRow {
-  FindUserByNameRow(
+pub type UserFindByIdRow {
+  UserFindByIdRow(
     id: Uuid,
     username: String,
     first_name: String,
@@ -273,16 +669,16 @@ pub type FindUserByNameRow {
   )
 }
 
-/// Runs the `find_user_by_name` query
-/// defined in `./src/server/sql/find_user_by_name.sql`.
+/// Runs the `user_find_by_id` query
+/// defined in `./src/server/sql/user_find_by_id.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn find_user_by_name(
+pub fn user_find_by_id(
   db: pog.Connection,
-  arg_1: String,
-) -> Result(pog.Returned(FindUserByNameRow), pog.QueryError) {
+  arg_1: Uuid,
+) -> Result(pog.Returned(UserFindByIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use username <- decode.field(1, decode.string)
@@ -294,7 +690,74 @@ pub fn find_user_by_name(
     use password <- decode.field(7, decode.string)
     use created_at <- decode.field(8, pog.timestamp_decoder())
     use updated_at <- decode.field(9, pog.timestamp_decoder())
-    decode.success(FindUserByNameRow(
+    decode.success(UserFindByIdRow(
+      id:,
+      username:,
+      first_name:,
+      last_name:,
+      bio:,
+      available_for_hire:,
+      premium:,
+      password:,
+      created_at:,
+      updated_at:,
+    ))
+  }
+
+  "SELECT *
+FROM users
+WHERE id=$1
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `user_find_by_name` query
+/// defined in `./src/server/sql/user_find_by_name.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type UserFindByNameRow {
+  UserFindByNameRow(
+    id: Uuid,
+    username: String,
+    first_name: String,
+    last_name: Option(String),
+    bio: Option(String),
+    available_for_hire: Bool,
+    premium: Bool,
+    password: String,
+    created_at: Timestamp,
+    updated_at: Timestamp,
+  )
+}
+
+/// Runs the `user_find_by_name` query
+/// defined in `./src/server/sql/user_find_by_name.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_find_by_name(
+  db: pog.Connection,
+  arg_1: String,
+) -> Result(pog.Returned(UserFindByNameRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use username <- decode.field(1, decode.string)
+    use first_name <- decode.field(2, decode.string)
+    use last_name <- decode.field(3, decode.optional(decode.string))
+    use bio <- decode.field(4, decode.optional(decode.string))
+    use available_for_hire <- decode.field(5, decode.bool)
+    use premium <- decode.field(6, decode.bool)
+    use password <- decode.field(7, decode.string)
+    use created_at <- decode.field(8, pog.timestamp_decoder())
+    use updated_at <- decode.field(9, pog.timestamp_decoder())
+    decode.success(UserFindByNameRow(
       id:,
       username:,
       first_name:,
@@ -319,228 +782,39 @@ LIMIT 1;
   |> pog.execute(db)
 }
 
-/// A row you get from running the `list_photos_by_tag` query
-/// defined in `./src/server/sql/list_photos_by_tag.sql`.
+/// A row you get from running the `user_liked_photo` query
+/// defined in `./src/server/sql/user_liked_photo.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v4.6.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type ListPhotosByTagRow {
-  ListPhotosByTagRow(
-    id: Uuid,
-    description: Option(String),
-    title: Option(String),
-    creator: Uuid,
-    photo: BitArray,
-    premium: Bool,
-    private: Bool,
-    show_on_profile: Bool,
-    location: Option(String),
-    camera: Option(String),
-    likes_count: Int,
-    views: Int,
-    downloads: Int,
-    created_at: Timestamp,
-    updated_at: Timestamp,
-  )
+pub type UserLikedPhotoRow {
+  UserLikedPhotoRow(user_liked: Bool)
 }
 
-/// Runs the `list_photos_by_tag` query
-/// defined in `./src/server/sql/list_photos_by_tag.sql`.
+/// Runs the `user_liked_photo` query
+/// defined in `./src/server/sql/user_liked_photo.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v4.6.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn list_photos_by_tag(
-  db: pog.Connection,
-  arg_1: String,
-) -> Result(pog.Returned(ListPhotosByTagRow), pog.QueryError) {
-  let decoder = {
-    use id <- decode.field(0, uuid_decoder())
-    use description <- decode.field(1, decode.optional(decode.string))
-    use title <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use photo <- decode.field(4, decode.bit_array)
-    use premium <- decode.field(5, decode.bool)
-    use private <- decode.field(6, decode.bool)
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
-    use updated_at <- decode.field(14, pog.timestamp_decoder())
-    decode.success(ListPhotosByTagRow(
-      id:,
-      description:,
-      title:,
-      creator:,
-      photo:,
-      premium:,
-      private:,
-      show_on_profile:,
-      location:,
-      camera:,
-      likes_count:,
-      views:,
-      downloads:,
-      created_at:,
-      updated_at:,
-    ))
-  }
-
-  "SELECT photos.*
-FROM photos
-JOIN photos_tags ON photos.id = photos_tags.photo_id
-WHERE photos_tags.tag = $1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(arg_1))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `list_photos_by_user` query
-/// defined in `./src/server/sql/list_photos_by_user.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type ListPhotosByUserRow {
-  ListPhotosByUserRow(
-    id: Uuid,
-    description: Option(String),
-    title: Option(String),
-    creator: Uuid,
-    photo: BitArray,
-    premium: Bool,
-    private: Bool,
-    show_on_profile: Bool,
-    location: Option(String),
-    camera: Option(String),
-    likes_count: Int,
-    views: Int,
-    downloads: Int,
-    created_at: Timestamp,
-    updated_at: Timestamp,
-  )
-}
-
-/// Runs the `list_photos_by_user` query
-/// defined in `./src/server/sql/list_photos_by_user.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn list_photos_by_user(
+pub fn user_liked_photo(
   db: pog.Connection,
   arg_1: Uuid,
-  arg_2: Bool,
-  arg_3: Bool,
-) -> Result(pog.Returned(ListPhotosByUserRow), pog.QueryError) {
-  let decoder = {
-    use id <- decode.field(0, uuid_decoder())
-    use description <- decode.field(1, decode.optional(decode.string))
-    use title <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use photo <- decode.field(4, decode.bit_array)
-    use premium <- decode.field(5, decode.bool)
-    use private <- decode.field(6, decode.bool)
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
-    use updated_at <- decode.field(14, pog.timestamp_decoder())
-    decode.success(ListPhotosByUserRow(
-      id:,
-      description:,
-      title:,
-      creator:,
-      photo:,
-      premium:,
-      private:,
-      show_on_profile:,
-      location:,
-      camera:,
-      likes_count:,
-      views:,
-      downloads:,
-      created_at:,
-      updated_at:,
-    ))
-  }
-
-  "SELECT *
-FROM photos
-WHERE creator = $1
-AND private = $2
-AND premium = $3;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.bool(arg_2))
-  |> pog.parameter(pog.bool(arg_3))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `list_tags_by_photo` query
-/// defined in `./src/server/sql/list_tags_by_photo.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type ListTagsByPhotoRow {
-  ListTagsByPhotoRow(tag: String)
-}
-
-/// Runs the `list_tags_by_photo` query
-/// defined in `./src/server/sql/list_tags_by_photo.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn list_tags_by_photo(
-  db: pog.Connection,
-  arg_1: Uuid,
-) -> Result(pog.Returned(ListTagsByPhotoRow), pog.QueryError) {
-  let decoder = {
-    use tag <- decode.field(0, decode.string)
-    decode.success(ListTagsByPhotoRow(tag:))
-  }
-
-  "SELECT tag
-FROM photos_tags
-WHERE photo_id = $1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// Runs the `remove_photo_tag` query
-/// defined in `./src/server/sql/remove_photo_tag.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn remove_photo_tag(
-  db: pog.Connection,
-  arg_1: String,
   arg_2: Uuid,
-) -> Result(pog.Returned(Nil), pog.QueryError) {
-  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+) -> Result(pog.Returned(UserLikedPhotoRow), pog.QueryError) {
+  let decoder = {
+    use user_liked <- decode.field(0, decode.bool)
+    decode.success(UserLikedPhotoRow(user_liked:))
+  }
 
-  "DELETE FROM photos_tags
-WHERE tag = $1 AND photo_id = $2;
+  "SELECT true AS user_liked
+FROM likes
+WHERE user_id = $1 
+AND photo_id = $2;
 "
   |> pog.query
-  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
   |> pog.parameter(pog.text(uuid.to_string(arg_2)))
   |> pog.returning(decoder)
   |> pog.execute(db)

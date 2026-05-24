@@ -33,7 +33,7 @@ fn server(db: pog.Connection, config: Config) -> Nil {
     mist_handler
     |> mist.new
     |> mist.port(config.server_port)
-    |> mist.bind("0.0.0.0")
+    |> mist.bind(config.server_host)
     |> mist.start
 
   process.sleep_forever()

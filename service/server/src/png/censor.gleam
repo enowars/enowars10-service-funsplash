@@ -1,29 +1,39 @@
 import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
-import gleam/result
-import png/photo.{type Compressed, type Photo, type Uncompressed, type ZStream}
+import gleam/int
+import gleam/io
+import png/png
 
-@external(erlang, "censor.erl", "apply_mask")
-fn apply_mask(target: BitArray, mask: BitArray, width: Int) -> BytesTree
+@external(erlang, "censor", "apply_mask")
+pub fn apply_mask(target: BitArray, mask: BitArray, width: Int) -> BytesTree
 
 pub fn censor_raw(
-  photo: Photo(Uncompressed),
+  photo: png.Photo(png.Uncompressed),
   mask: BitArray,
-  z_stream: ZStream,
-) -> Result(Photo(Compressed), String) {
+  z_stream: png.ZStream,
+) -> Result(png.Photo(png.Compressed), String) {
   let photo_size = bit_array.byte_size(photo.idat)
   let mask_size = bit_array.byte_size(mask)
 
   case photo_size {
     ps if ps > 5120 -> Error("image too large")
-    ps if ps != mask_size -> Error("mask is wrong size")
+    ps if ps != mask_size -> {
+      io.println(
+        "Wrong size! Photo IDAT: "
+        <> int.to_string(ps)
+        <> ", Mask: "
+        <> int.to_string(mask_size),
+      )
+      Error("mask is wrong size")
+    }
     _ if photo.width <= 0 -> Error("invalid width")
     _ -> {
       let redacted = apply_mask(photo.idat, mask, photo.width)
-      let compressed = photo.compress_stream(z_stream, redacted)
+      let compressed = png.compress_stream(z_stream, redacted)
       let compressed = bytes_tree.to_bit_array(compressed)
+      let idat = png.build_idat(compressed)
 
-      Ok(photo.Photo(..photo, idat: compressed))
+      Ok(png.Photo(..photo, idat: idat))
     }
   }
 }

@@ -1,15 +1,12 @@
 import argus
-import pog
-
 import gleam/bool
-
 import gleam/http
-import gleam/http/request
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import pog
 import server/sql
-import server/user.{type User}
+import server/user
 import server/web
 import wisp
 
@@ -17,7 +14,7 @@ const auth_cookie = "uid"
 
 pub fn require_login(
   context: web.Context,
-  next: fn(User) -> wisp.Response,
+  next: fn(user.User) -> wisp.Response,
 ) -> wisp.Response {
   case context.user {
     Some(user) -> next(user)
@@ -28,19 +25,23 @@ pub fn require_login(
 pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
   case request.method {
     http.Get -> todo
-    http.Post -> login_post(request, context)
+    http.Post -> login_attempt(request, context)
     _ -> wisp.method_not_allowed([http.Get, http.Post])
   }
 }
 
-fn login_post(request: wisp.Request, context: web.Context) -> wisp.Response {
+pub fn logout(request, context) -> wisp.Response {
+  todo
+}
+
+fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
   use form <- wisp.require_form(request)
 
   let login_result = {
     use username <- result.try(list.key_find(form.values, "username"))
     use password <- result.try(list.key_find(form.values, "password"))
     use res <- result.try(
-      sql.find_user_by_name(context.db, username)
+      sql.user_find_by_name(context.db, username)
       |> result.replace_error(Nil),
     )
     use user <- result.try(list.first(res.rows))
@@ -73,8 +74,8 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   let res = {
     use username <- result.try(list.key_find(form.values, "username"))
     use password <- result.try(list.key_find(form.values, "password"))
-    use first_name <- result.try(list.key_find(form.values, "firstname"))
-    let last_name = result.unwrap(list.key_find(form.values, "lastname"), "")
+    use first_name <- result.try(list.key_find(form.values, "first_name"))
+    let last_name = result.unwrap(list.key_find(form.values, "last_name"), "")
 
     // TODO: think about using insecure salt
     use pass_hash <- result.try(
@@ -83,7 +84,7 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> result.replace_error(Nil),
     )
 
-    sql.create_user(
+    sql.user_create(
       context.db,
       username,
       first_name,
@@ -99,20 +100,69 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
 }
 
+// pub fn get_user_from_session(
+//   request,
+//   db: pog.Connection,
+// ) -> Result(user.User, Nil) {
+//   let user: Result(Option(user.User), Nil) =
+//     wisp.get_cookie(request, auth_cookie, wisp.Signed)
+//     |> result.map(user.get_user(db, _))
+
+//   case user {
+//     Ok(Some(user)) -> Ok(user)
+//     _ -> Error(Nil)
+//   }
+// }
+
 pub fn get_user_from_session(
   request,
   db: pog.Connection,
-  next: fn(Option(User)) -> wisp.Response,
+  next: fn(Option(user.User)) -> wisp.Response,
 ) -> wisp.Response {
-  let user: Result(Option(User), Nil) =
+  let user: Result(Option(user.User), Nil) =
     wisp.get_cookie(request, auth_cookie, wisp.Signed)
     |> result.map(user.get_user(db, _))
 
   case user {
     Ok(Some(user)) -> next(Some(user))
     Ok(None) ->
-      wisp.not_found()
+      wisp.response(403)
       |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
     Error(_) -> next(None)
+  }
+}
+
+// pub fn get_user_from_session_try(
+//   request,
+//   db: pog.Connection,
+//   next: fn(Option(user.User)) -> wisp.Response,
+// ) -> wisp.Response {
+//   let user: Result(Option(user.User), Nil) =
+//     wisp.get_cookie(request, auth_cookie, wisp.Signed)
+//     |> result.map(user.get_user(db, _))
+
+//   case user {
+//     Ok(Some(user)) -> next(Some(user))
+//     Ok(None) ->
+//       wisp.response(403)
+//       |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
+//     Error(_) -> next(None)
+//   }
+// }
+
+pub fn get_user_from_session_try(
+  request,
+  db: pog.Connection,
+  next: fn(user.User) -> wisp.Response,
+) -> wisp.Response {
+  let user: Result(Option(user.User), Nil) =
+    wisp.get_cookie(request, auth_cookie, wisp.Signed)
+    |> result.map(user.get_user(db, _))
+
+  case user {
+    Ok(Some(user)) -> next(user)
+    _ ->
+      wisp.response(403)
+      |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
   }
 }

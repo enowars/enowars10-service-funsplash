@@ -1,108 +1,101 @@
 import gleam/bytes_tree
 import gleam/http
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
+import gleam/time/timestamp.{type Timestamp}
 import server/sql
 import server/web
 import server/web/auth
+import shared/shared_photo
 import simplifile
 import wisp
-import youid/uuid
+import youid/uuid.{type Uuid}
 
-pub type Photo =
-  sql.FindPhotoByIdRow
-
-pub fn get(
-  request: wisp.Request,
-  context: web.Context,
-  photo: String,
-) -> wisp.Response {
-  case request.method {
-    http.Get -> get_photo(request, context, photo)
-    _ -> wisp.method_not_allowed([http.Get])
-  }
+pub type Photo {
+  Photo(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    title: Option(String),
+    creator: Uuid,
+    premium: Bool,
+    private: Bool,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
 }
 
-fn get_photo(
-  request: wisp.Request,
-  context: web.Context,
-  photo: String,
-) -> wisp.Response {
-  let photo_result = {
-    use id <- result.try(uuid.from_string(photo) |> result.replace_error(Nil))
-    use res <- result.try(
-      sql.find_photo_by_id(context.db, id) |> result.replace_error(Nil),
-    )
-    use row <- result.try(list.first(res.rows))
-    Ok(row)
-  }
-  // FIXME: check private and premium
-  case photo_result {
-    Ok(row) -> {
-      wisp.ok()
-      |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(wisp.Bytes(bytes_tree.from_bit_array(row.photo)))
-    }
-    Error(_) -> wisp.not_found()
-  }
+pub fn to_shared(
+  photo: Photo,
+  creator: String,
+  tags: List(String),
+  user_liked: Bool,
+) -> shared_photo.Photo {
+  shared_photo.Photo(
+    public_id: photo.public_id,
+    asset_id: photo.asset_id |> uuid.to_string,
+    description: photo.description,
+    title: photo.title,
+    creator:,
+    premium: photo.premium,
+    private: photo.private,
+    show_on_profile: photo.show_on_profile,
+    location: photo.location,
+    camera: photo.camera,
+    likes_count: photo.likes_count,
+    views: photo.views,
+    downloads: photo.downloads,
+    created_at: photo.created_at |> timestamp.to_unix_seconds,
+    //
+    tags:,
+    user_liked:,
+  )
 }
 
-pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
-  use user <- auth.require_login(context)
+pub fn from_photo_find_by_public_id_row(p: sql.PhotoFindByPublicIdRow) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    title: p.title,
+    creator: p.creator,
+    premium: p.premium,
+    private: p.private,
+    show_on_profile: p.show_on_profile,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    created_at: p.created_at,
+  )
+}
 
-  use form <- wisp.require_form(request)
-
-  let upload_result = {
-    let description =
-      result.unwrap(list.key_find(form.values, "description"), "")
-    let premium =
-      result.unwrap(list.key_find(form.values, "premium"), "false") == "true"
-    let private =
-      result.unwrap(list.key_find(form.values, "private"), "false") == "true"
-    let location = result.unwrap(list.key_find(form.values, "location"), "")
-    let camera = result.unwrap(list.key_find(form.values, "camera"), "")
-
-    let tags_str = result.unwrap(list.key_find(form.values, "tags"), "")
-    let tags =
-      string.split(tags_str, ",")
-      |> list.map(string.trim)
-      |> list.filter(fn(t) { t != "" })
-
-    use photo_file <- result.try(
-      list.key_find(form.files, "photo") |> result.replace_error(Nil),
-    )
-    use photo_data <- result.try(
-      simplifile.read_bits(photo_file.path) |> result.replace_error(Nil),
-    )
-
-    use res <- result.try(
-      sql.create_photo(
-        context.db,
-        description,
-        user.id,
-        photo_data,
-        premium,
-        private,
-        location,
-        camera,
-      )
-      |> result.replace_error(Nil),
-    )
-    use new_photo <- result.try(list.first(res.rows))
-
-    use _ <- result.try(
-      list.try_each(tags, fn(tag) {
-        sql.create_photo_tag(context.db, tag, new_photo.id)
-        |> result.replace_error(Nil)
-      }),
-    )
-
-    Ok(Nil)
-  }
-
-  case upload_result {
-    Ok(_) -> wisp.redirect("/")
-    Error(_) -> wisp.bad_request("Upload failed")
-  }
+pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    title: p.title,
+    creator: p.creator,
+    premium: p.premium,
+    private: p.private,
+    show_on_profile: p.show_on_profile,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    created_at: p.created_at,
+  )
 }

@@ -1,0 +1,193 @@
+import gleam/bit_array
+import gleam/bool
+import gleam/bytes_tree
+import png/censor
+import png/png
+
+fn censor_mask() -> BitArray {
+  // A 29x29 mask where everything is censored (0x00) except the structural elements.
+  // This matches the 1-bit QR code format with filter bytes intact.
+  <<
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0x00,
+    0x03,
+    0xff,
+    0xff,
+    0xfe,
+    0xff,
+    0xfb,
+    0xff,
+    0xff,
+    0x00,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0x02,
+    0x00,
+    0x0f,
+    0x87,
+    0xff,
+    0x00,
+    0x00,
+    0x0f,
+    0x87,
+    0xff,
+    0xfe,
+    0x00,
+    0x0f,
+    0x87,
+    0xff,
+    0xfe,
+    0x00,
+    0x0f,
+    0x87,
+    0xff,
+    0xfe,
+    0x00,
+    0x0f,
+    0x87,
+    0xff,
+    0xfe,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0xfe,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0xfe,
+    0x00,
+    0x00,
+    0x07,
+    0xff,
+    0xfe,
+    0x00,
+    0x00,
+    0x07,
+  >>
+}
+
+// pub fn censor(photo_data: BitArray) -> BitArray {
+//   let photo = png.parse_photo(photo_data)
+//   let mask = censor_mask()
+
+//   // We initialize a temporary compressor just to recompress the single masked image
+//   let z_stream = png.init_compressor()
+
+//   let result = censor.censor_raw(photo, mask, z_stream)
+
+//   // Clean up the zlib compressor properly to prevent Erlang data_error crashes
+//   png.close_compressor(z_stream)
+
+//   case result {
+//     Ok(censored_photo) -> png.pack(censored_photo)
+//     Error(_) -> photo_data
+//     // Fallback to original if masking fails
+//   }
+// }
+
+pub fn censor(photo: BitArray) -> BitArray {
+  let photo = png.parse_photo(photo)
+  let mask = censor_mask()
+  let photo_size = bit_array.byte_size(photo.idat)
+  let mask_size = bit_array.byte_size(mask)
+
+  use <- bool.guard(photo_size == mask_size, mask)
+
+  png.Photo(
+    ..photo,
+    idat: censor.apply_mask(photo.idat, mask, photo_size)
+      |> png.compress()
+      |> png.build_idat(),
+  )
+  |> png.pack
+}

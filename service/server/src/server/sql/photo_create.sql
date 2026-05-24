@@ -1,4 +1,4 @@
-INSERT INTO photos (description, creator, photo, premium, private, location, camera)
+INSERT INTO photos (description, creator, data, premium, private, location, camera)
 VALUES (nullif($1,''),
 	$2,
 	$3,
