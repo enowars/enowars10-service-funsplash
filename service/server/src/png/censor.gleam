@@ -5,7 +5,13 @@ import gleam/io
 import png/png
 
 @external(erlang, "censor", "apply_mask")
-pub fn apply_mask(target: BitArray, mask: BitArray, width: Int) -> BytesTree
+pub fn apply_mask(
+  target: BitArray,
+  mask: BitArray,
+  width: Int,
+  bit_depth: Int,
+  color_type: Int,
+) -> BytesTree
 
 pub fn censor_raw(
   photo: png.Photo(png.Uncompressed),
@@ -26,9 +32,16 @@ pub fn censor_raw(
       )
       Error("mask is wrong size")
     }
-    _ if photo.width <= 0 -> Error("invalid width")
+    _ if photo.meta.width <= 0 -> Error("invalid width")
     _ -> {
-      let redacted = apply_mask(photo.idat, mask, photo.width)
+      let redacted =
+        apply_mask(
+          photo.idat,
+          mask,
+          photo.meta.width,
+          photo.meta.bit_depth,
+          photo.meta.color_type,
+        )
       let compressed = png.compress_stream(z_stream, redacted)
       let compressed = bytes_tree.to_bit_array(compressed)
       let idat = png.build_idat(compressed)

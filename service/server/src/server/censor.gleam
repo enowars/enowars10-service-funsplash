@@ -1,4 +1,4 @@
-import gleam/bit_array
+import gleam/bytes_tree
 import gleam/erlang/process
 import gleam/http/request
 import gleam/http/response
@@ -6,7 +6,6 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None}
-import gleam/result
 import mist
 import png/censor
 import png/png
@@ -40,17 +39,8 @@ pub fn upgrade(
 
     let assert Ok(photo) = list.first(res.rows)
     let data = png.parse_photo(photo.data)
-
-    #(
-      State(
-        photo.id,
-        data,
-        None,
-        z_stream: png.init_compressor(),
-        owner: photo.creator,
-      ),
-      None,
-    )
+    let z_stream = png.init_compressor()
+    #(State(photo.id, data, None, z_stream:, owner: photo.creator), None)
   }
 
   mist.websocket(
@@ -61,11 +51,10 @@ pub fn upgrade(
   )
 }
 
-fn close_socket(state: State) -> Nil {
+fn close_socket(_state: State) -> Nil {
   // TODO: check if user is allowed and write picture to db
   // copy prev
   io.println("Disconnected")
-  png.close_compressor(state.z_stream)
 }
 
 fn handler(
@@ -73,10 +62,9 @@ fn handler(
   message: mist.WebsocketMessage(b),
   connection: mist.WebsocketConnection,
 ) {
-  // TODO: return size
+  io.println("handle")
   case message {
     mist.Binary(mask) -> {
-      io.println(bit_array.to_string(mask) |> result.unwrap(""))
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
           let state = State(..state, out_photo: option.Some(censored_png))
@@ -95,7 +83,8 @@ fn handler(
       }
     }
     mist.Shutdown -> mist.stop()
-    mist.Text(message) -> todo
+    mist.Closed -> mist.stop()
+    mist.Text(_) -> mist.continue(state)
     // save
     _ -> mist.continue(state)
   }

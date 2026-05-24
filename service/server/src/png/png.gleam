@@ -10,9 +10,13 @@ pub type Compressed
 
 pub type Uncompressed
 
+pub type Meta {
+  Meta(width: Int, height: Int, bit_depth: Int, color_type: Int)
+}
+
 pub type Photo(compression_state) {
   Photo(
-    width: Int,
+    meta: Meta,
     header_envelope: BitArray,
     idat: BitArray,
     footer_envelope: BitArray,
@@ -20,8 +24,18 @@ pub type Photo(compression_state) {
 }
 
 pub fn parse_photo(raw: BitArray) -> Photo(Uncompressed) {
-  let #(width, header_envelope, idat, footer_envelope) = parse_png(raw)
-  Photo(width:, header_envelope:, idat:, footer_envelope:)
+  let #(
+    #(width, height, bit_depth, color_type),
+    header_envelope,
+    idat,
+    footer_envelope,
+  ) = parse_png(raw)
+  Photo(
+    Meta(width:, height:, bit_depth:, color_type:),
+    header_envelope:,
+    idat:,
+    footer_envelope:,
+  )
 }
 
 pub fn size(photo: Photo(Compressed)) -> Bytes {
@@ -42,7 +56,9 @@ pub fn pack(photo: Photo(Compressed)) -> BitArray {
 pub fn build_idat(compressed_data: BitArray) -> BitArray
 
 @external(erlang, "png", "parse_png")
-pub fn parse_png(raw: BitArray) -> #(Int, BitArray, BitArray, BitArray)
+fn parse_png(
+  raw: BitArray,
+) -> #(#(Int, Int, Int, Int), BitArray, BitArray, BitArray)
 
 @external(erlang, "compression", "init_compressor")
 pub fn init_compressor() -> ZStream
