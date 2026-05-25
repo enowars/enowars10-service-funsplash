@@ -1,19 +1,19 @@
 version: '2.1'
 
 services:
-  n0t3b00k-checker:
+  funsplash-checker:
     build: .
     # The checker runs a HTTP interfaces, so we need to map port 3031 to the outside (port 8000).
     ports:
-      - 12323:8000
+      - 11337:8000
     environment:
       - MONGO_ENABLED=1
-      - MONGO_HOST=n0t3b00k-mongo
+      - MONGO_HOST=funsplash-mongo
       - MONGO_PORT=27017
-      - MONGO_USER=n0t3b00k
-      - MONGO_PASSWORD=n0t3b00k
-    mem_limit: 1G
-    memswap_limit: 2G
+      - MONGO_USER=funsplash
+      - MONGO_PASSWORD=funsplash
+    # mem_limit: 1G
+    # memswap_limit: 2G
     ulimits:
       core:
         soft: 0
@@ -22,17 +22,17 @@ services:
         soft: 4000
         hard: 4000
   # The python checkerlib requires a mongo db!
-  n0t3b00k-mongo:
+  funsplash-mongo:
     image: mongo
     #ports:
     #  - 27017:27017
     volumes:
-      - ./data:/data/db
+      - ./data:/data/db:z
     environment:
-      MONGO_INITDB_ROOT_USERNAME: n0t3b00k
-      MONGO_INITDB_ROOT_PASSWORD: n0t3b00k
-    mem_limit: 1G
-    memswap_limit: 2G
+      MONGO_INITDB_ROOT_USERNAME: funsplash
+      MONGO_INITDB_ROOT_PASSWORD: funsplash
+    # mem_limit: 1G
+    # memswap_limit: 2G
     ulimits:
       core:
         soft: 0
