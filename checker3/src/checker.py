@@ -1,4 +1,5 @@
 import json
+import httpx
 import asyncio
 from typing import Optional
 import user
@@ -39,7 +40,7 @@ app = lambda: checker.app
 
 
 @checker.register_dependency
-def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connection:  # noqa: F821
+def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connection:
     return Connection(client, logger)
 
 
