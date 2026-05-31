@@ -1,9 +1,10 @@
-import re
 import json
 import asyncio
 from typing import Optional
+import user
+import qr
+import utils
 from logging import LoggerAdapter
-from httpx import AsyncClient
 
 from utils import (
     get_placeholder_png,
@@ -12,7 +13,6 @@ from utils import (
     CHARSET_LETTERS,
     CHARSET_ALPHANUMERIC_MIXED,
     CHARSET_UPPER_ALPHANUMERIC,
-    Connection,
 )
 from enochecker3 import (
     ChainDB,
@@ -26,6 +26,7 @@ from enochecker3 import (
     MumbleException,
     PutflagCheckerTaskMessage,
 )
+from connection import Connection
 from enochecker3.utils import assert_equals, assert_in
 
 """
@@ -37,13 +38,8 @@ checker = Enochecker("funsplash", SERVICE_PORT)
 app = lambda: checker.app
 
 
-"""
-Utility functions
-"""
-
-
 @checker.register_dependency
-def _get_connection(client: AsyncClient, logger: LoggerAdapter) -> Connection:
+def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connection:  # noqa: F821
     return Connection(client, logger)
 
 
@@ -53,7 +49,7 @@ CHECKER FUNCTIONS
 
 
 @checker.putflag(0)
-async def putflag_note(
+async def putflag(
     task: PutflagCheckerTaskMessage,
     db: ChainDB,
     conn: Connection,
@@ -62,41 +58,38 @@ async def putflag_note(
     username = random_string(12, CHARSET_ALPHANUMERIC)
     first_name = random_string(10, CHARSET_LETTERS)
     password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
+    photo_desc = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
 
-    await conn.register_user(username, password, first_name)
-    await conn.login_user(username, password)
+    await user.register(conn, username, password, first_name)
+    cookie = await user.login(conn, username, password)
 
-    await conn.upload_photo(
-        description=task.flag,
+    await user.upload_photo(
+        conn,
+        cookie,
+        description=f"a flag but its premium and you are poor 🪙🤑 {photo_desc}",
         premium=True,
         private=False,
         location="Berlin",
-        camera="Gemini",
-        tags="flag",
+        camera="Sony Beta",
+        tags="flag,secret,premium",
         photo_name="flag.png",
-        photo_data=get_placeholder_png(),
+        photo_data=qr.generate_qr_flag(task.flag),
     )
 
-    photo_id = None
-    for attempt in range(10):
-        try:
-            profile_html = await conn.get_user_profile(username)
-            profile_data = json.loads(profile_html)
-            photos = profile_data.get("photos", [])
-            if photos:
-                photo_id = photos[0].get("public_id") or photos[0].get("asset_id")
-                if photo_id:
-                    break
-        except Exception:
-            pass
-        await asyncio.sleep(2)
+    profile = await user.get_profile(conn, username, cookie)
 
-    if not photo_id:
-        raise MumbleException("Uploaded photo did not appear on profile")
+    p = utils.get_photo_by_description_contains(profile, photo_desc)
 
-    logger.debug(f"Got photo_id {photo_id}")
-    await db.set("userdata", (username, password, photo_id))
-    return username
+    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookie)
+    assert_equals(r.status_code, 200)
+    flag_got = qr.decode(r.content)
+    assert_equals(flag_got, task.flag)
+
+    u = user.User(username, password, first_name)
+
+    await db.set("user_data", (u))
+    await db.set("photo_data", (p))
+    return u.username
 
 
 @checker.getflag(0)
@@ -107,24 +100,43 @@ async def getflag_note(
     conn: Connection,
 ) -> None:
     try:
-        username, password, photo_id = await db.get("userdata")
+        u: user.User = db.get("user_data")
+        p: utils.Photo = db.get("photo_data")
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-    await conn.login_user(username, password)
+    cookie = await user.login(conn, u.username, u.password)
+
+    profile = await user.get_profile(conn, u.username)
+
+    p2: utils.Photo = utils.get_photo_by_description_contains(profile, p.description)
+
+    assert_equals(
+        p, p2, "photo was returned differently from profile how it was stored"
+    )
 
     # Check photo metadata
-    r = await conn.client.get(f"/photos/{photo_id}", headers=conn._get_headers())
+    r = await conn.client.get(f"/photos/{p.public_id}")
     if r.status_code != 200:
         raise MumbleException(f"Failed to retrieve photo metadata: {r.status_code}")
+    p2: utils.Photo = utils.get_photo_by_description_contains(r.content, p.description)
 
-    if task.flag not in r.text:
-        raise MumbleException("Flag not found in photo metadata")
+    assert_equals(p, p2, "photo was returned differently from how it was stored")
 
-    # Check photo data
-    photo_content = await conn.get_photo(photo_id, premium=True)
-    if len(photo_content) == 0:
-        raise MumbleException("Downloaded photo is empty")
+    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookie)
+    assert_equals(r.status_code, 200)
+    flag_got = qr.decode(r.content)
+    assert_equals(flag_got, task.flag)
+
+    r = await conn.get(f"/premium_photo-{p.asset_id}")
+    assert_equals(r.status_code, 200)
+    try:
+        flag_got = qr.decode(r.content)
+        assert_equals(flag_got, task.flag)
+    except Exception:
+        return
+
+    raise MumbleException("could decode flag even when not logged in")
 
 
 @checker.putnoise(0)
@@ -146,8 +158,8 @@ async def putnoise0(
         description=randomNote,
         premium=False,
         private=False,
-        location="Munich",
-        camera="Gemini",
+        location="Berlin",
+        camera="Sony Alpha",
         tags="noise",
         photo_name="noise.png",
         photo_data=get_placeholder_png(),

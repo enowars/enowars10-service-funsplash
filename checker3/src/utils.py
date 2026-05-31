@@ -1,4 +1,5 @@
 import random
+from dataclasses import dataclass
 import string
 import httpx
 import asyncio
@@ -13,27 +14,62 @@ CHARSET_LETTERS = string.ascii_letters
 CHARSET_ALPHANUMERIC_MIXED = string.ascii_letters + string.digits
 CHARSET_UPPER_ALPHANUMERIC = string.ascii_uppercase + string.digits
 
+
+@dataclass
+class Photo:
+    public_id: str
+    asset_id: str
+    description: str
+    creator: str
+    private: bool
+    premium: bool
+    show_on_profile: bool
+
+
+def get_photo_by_description_contains(data, description) -> Photo:
+    desc = description.lower()
+    for p in data.get("photos", []):
+        if desc in (p.get("description") or "").lower():
+            return Photo(
+                p["public_id"],
+                p["asset_id"],
+                p["description"],
+                p["creator"],
+                p["private"],
+                p["premium"],
+                p["show_on_profile"],
+            )
+    raise MumbleException(
+        f"asset_id not found for description containing: {description}"
+    )
+
+
 def get_placeholder_png() -> bytes:
     """Returns a valid 1x1 transparent PNG placeholder with padding."""
     base = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
     return base + random.randbytes(64)
 
+
 def random_string(length: int, charset: str = CHARSET_ALPHANUMERIC) -> str:
     """Generates a random string of a given length from a given charset."""
     return "".join(random.choices(charset, k=length))
+
 
 def generate_flag() -> str:
     """Generates a random flag for testing purposes."""
     return "ENO" + random_string(32, CHARSET_UPPER_ALPHANUMERIC)
 
-class Connection:
+
+class OldConnection:
     def __init__(self, client: AsyncClient, logger: LoggerAdapter):
         self.client = client
         self.logger = logger
         self.uid = None
-        self.client.headers.update({
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        })
+        self.client.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+        )
 
     def _update_cookies(self, response: httpx.Response):
         # Manually track the uid cookie because it's marked Secure
@@ -58,7 +94,7 @@ class Connection:
                 "first_name": first_name,
                 "last_name": "Checker",
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
         self._update_cookies(r)
         if r.status_code not in [200, 302, 303]:
@@ -72,19 +108,19 @@ class Connection:
                 "username": username,
                 "password": password,
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
         self._update_cookies(r)
-        
+
         # Verify success: check our manually tracked uid or status
         if r.status_code not in [200, 302, 303]:
             raise MumbleException(f"Failed to log in: {r.status_code}")
-            
+
         if not self.uid:
             # Fallback check if it was already set
             if "uid" in self.client.cookies:
-                 self.uid = self.client.cookies["uid"]
-            
+                self.uid = self.client.cookies["uid"]
+
         if not self.uid:
             raise MumbleException("Failed to obtain session cookie 'uid' after login")
 
@@ -100,7 +136,7 @@ class Connection:
         photo_data: bytes,
     ) -> str:
         self.logger.debug(f"Uploading photo: {photo_name}")
-        
+
         data = {
             "title": photo_name,
             "description": description,
@@ -111,26 +147,28 @@ class Connection:
             "premium": "true" if premium else "false",
             "private": "true" if private else "false",
         }
-            
+
         filename = random_string(10) + ".png"
         files = {"photo": (filename, photo_data, "image/png")}
-        
+
         try:
             r = await self.client.post(
-                "/upload", 
-                data=data, 
-                files=files, 
-                headers=self._get_headers(), # Force the cookie
+                "/upload",
+                data=data,
+                files=files,
+                headers=self._get_headers(),  # Force the cookie
                 timeout=httpx.Timeout(30.0, read=None),
-                follow_redirects=False
+                follow_redirects=False,
             )
             self._update_cookies(r)
             loc = r.headers.get("Location", "")
             if "User needs to be logged in" in loc:
-                 raise MumbleException("Upload failed: Session rejected by service (secure cookie over HTTP?)")
-                 
+                raise MumbleException(
+                    "Upload failed: Session rejected by service (secure cookie over HTTP?)"
+                )
+
             return loc if loc else f"status={r.status_code}"
-        except (httpx.ReadError, httpx.RemoteProtocolError):
+        except httpx.ReadError, httpx.RemoteProtocolError:
             return "potential success"
 
     async def get_user_profile(self, username: str) -> str:
@@ -140,8 +178,12 @@ class Connection:
         return r.text
 
     async def get_photo(self, photo_id: str, premium: bool = False) -> bytes:
-        urls = [f"/photos/{photo_id}", f"/photo-{photo_id}", f"/premium_photo-{photo_id}"]
-            
+        urls = [
+            f"/photos/{photo_id}",
+            f"/photo-{photo_id}",
+            f"/premium_photo-{photo_id}",
+        ]
+
         for url in urls:
             try:
                 r = await self.client.get(url, headers=self._get_headers())
@@ -149,5 +191,5 @@ class Connection:
                     return r.content
             except Exception:
                 continue
-        
+
         raise MumbleException(f"Failed to get photo {photo_id}")
