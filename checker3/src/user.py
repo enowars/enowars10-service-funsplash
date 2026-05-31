@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-import Connection
+from connection import Connection
 import httpx
 from utils import random_string
 from enochecker3.utils import assert_equals
-from enochecker3 import MumbleException
 
 
 @dataclass
@@ -27,15 +26,13 @@ async def register(
     assert_equals(r.status_code, 302)  # TODO: check if real code
 
 
-async def get_profile(connection: Connection, username: str, cookie):
+async def get_profile(connection: Connection, username: str, cookie=None):
     r = await connection.get(f"/@{username}", cookies=cookie)
     assert_equals(r.status_code, 200)
-    r.content
+    return r.json()
 
 
-async def login(
-    connection: Connection, username: str, password: str, first_name: str
-) -> str:
+async def login(connection: Connection, username: str, password: str) -> dict:
     r = await connection.post(
         "/login",
         data={
@@ -45,9 +42,7 @@ async def login(
     )
 
     assert_equals(r.status_code, 302)
-
-    # TODO: check if only one cookie and is valid etc.
-    r.cookies["uid"]
+    return r.cookies
 
 
 async def upload_photo(
