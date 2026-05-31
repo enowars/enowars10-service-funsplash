@@ -1,5 +1,5 @@
 FROM python:3.11-trixie
-RUN apt-get update -y && apt-get upgrade -y 
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y libzbar0
 
 # add checker user
 RUN useradd -ms /bin/bash -u 1000 checker
