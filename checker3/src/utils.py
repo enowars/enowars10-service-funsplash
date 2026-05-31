@@ -168,7 +168,8 @@ class OldConnection:
                 )
 
             return loc if loc else f"status={r.status_code}"
-        except httpx.ReadError, httpx.RemoteProtocolError:
+        except (httpx.ReadError, httpx.RemoteProtocolError):
+
             return "potential success"
 
     async def get_user_profile(self, username: str) -> str:

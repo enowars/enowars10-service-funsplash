@@ -36,7 +36,7 @@ Checker config
 
 SERVICE_PORT = 1337
 checker = Enochecker("funsplash", SERVICE_PORT)
-app = lambda: checker.app
+app = checker.app
 
 
 @checker.register_dependency
