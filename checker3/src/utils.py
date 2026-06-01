@@ -137,7 +137,7 @@ class OldConnection:
         tags: str,
         photo_name: str,
         photo_data: bytes,
-    ) -> str:
+    ):
         self.logger.debug(f"Uploading photo: {photo_name}")
 
         data = {
@@ -169,10 +169,8 @@ class OldConnection:
                 raise MumbleException(
                     "Upload failed: Session rejected by service (secure cookie over HTTP?)"
                 )
-
-            return loc if loc else f"status={r.status_code}"
-        except httpx.ReadError, httpx.RemoteProtocolError:
-            return "potential success"
+        except Exception:
+            raise MumbleException("couldnt upload photo")
 
     async def get_user_profile(self, username: str) -> str:
         r = await self.client.get(f"/@{username}", headers=self._get_headers())
