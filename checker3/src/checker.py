@@ -7,6 +7,7 @@ import qr
 import utils
 from logging import LoggerAdapter
 import uuid
+import re
 
 from utils import (
     get_placeholder_png,
@@ -45,7 +46,9 @@ def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connect
     return Connection.wrap(client, logger)
 
 
-"""
+FLAG_REGEX_ASCII = r"ENO[A-Za-z0-9+\/=]{48}"
+FLAG_REGEX_UTF8 = r"🥺[A-Za-z0-9+\/=]{48}🥺🥺"
+""""
 CHECKER FUNCTIONS
 """
 
@@ -57,6 +60,10 @@ async def putflag(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> None:
+    logger.info(f"{task.flag=}")
+    assert re.search(FLAG_REGEX_ASCII, task.flag) or re.search(
+        FLAG_REGEX_UTF8, task.flag
+    )
     username = random_string(12, CHARSET_ALPHANUMERIC)
     first_name = random_string(10, CHARSET_LETTERS)
     password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
@@ -254,4 +261,5 @@ async def exploit0(
 
 
 if __name__ == "__main__":
+    checker.run()
     checker.run()
