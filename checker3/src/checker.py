@@ -38,7 +38,7 @@ Checker config
 
 SERVICE_PORT = 1337
 checker = Enochecker("funsplash", SERVICE_PORT)
-app = checker.app
+app = lambda: checker.app
 
 
 @checker.register_dependency
@@ -60,10 +60,6 @@ async def putflag(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> None:
-    logger.info(f"{task.flag=}")
-    assert re.search(FLAG_REGEX_ASCII, task.flag) or re.search(
-        FLAG_REGEX_UTF8, task.flag
-    )
     username = random_string(12, CHARSET_ALPHANUMERIC)
     first_name = random_string(10, CHARSET_LETTERS)
     password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
@@ -236,8 +232,9 @@ async def havoc1(
 ):
     username = random_string(12)
     password = random_string(12)
-    await user.register(conn, username, password)
-    profile_json = await user.get_profile(username)
+    first_name = random_string(12)
+    await user.register(conn, username, password, first_name)
+    profile_json = await user.get_profile(conn, username)
     assert_in(username, profile_json, "Username not found in profile")
 
 
@@ -245,8 +242,9 @@ async def havoc1(
 async def havoc2(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    # r = await conn.get("/photos/00000000-0000-0000-0000-000000000000")
-    r = await conn.get(f"/photos/{uuid.uuid7()}")
+    r = await conn.get("/photos/00000000-0000-0000-0000-000000000000")
+    # TODO for after python upgrade?
+    # r = await conn.get(f"/photos/{uuid.uuid7()}")
     assert_equals(r.status_code, 404, "Non-existent photo should return 404")
 
 
@@ -261,5 +259,4 @@ async def exploit0(
 
 
 if __name__ == "__main__":
-    checker.run()
     checker.run()
