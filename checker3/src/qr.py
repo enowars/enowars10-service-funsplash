@@ -4,9 +4,7 @@ import io
 from PIL import Image
 import qrcode
 from enochecker3 import MumbleException
-
-
-import pyzbar.pyzbar as pyzbar
+import pyzbar.pyzbar
 
 
 def decode(img, logger: LoggerAdapter) -> str:
@@ -28,7 +26,7 @@ def decode(img, logger: LoggerAdapter) -> str:
         )
         padded.paste(upscaled, (border, border))
 
-        decoded = pyzbar.decode(padded)
+        decoded = pyzbar.pyzbar.decode(padded)
         if not decoded:
             raise ValueError("No QR code detected after processing")
 
