@@ -6,8 +6,6 @@ services:
     # The checker runs a HTTP interfaces, so we need to map port 3031 to the outside (port 8000).
     ports:
       - 11337:8000
-    volumes:
-      - ./src:/checker/src:z
     environment:
       - MONGO_ENABLED=1
       - MONGO_HOST=funsplash-mongo
