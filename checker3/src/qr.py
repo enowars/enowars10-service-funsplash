@@ -6,6 +6,25 @@ import qrcode
 from enochecker3 import MumbleException
 import pyzbar.pyzbar
 
+def generate_qr_flag(flag: str) -> bytes:
+    qr = qrcode.QRCode(
+        version=4,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=1,  # 1 module = exactly 1 pixel
+        border=0,  # Remove the standard 4-module quiet zone to keep it 29x29
+    )
+
+    qr.add_data(flag)
+
+    # fit=False forces it to stay at Version 3 even if it could fit in a smaller one
+    qr.make(fit=False)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # 5. Convert to PNG bytes for upload
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 def decode(img, logger: LoggerAdapter) -> str:
     try:
@@ -98,32 +117,6 @@ def create_mask(mode: str) -> bytearray:
         pass
 
     return mask
-
-
-def generate_qr_flag(flag: str) -> bytes:
-    # 3. Configure the QR code for the CTF specs
-    # Version 3 = 29x29 modules.
-    # Level L allows up to 55 bytes (our flag is 51 bytes).
-    qr = qrcode.QRCode(
-        version=3,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=1,  # 1 module = exactly 1 pixel
-        border=0,  # Remove the standard 4-module quiet zone to keep it 29x29
-    )
-
-    qr.add_data(flag)
-
-    # fit=False forces it to stay at Version 3 even if it could fit in a smaller one
-    qr.make(fit=False)
-
-    # 4. Generate the raw black and white image
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # 5. Convert to PNG bytes for upload
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
 
 def simulate_and_save(base_img, pixel_data, test_name, output_filename) -> Image:
     # 1. Calculate the raw zlib oracle size (What the attacker sees)
