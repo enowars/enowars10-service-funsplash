@@ -6,3 +6,4 @@ qrcode
 Pillow
 pyzbar
 websockets
+httpx

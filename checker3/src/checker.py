@@ -1,11 +1,12 @@
-import json
 import httpx
 import asyncio
 from typing import Optional
+from dataclasses import asdict
 import user
 import qr
 import utils
 from logging import LoggerAdapter
+import uuid
 
 from utils import (
     get_placeholder_png,
@@ -41,7 +42,7 @@ app = checker.app
 
 @checker.register_dependency
 def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connection:
-    return Connection(client, logger)
+    return Connection.wrap(client, logger)
 
 
 """
@@ -62,11 +63,14 @@ async def putflag(
     photo_desc = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
 
     await user.register(conn, username, password, first_name)
-    cookie = await user.login(conn, username, password)
+    cookies = await user.login(conn, username, password)
+
+    # photo_data = utils.get_placeholder_png()
+    photo_data = qr.generate_qr_flag(task.flag)
 
     await user.upload_photo(
         conn,
-        cookie,
+        cookies,
         description=f"a flag but its premium and you are poor 🪙🤑 {photo_desc}",
         premium=True,
         private=False,
@@ -74,22 +78,22 @@ async def putflag(
         camera="Sony Beta",
         tags="flag,secret,premium",
         photo_name="flag.png",
-        photo_data=qr.generate_qr_flag(task.flag),
+        photo_data=photo_data,
     )
 
-    profile = await user.get_profile(conn, username, cookie)
+    profile = await user.get_profile(conn, username)
 
     p = utils.get_photo_by_description_contains(profile, photo_desc)
 
-    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookie)
+    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookies)
     assert_equals(r.status_code, 200)
-    flag_got = qr.decode(r.content)
+    flag_got = qr.decode(r.content, logger)
     assert_equals(flag_got, task.flag)
 
     u = user.User(username, password, first_name)
 
-    await db.set("user_data", (u))
-    await db.set("photo_data", (p))
+    await db.set("user_data", asdict(u))
+    await db.set("photo_data", asdict(p))
     return u.username
 
 
@@ -101,14 +105,16 @@ async def getflag_note(
     conn: Connection,
 ) -> None:
     try:
-        u: user.User = db.get("user_data")
-        p: utils.Photo = db.get("photo_data")
+        u: user.User = user.User(**(await db.get("user_data")))
+        p: utils.Photo = utils.Photo(**(await db.get("photo_data")))
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-    cookie = await user.login(conn, u.username, u.password)
+    cookies = await user.login(conn, u.username, u.password)
 
     profile = await user.get_profile(conn, u.username)
+
+    logger.info(f"{profile=}")
 
     p2: utils.Photo = utils.get_photo_by_description_contains(profile, p.description)
 
@@ -117,22 +123,22 @@ async def getflag_note(
     )
 
     # Check photo metadata
-    r = await conn.client.get(f"/photos/{p.public_id}")
+    r = await conn.get(f"/photos/{p.public_id}")
     if r.status_code != 200:
         raise MumbleException(f"Failed to retrieve photo metadata: {r.status_code}")
-    p2: utils.Photo = utils.get_photo_by_description_contains(r.content, p.description)
+    p2: utils.Photo = utils.Photo.from_dict(r.json())
 
     assert_equals(p, p2, "photo was returned differently from how it was stored")
 
-    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookie)
+    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookies)
     assert_equals(r.status_code, 200)
-    flag_got = qr.decode(r.content)
+    flag_got = qr.decode(r.content, logger)
     assert_equals(flag_got, task.flag)
 
     r = await conn.get(f"/premium_photo-{p.asset_id}")
     assert_equals(r.status_code, 200)
     try:
-        flag_got = qr.decode(r.content)
+        flag_got = qr.decode(r.content, logger)
         assert_equals(flag_got, task.flag)
     except Exception:
         return
@@ -150,13 +156,15 @@ async def putnoise0(
     username = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
     first_name = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
     password = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
-    randomNote = random_string(36, CHARSET_UPPER_ALPHANUMERIC)
+    description = random_string(36, CHARSET_UPPER_ALPHANUMERIC)
 
-    await conn.register_user(username, password, first_name)
-    await conn.login_user(username, password)
+    await user.register(conn, username, password, first_name)
+    cookies = await user.login(conn, username, password)
 
-    await conn.upload_photo(
-        description=randomNote,
+    await user.upload_photo(
+        conn=conn,
+        cookies=cookies,
+        description=description,
         premium=False,
         private=False,
         location="Berlin",
@@ -166,24 +174,23 @@ async def putnoise0(
         photo_data=get_placeholder_png(),
     )
 
-    noteId = None
+    public_id = None
     for attempt in range(10):
         try:
-            profile_html = await conn.get_user_profile(username)
-            profile_data = json.loads(profile_html)
-            photos = profile_data.get("photos", [])
+            profile = await user.get_profile(conn, username)
+            photos = profile.get("photos", [])
             if photos:
-                noteId = photos[0].get("public_id") or photos[0].get("asset_id")
-                if noteId:
+                public_id = photos[0].get("public_id")
+                if public_id:
                     break
         except Exception:
             pass
         await asyncio.sleep(2)
 
-    if not noteId:
+    if not public_id:
         raise MumbleException("Noise photo did not appear on profile")
 
-    await db.set("noise_data", (username, password, noteId, randomNote))
+    await db.set("noise_data", (username, password, public_id, description))
 
 
 @checker.getnoise(0)
@@ -194,17 +201,17 @@ async def getnoise0(
     conn: Connection,
 ):
     try:
-        username, password, noteId, randomNote = await db.get("noise_data")
+        username, password, public_id, description = await db.get("noise_data")
     except KeyError:
         raise MumbleException("Missing database entry from putnoise")
 
-    await conn.login_user(username, password)
+    # cookies = await user.login(username, password)
 
-    r = await conn.client.get(f"/photos/{noteId}", headers=conn._get_headers())
+    r = await conn.get(f"/photos/{public_id}")
     if r.status_code != 200:
         raise MumbleException(f"Failed to retrieve noise metadata: {r.status_code}")
 
-    if randomNote not in r.text:
+    if description not in r.text:
         raise MumbleException("Resulting noise was found to be incorrect")
 
 
@@ -212,7 +219,7 @@ async def getnoise0(
 async def havoc0(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    r = await conn.client.get("/")
+    r = await conn.get("/")
     assert_equals(r.status_code, 200, "Service root is not reachable")
 
 
@@ -222,8 +229,8 @@ async def havoc1(
 ):
     username = random_string(12)
     password = random_string(12)
-    await conn.register_user(username, password, "Dummy")
-    profile_json = await conn.get_user_profile(username)
+    await user.register(conn, username, password)
+    profile_json = await user.get_profile(username)
     assert_in(username, profile_json, "Username not found in profile")
 
 
@@ -231,7 +238,8 @@ async def havoc1(
 async def havoc2(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    r = await conn.client.get("/photos/00000000-0000-0000-0000-000000000000")
+    # r = await conn.get("/photos/00000000-0000-0000-0000-000000000000")
+    r = await conn.get(f"/photos/{uuid.uuid7()}")
     assert_equals(r.status_code, 404, "Non-existent photo should return 404")
 
 

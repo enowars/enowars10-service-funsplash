@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 from connection import Connection
-import httpx
-from utils import random_string
 from enochecker3.utils import assert_equals
 
 
@@ -23,7 +21,7 @@ async def register(
             "first_name": first_name,
         },
     )
-    assert_equals(r.status_code, 302)  # TODO: check if real code
+    assert_equals(r.status_code, 200)  # TODO: check if real code
 
 
 async def get_profile(connection: Connection, username: str, cookie=None):
@@ -41,13 +39,13 @@ async def login(connection: Connection, username: str, password: str) -> dict:
         },
     )
 
-    assert_equals(r.status_code, 302)
-    return r.cookies
+    assert_equals(r.status_code, 303)
+    return dict(r.cookies)
 
 
 async def upload_photo(
-    connection: Connection,
-    cookie,
+    conn: Connection,
+    cookies,
     description: str,
     premium: bool,
     private: bool,
@@ -57,7 +55,7 @@ async def upload_photo(
     photo_name: str,
     photo_data: bytes,
 ):
-    data = {
+    payload = {
         "title": photo_name,
         "description": description,
         "show_on_profile": "true",
@@ -68,16 +66,13 @@ async def upload_photo(
         "private": "true" if private else "false",
     }
 
-    filename = random_string(10) + ".png"
-    files = {"photo": (filename, photo_data, "image/png")}
+    files = {"photo": (photo_name, photo_data, "image/png")}
 
-    r = await connection.post(
+    r = await conn.post(
         "/upload",
-        data=data,
+        data=payload,
         files=files,
-        cookies=cookie,
-        timeout=httpx.Timeout(30.0, read=None),
-        follow_redirects=False,
+        cookies=cookies,
     )
 
-    assert_equals(r.status_code, 200)
+    assert_equals(r.status_code, 303)

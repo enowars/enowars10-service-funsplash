@@ -2,8 +2,6 @@ import random
 from dataclasses import dataclass
 import string
 import httpx
-import asyncio
-from typing import Optional
 from logging import LoggerAdapter
 from httpx import AsyncClient
 from enochecker3 import MumbleException
@@ -25,20 +23,25 @@ class Photo:
     premium: bool
     show_on_profile: bool
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Photo":
+        """Creates a Photo instance from a dictionary (JSON response)."""
+        return cls(
+            public_id=data["public_id"],
+            asset_id=data["asset_id"],
+            description=data.get("description", ""),
+            creator=data.get("creator", "unknown"),
+            private=bool(data.get("private", False)),
+            premium=bool(data.get("premium", False)),
+            show_on_profile=bool(data.get("show_on_profile", True)),
+        )
+
 
 def get_photo_by_description_contains(data, description) -> Photo:
     desc = description.lower()
     for p in data.get("photos", []):
         if desc in (p.get("description") or "").lower():
-            return Photo(
-                p["public_id"],
-                p["asset_id"],
-                p["description"],
-                p["creator"],
-                p["private"],
-                p["premium"],
-                p["show_on_profile"],
-            )
+            return Photo.from_dict(p)
     raise MumbleException(
         f"asset_id not found for description containing: {description}"
     )
@@ -168,8 +171,7 @@ class OldConnection:
                 )
 
             return loc if loc else f"status={r.status_code}"
-        except (httpx.ReadError, httpx.RemoteProtocolError):
-
+        except httpx.ReadError, httpx.RemoteProtocolError:
             return "potential success"
 
     async def get_user_profile(self, username: str) -> str:

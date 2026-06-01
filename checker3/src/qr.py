@@ -1,19 +1,41 @@
+from logging import LoggerAdapter
 import zlib
 import io
 from PIL import Image
 import qrcode
-import secrets
-import base64
-import pyzbar.pyzbar
 from enochecker3 import MumbleException
 
 
-def decode(img) -> str:
-    img = Image.open(io.BytesIO(img))
-    decoded = pyzbar.decode(img)
-    if not decoded:
-        raise MumbleException("couldnt decode flag")
-    return decoded[0].data.decode("utf-8")
+import pyzbar.pyzbar as pyzbar
+
+
+def decode(img, logger: LoggerAdapter) -> str:
+    try:
+        # Load the 1px-per-module image
+        img_obj = Image.open(io.BytesIO(img)).convert("L")
+
+        # 29x29 pixels is too small for pyzbar's detection engine.
+        # We upscale 10x using NEAREST neighbor to preserve the sharp edges.
+        # This makes the image 290x290, where each module is 10x10 pixels.
+        w, h = img_obj.size
+        upscaled = img_obj.resize((w * 10, h * 10), resample=Image.NEAREST)
+
+        # Add a 4-module (40px) white border (Quiet Zone).
+        # Without this, pyzbar cannot distinguish the QR markers from the image edge.
+        border = 40
+        padded = Image.new(
+            "L", (upscaled.width + 2 * border, upscaled.height + 2 * border), 255
+        )
+        padded.paste(upscaled, (border, border))
+
+        decoded = pyzbar.decode(padded)
+        if not decoded:
+            raise ValueError("No QR code detected after processing")
+
+        return decoded[0].data.decode("utf-8")
+    except Exception as e:
+        logger.error(f"QR Decode failed: {e}")
+        raise MumbleException("couldnt decode flag from image")
 
 
 def create_mask(mode: str) -> bytearray:
@@ -80,15 +102,7 @@ def create_mask(mode: str) -> bytearray:
     return mask
 
 
-def generate_qr_flag(flag: str):
-    # 1. Generate 36 random bytes, which encodes to exactly 48 Base64 characters
-    random_bytes = secrets.token_bytes(36)
-    b64_string = base64.b64encode(random_bytes).decode("utf-8")
-
-    # 2. Add your static prefix
-    flag = f"ENO{b64_string}"
-    print(f"Generated Flag: {flag}")
-
+def generate_qr_flag(flag: str) -> bytes:
     # 3. Configure the QR code for the CTF specs
     # Version 3 = 29x29 modules.
     # Level L allows up to 55 bytes (our flag is 51 bytes).
@@ -105,14 +119,19 @@ def generate_qr_flag(flag: str):
     qr.make(fit=False)
 
     # 4. Generate the raw black and white image
-    return qr.make_image(fill_color="black", back_color="white")
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # 5. Convert to PNG bytes for upload
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def simulate_and_save(base_img, pixel_data, test_name, output_filename) -> Image:
     # 1. Calculate the raw zlib oracle size (What the attacker sees)
     raw_bytes = bytes(pixel_data)
     compressed_data = zlib.compress(raw_bytes, level=1)
-    oracle_size = len(compressed_data)
+    _ = len(compressed_data)
 
     # 2. Save the visual image to disk (What you see to verify your code)
     # Create a new blank 1-bit image with the same dimensions

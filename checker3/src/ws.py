@@ -1,6 +1,5 @@
 import asyncio
 import websockets
-import os
 
 
 async def run_censor_tests(mask: bytearray):
