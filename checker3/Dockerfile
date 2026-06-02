@@ -1,8 +1,9 @@
-FROM python:3.14-trixie
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y libzbar0
+FROM python:3.14-alpine
+RUN apk add --no-cache libzbar binutils
+RUN ln -s /usr/lib/libzbar.so.0 /usr/lib/libzbar.so
 
 # add checker user
-RUN useradd -ms /bin/bash -u 1000 checker
+RUN adduser -s /bin/bash -u 1000 checker -D -S
 
 WORKDIR /checker
 
