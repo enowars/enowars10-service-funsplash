@@ -1,4 +1,4 @@
-FROM python:3.11-trixie
+FROM python:3.14-trixie
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y libzbar0
 
 # add checker user
