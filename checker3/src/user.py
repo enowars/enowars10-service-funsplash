@@ -41,38 +41,3 @@ async def login(connection: Connection, username: str, password: str) -> dict:
 
     assert_equals(r.status_code, 303)
     return dict(r.cookies)
-
-
-async def upload_photo(
-    conn: Connection,
-    cookies,
-    description: str,
-    premium: bool,
-    private: bool,
-    location: str,
-    camera: str,
-    tags: str,
-    photo_name: str,
-    photo_data: bytes,
-):
-    payload = {
-        "title": photo_name,
-        "description": description,
-        "show_on_profile": "true",
-        "location": location,
-        "camera": camera,
-        "tags": tags,
-        "premium": "true" if premium else "false",
-        "private": "true" if private else "false",
-    }
-
-    files = {"photo": (photo_name, photo_data, "image/png")}
-
-    r = await conn.post(
-        "/upload",
-        data=payload,
-        files=files,
-        cookies=cookies,
-    )
-
-    assert_equals(r.status_code, 303)

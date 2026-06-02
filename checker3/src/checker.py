@@ -4,13 +4,10 @@ from typing import Optional
 from dataclasses import asdict
 import user
 import qr
-import utils
+import photo
 from logging import LoggerAdapter
-import uuid
-import re
 
 from utils import (
-    get_placeholder_png,
     random_string,
     CHARSET_ALPHANUMERIC,
     CHARSET_LETTERS,
@@ -68,10 +65,9 @@ async def putflag(
     await user.register(conn, username, password, first_name)
     cookies = await user.login(conn, username, password)
 
-    # photo_data = utils.get_placeholder_png()
     photo_data = qr.generate_qr_flag(task.flag)
 
-    await user.upload_photo(
+    await photo.upload_photo(
         conn,
         cookies,
         description=f"a flag but its premium and you are poor 🪙🤑 {photo_desc}",
@@ -86,7 +82,7 @@ async def putflag(
 
     profile = await user.get_profile(conn, username)
 
-    p = utils.get_photo_by_description_contains(profile, photo_desc)
+    p = photo.get_by_description_contains(profile, photo_desc)
 
     r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookies)
     assert_equals(r.status_code, 200)
@@ -109,7 +105,7 @@ async def getflag_note(
 ) -> None:
     try:
         u: user.User = user.User(**(await db.get("user_data")))
-        p: utils.Photo = utils.Photo(**(await db.get("photo_data")))
+        p: photo.Photo = photo.Photo(**(await db.get("photo_data")))
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
@@ -119,7 +115,7 @@ async def getflag_note(
 
     logger.info(f"{profile=}")
 
-    p2: utils.Photo = utils.get_photo_by_description_contains(profile, p.description)
+    p2: photo.Photo = photo.get_by_description_contains(profile, p.description)
 
     assert_equals(
         p, p2, "photo was returned differently from profile how it was stored"
@@ -129,7 +125,7 @@ async def getflag_note(
     r = await conn.get(f"/photos/{p.public_id}")
     if r.status_code != 200:
         raise MumbleException(f"Failed to retrieve photo metadata: {r.status_code}")
-    p2: utils.Photo = utils.Photo.from_dict(r.json())
+    p2: photo.Photo = photo.Photo.from_dict(r.json())
 
     assert_equals(p, p2, "photo was returned differently from how it was stored")
 
@@ -164,7 +160,7 @@ async def putnoise0(
     await user.register(conn, username, password, first_name)
     cookies = await user.login(conn, username, password)
 
-    await user.upload_photo(
+    await photo.upload_photo(
         conn=conn,
         cookies=cookies,
         description=description,
@@ -174,7 +170,7 @@ async def putnoise0(
         camera="Sony Alpha",
         tags="noise",
         photo_name="noise.png",
-        photo_data=get_placeholder_png(),
+        photo_data=photo.get_placeholder_png(),
     )
 
     public_id = None
@@ -219,15 +215,13 @@ async def getnoise0(
 
 
 @checker.havoc(0)
-async def havoc0(
-    task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
-):
+async def index(task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection):
     r = await conn.get("/")
     assert_equals(r.status_code, 200, "Service root is not reachable")
 
 
 @checker.havoc(1)
-async def havoc1(
+async def create_and_get_user(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
     username = random_string(12)
@@ -239,7 +233,7 @@ async def havoc1(
 
 
 @checker.havoc(2)
-async def havoc2(
+async def get_non_existant_photo(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
     r = await conn.get("/photos/00000000-0000-0000-0000-000000000000")
@@ -255,7 +249,7 @@ async def exploit0(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> Optional[str]:
-    return None
+    return task.flag
 
 
 if __name__ == "__main__":
