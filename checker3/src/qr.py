@@ -6,6 +6,7 @@ import qrcode
 from enochecker3 import MumbleException
 import pyzbar.pyzbar
 
+
 def generate_qr_flag(flag: str) -> bytes:
     qr = qrcode.QRCode(
         version=4,
@@ -26,7 +27,8 @@ def generate_qr_flag(flag: str) -> bytes:
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-def decode(img, logger: LoggerAdapter) -> str:
+
+def decode(img) -> str:
     try:
         # Load the 1px-per-module image
         img_obj = Image.open(io.BytesIO(img)).convert("L")
@@ -51,8 +53,7 @@ def decode(img, logger: LoggerAdapter) -> str:
 
         return decoded[0].data.decode("utf-8")
     except Exception as e:
-        logger.error(f"QR Decode failed: {e}")
-        raise MumbleException("couldnt decode flag from image")
+        raise MumbleException(f"couldnt decode flag from image: {e}")
 
 
 def create_mask(mode: str) -> bytearray:
@@ -117,6 +118,7 @@ def create_mask(mode: str) -> bytearray:
         pass
 
     return mask
+
 
 def simulate_and_save(base_img, pixel_data, test_name, output_filename) -> Image:
     # 1. Calculate the raw zlib oracle size (What the attacker sees)

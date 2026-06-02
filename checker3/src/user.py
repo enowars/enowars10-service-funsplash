@@ -11,7 +11,11 @@ class User:
 
 
 async def register(
-    connection: Connection, username: str, password: str, first_name: str
+    connection: Connection,
+    username: str,
+    password: str,
+    first_name: str,
+    expected_code: int = 200,
 ) -> None:
     r = await connection.post(
         "/join",
@@ -21,16 +25,20 @@ async def register(
             "first_name": first_name,
         },
     )
-    assert_equals(r.status_code, 200)  # TODO: check if real code
+    assert_equals(r.status_code, expected_code)
 
 
-async def get_profile(connection: Connection, username: str, cookie=None):
+async def get_profile(
+    connection: Connection, username: str, cookie=None, expected_code: int = 200
+):
     r = await connection.get(f"/@{username}", cookies=cookie)
-    assert_equals(r.status_code, 200)
+    assert_equals(r.status_code, expected_code)
     return r.json()
 
 
-async def login(connection: Connection, username: str, password: str) -> dict:
+async def login(
+    connection: Connection, username: str, password: str, expected_code: int = 303
+) -> dict:
     r = await connection.post(
         "/login",
         data={
@@ -39,5 +47,5 @@ async def login(connection: Connection, username: str, password: str) -> dict:
         },
     )
 
-    assert_equals(r.status_code, 303)
+    assert_equals(r.status_code, expected_code)
     return dict(r.cookies)

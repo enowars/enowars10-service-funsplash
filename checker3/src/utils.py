@@ -1,9 +1,5 @@
 import random
 import string
-import httpx
-from logging import LoggerAdapter
-from httpx import AsyncClient
-from enochecker3 import MumbleException
 
 # Common charsets for random string generation
 CHARSET_ALPHANUMERIC = string.ascii_lowercase + string.digits

@@ -2,6 +2,7 @@ from enochecker3 import MumbleException
 from dataclasses import dataclass
 from connection import Connection
 from enochecker3.utils import assert_equals
+import httpx
 
 
 @dataclass
@@ -28,9 +29,36 @@ class Photo:
         )
 
 
-def get_by_description_contains(data, description) -> Photo:
+async def get_data_premium(
+    conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
+):
+    r = await conn.get(f"/premium_photo-{asset_id}", cookies=cookies)
+    assert_equals(r.status_code, expected_code)
+    return r.content
+
+
+async def get_data(
+    conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
+):
+    r = await conn.get(f"/photo-{asset_id}", cookies=cookies)
+    assert_equals(r.status_code, expected_code)
+    return r.content
+
+
+async def get(
+    conn: Connection, public_id: str, cookies=None, expected_code: int = 200
+) -> Photo:
+    r = await conn.get(f"/photos/{public_id}", cookies=cookies)
+    assert_equals(r.status_code, expected_code)
+    try:
+        return Photo.from_dict(r.json())
+    except Exception:
+        raise MumbleException("couldnt parse photo metadata")
+
+
+def get_by_description_contains(profile_json, description: str) -> Photo:
     desc = description.lower()
-    for p in data.get("photos", []):
+    for p in profile_json.get("photos", []):
         if desc in (p.get("description") or "").lower():
             return Photo.from_dict(p)
     raise MumbleException(
@@ -68,6 +96,7 @@ async def upload(
         data=payload,
         files=files,
         cookies=cookies,
+        # timeout=httpx.Timeout(30.0, read=None),
     )
 
     assert_equals(r.status_code, 303)

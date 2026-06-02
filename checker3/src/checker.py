@@ -1,10 +1,11 @@
 import httpx
-import asyncio
-from typing import Optional
+import utils
 from dataclasses import asdict
 import user
+from user import User
 import qr
 import photo
+from photo import Photo
 from logging import LoggerAdapter
 
 from utils import (
@@ -43,8 +44,6 @@ def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connect
     return Connection.wrap(client, logger)
 
 
-FLAG_REGEX_ASCII = r"ENO[A-Za-z0-9+\/=]{48}"
-FLAG_REGEX_UTF8 = r"🥺[A-Za-z0-9+\/=]{48}🥺🥺"
 """"
 CHECKER FUNCTIONS
 """
@@ -59,7 +58,8 @@ async def putflag(
 ) -> None:
     username = random_string(12, CHARSET_ALPHANUMERIC)
     first_name = random_string(10, CHARSET_LETTERS)
-    password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
+    # password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
+    password = "asdf"
     photo_desc = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
 
     await user.register(conn, username, password, first_name)
@@ -67,10 +67,10 @@ async def putflag(
 
     photo_data = qr.generate_qr_flag(task.flag)
 
-    await photo.upload_photo(
-        conn,
-        cookies,
-        description=f"a flag but its premium and you are poor 🪙🤑 {photo_desc}",
+    await photo.upload(
+        conn=conn,
+        cookies=cookies,
+        description=f"a flag but its premium and you are poor {photo_desc}",
         premium=True,
         private=False,
         location="Berlin",
@@ -82,11 +82,11 @@ async def putflag(
 
     profile = await user.get_profile(conn, username)
 
-    p = photo.get_by_description_contains(profile, photo_desc)
+    p: Photo = photo.get_by_description_contains(profile, photo_desc)
 
-    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookies)
-    assert_equals(r.status_code, 200)
-    flag_got = qr.decode(r.content, logger)
+    data = await photo.get_data_premium(conn, p.asset_id, cookies)
+
+    flag_got = qr.decode(data)
     assert_equals(flag_got, task.flag)
 
     u = user.User(username, password, first_name)
@@ -97,15 +97,17 @@ async def putflag(
 
 
 @checker.getflag(0)
-async def getflag_note(
+async def getflag(
     task: GetflagCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
     conn: Connection,
 ) -> None:
     try:
-        u: user.User = user.User(**(await db.get("user_data")))
-        p: photo.Photo = photo.Photo(**(await db.get("photo_data")))
+        ud = await db.get("user_data")
+        u: User = User(**ud)
+        pd = await db.get("photo_data")
+        p: Photo = Photo(**pd)
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
@@ -113,31 +115,22 @@ async def getflag_note(
 
     profile = await user.get_profile(conn, u.username)
 
-    logger.info(f"{profile=}")
-
-    p2: photo.Photo = photo.get_by_description_contains(profile, p.description)
+    p2: Photo = photo.get_by_description_contains(profile, p.description)
 
     assert_equals(
         p, p2, "photo was returned differently from profile how it was stored"
     )
 
-    # Check photo metadata
-    r = await conn.get(f"/photos/{p.public_id}")
-    if r.status_code != 200:
-        raise MumbleException(f"Failed to retrieve photo metadata: {r.status_code}")
-    p2: photo.Photo = photo.Photo.from_dict(r.json())
-
+    p2: Photo = await photo.get(conn, p.public_id)
     assert_equals(p, p2, "photo was returned differently from how it was stored")
 
-    r = await conn.get(f"/premium_photo-{p.asset_id}", cookies=cookies)
-    assert_equals(r.status_code, 200)
-    flag_got = qr.decode(r.content, logger)
+    pd = await photo.get_data_premium(conn, p.asset_id, cookies)
+    flag_got = qr.decode(pd)
     assert_equals(flag_got, task.flag)
 
-    r = await conn.get(f"/premium_photo-{p.asset_id}")
-    assert_equals(r.status_code, 200)
+    pd = await photo.get_data_premium(conn, p.asset_id)
     try:
-        flag_got = qr.decode(r.content, logger)
+        flag_got = qr.decode(pd)
         assert_equals(flag_got, task.flag)
     except Exception:
         return
@@ -160,7 +153,7 @@ async def putnoise0(
     await user.register(conn, username, password, first_name)
     cookies = await user.login(conn, username, password)
 
-    await photo.upload_photo(
+    await photo.upload(
         conn=conn,
         cookies=cookies,
         description=description,
@@ -170,26 +163,15 @@ async def putnoise0(
         camera="Sony Alpha",
         tags="noise",
         photo_name="noise.png",
-        photo_data=photo.get_placeholder_png(),
+        photo_data=utils.placeholder_png(),
     )
 
-    public_id = None
-    for attempt in range(10):
-        try:
-            profile = await user.get_profile(conn, username)
-            photos = profile.get("photos", [])
-            if photos:
-                public_id = photos[0].get("public_id")
-                if public_id:
-                    break
-        except Exception:
-            pass
-        await asyncio.sleep(2)
+    profile = await user.get_profile(conn, username)
+    p: Photo = photo.get_by_description_contains(profile, description)
+    await photo.get(conn, p.public_id)
+    await photo.get_data(conn, p.asset_id)
 
-    if not public_id:
-        raise MumbleException("Noise photo did not appear on profile")
-
-    await db.set("noise_data", (username, password, public_id, description))
+    await db.set("noise_data", (username, password, description))
 
 
 @checker.getnoise(0)
@@ -200,17 +182,16 @@ async def getnoise0(
     conn: Connection,
 ):
     try:
-        username, password, public_id, description = await db.get("noise_data")
+        username, password, description = await db.get("noise_data")
     except KeyError:
         raise MumbleException("Missing database entry from putnoise")
 
-    # cookies = await user.login(username, password)
+    profile = await user.get_profile(conn, username)
+    p: Photo = photo.get_by_description_contains(profile, description)
+    p: Photo = await photo.get(conn, p.public_id)
+    await photo.get_data(conn, p.asset_id)
 
-    r = await conn.get(f"/photos/{public_id}")
-    if r.status_code != 200:
-        raise MumbleException(f"Failed to retrieve noise metadata: {r.status_code}")
-
-    if description not in r.text:
+    if description not in p.description:
         raise MumbleException("Resulting noise was found to be incorrect")
 
 
@@ -228,18 +209,19 @@ async def create_and_get_user(
     password = random_string(12)
     first_name = random_string(12)
     await user.register(conn, username, password, first_name)
-    profile_json = await user.get_profile(conn, username)
-    assert_in(username, profile_json, "Username not found in profile")
+    profile = await user.get_profile(conn, username)
+
+    assert_in(username, profile["username"], "Username not found in profile")
 
 
 @checker.havoc(2)
 async def get_non_existant_photo(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    r = await conn.get("/photos/00000000-0000-0000-0000-000000000000")
-    # TODO for after python upgrade?
-    # r = await conn.get(f"/photos/{uuid.uuid7()}")
-    assert_equals(r.status_code, 404, "Non-existent photo should return 404")
+    # TODO for after python upgrade? uuid.uuid7()
+    await photo.get_data(
+        conn, "00000000-0000-0000-0000-000000000000", expected_code=404
+    )
 
 
 @checker.exploit(0)
@@ -248,8 +230,21 @@ async def exploit0(
     searcher: FlagSearcher,
     conn: Connection,
     logger: LoggerAdapter,
-) -> Optional[str]:
-    return task.flag
+) -> str:
+    assert task.attack_info is not None
+
+    username = task.attack_info
+
+    profile = await user.get_profile(conn, username)
+
+    p: Photo = photo.get_by_description_contains(
+        profile, "a flag but its premium and you are poor"
+    )
+    cookies = await user.login(conn, username, "asdf")
+    data = await photo.get_data_premium(conn, p.asset_id, cookies)
+    flag = qr.decode(data)
+
+    return flag
 
 
 if __name__ == "__main__":
