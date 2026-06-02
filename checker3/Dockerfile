@@ -1,4 +1,8 @@
 FROM python:3.14-alpine
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 RUN apk add --no-cache libzbar binutils
 RUN ln -s /usr/lib/libzbar.so.0 /usr/lib/libzbar.so
 
@@ -7,11 +11,16 @@ RUN adduser -s /bin/bash -u 1000 checker -D -S
 
 WORKDIR /checker
 
-COPY requirements.txt .
+# Install dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache --no-dev --no-install-project
 
-USER checker
-RUN python3 -m pip install -r requirements.txt
-
+# Copy source
 COPY ./src .
 
-ENTRYPOINT [ "/home/checker/.local/bin/gunicorn", "-c", "gunicorn.conf.py", "checker:app" ]
+# Ensure checker user owns the directory
+RUN chown -R checker: /checker
+
+USER checker
+
+ENTRYPOINT [ "/checker/.venv/bin/gunicorn", "-c", "gunicorn.conf.py", "checker:app" ]
