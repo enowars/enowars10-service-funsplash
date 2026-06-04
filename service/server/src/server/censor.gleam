@@ -64,6 +64,7 @@ fn handler(
   connection: mist.WebsocketConnection,
 ) {
   io.println("handle")
+  // TODO: rate limit
   case message {
     mist.Binary(mask) -> {
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {

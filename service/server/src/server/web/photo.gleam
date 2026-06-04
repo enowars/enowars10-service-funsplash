@@ -40,7 +40,6 @@ pub fn get_data_premium(
 
   case get_data(asset_id, context.db, True) {
     Ok(photo) -> {
-      io.println("yup")
       let body = case user {
         Some(user) if user.premium == True ->
           wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
