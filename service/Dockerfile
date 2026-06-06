@@ -1,10 +1,10 @@
-ARG GLEAM_VERSION=v1.16.0
+ARG GLEAM_VERSION=v1.17.0
 ARG ERLANG_VERSION=29
 
 # --- Dev / Builder stage ---
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS dev
 
-RUN apk add --no-cache make gcc musl-dev curl bash
+RUN apk add --no-cache make gcc musl-dev
 
 WORKDIR /app
 
@@ -39,6 +39,3 @@ WORKDIR /app
 RUN addgroup --system webapp && adduser --system webapp -g webapp
 COPY --from=builder --chown=webapp:webapp /app/server/build/erlang-shipment /app
 USER webapp
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["run"]
-
