@@ -24,7 +24,7 @@ process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, RawPhoto, Mask, A
         BitDepth =:= 8, ColorType =:= 0 -> merge_gray(RawRow, MaskRow, <<>>);
         BitDepth =:= 8, ColorType =:= 3 -> merge_gray(RawRow, MaskRow, <<>>);
         BitDepth =:= 8, ColorType =:= 4 -> merge_gray_alpha(RawRow, MaskRow, <<>>);
-        BitDepth =:= 1 -> merge_bw(RawRow, MaskRow);
+        BitDepth =:= 1 -> merge_bw(RawRow, MaskRow, <<>>);
         true -> RawRow 
     end,
             
@@ -32,26 +32,26 @@ process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, RawPhoto, Mask, A
     process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, PhotoRest, MaskRest, [[0, NewRow] | Acc]).
 
 %% --- 1-BIT MASKING ---
-merge_bw(<<>>, _Mask) -> <<>>;
+merge_bw(<<>>, _Mask, Acc) -> Acc;
 merge_bw(<<PhotoByte:8, PRest/binary>>,
            <<_R1:24, M1A:8, _R2:24, M2A:8, _R3:24, M3A:8, _R4:24, M4A:8,
-             _R5:24, M5A:8, _R6:24, M6A:8, _R7:24, M7A:8, _R8:24, M8A:8, MRest/binary>>) ->
+             _R5:24, M5A:8, _R6:24, M6A:8, _R7:24, M7A:8, _R8:24, M8A:8, MRest/binary>>, Acc) ->
     
-    B1 = if M1A > 127 -> 0; true -> (PhotoByte band 128) end,
-    B2 = if M2A > 127 -> 0; true -> (PhotoByte band 64) end,
-    B3 = if M3A > 127 -> 0; true -> (PhotoByte band 32) end,
-    B4 = if M4A > 127 -> 0; true -> (PhotoByte band 16) end,
-    B5 = if M5A > 127 -> 0; true -> (PhotoByte band 8) end,
-    B6 = if M6A > 127 -> 0; true -> (PhotoByte band 4) end,
-    B7 = if M7A > 127 -> 0; true -> (PhotoByte band 2) end,
-    B8 = if M8A > 127 -> 0; true -> (PhotoByte band 1) end,
+    KeepMask = ((bnot M1A) band 128) bor
+               (((bnot M2A) band 128) bsr 1) bor
+               (((bnot M3A) band 128) bsr 2) bor
+               (((bnot M4A) band 128) bsr 3) bor
+               (((bnot M5A) band 128) bsr 4) bor
+               (((bnot M6A) band 128) bsr 5) bor
+               (((bnot M7A) band 128) bsr 6) bor
+               (((bnot M8A) band 128) bsr 7),
     
-    NewByte = B1 bor B2 bor B3 bor B4 bor B5 bor B6 bor B7 bor B8,
-    <<NewByte:8, (merge_bw(PRest, MRest))/binary>>;
-merge_bw(<<LastPhotoByte:8>>, TrailingMask) ->
+    NewByte = PhotoByte band KeepMask,
+    merge_bw(PRest, MRest, <<Acc/binary, NewByte:8>>);
+merge_bw(<<LastPhotoByte:8>>, TrailingMask, Acc) ->
     MissingBytes = 32 - byte_size(TrailingMask),
     PaddedMask = <<TrailingMask/binary, 0:(MissingBytes*8)>>,
-    merge_bw(<<LastPhotoByte:8>>, PaddedMask).
+    merge_bw(<<LastPhotoByte:8>>, PaddedMask, Acc).
 
 %% --- 8-BIT MERGING LOGIC ---
 merge_rgba(<<>>, <<>>, Acc) -> Acc;
