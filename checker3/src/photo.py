@@ -5,8 +5,8 @@ from enochecker3.utils import assert_equals
 import connection
 import websockets
 import asyncio
+import qr
 from typing import NamedTuple
-from logging import LoggerAdapter
 
 
 class Coordinate(NamedTuple):
@@ -116,14 +116,23 @@ async def censor(
 ) -> list[str]:
     responses: list[str] = []
     uri = f"ws://{addr.ip}:{addr.port}/censor/{public_id}"
+
     async with websockets.connect(uri, close_timeout=10) as ws:
-        for mask in masks:
-            await ws.send(mask)
-            try:
-                r = await asyncio.wait_for(ws.recv(), timeout=5.0)
-                responses.append(r)
-            except Exception:
-                break
+        async def sender():
+            for mask in masks:
+                await ws.send(mask)
+
+        async def receiver():
+            for _ in range(len(masks)):
+                try:
+                    r = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                    responses.append(r)
+                except Exception:
+                    break
+
+        # Run sender and receiver concurrently
+        await asyncio.gather(sender(), receiver())
+
     return responses
 
 
@@ -160,7 +169,9 @@ def gen_mask(keep_list: list[Coordinate], dimensions: Coordinate) -> bytearray:
 
 def exploit_masks(size: int = 33) -> list[bytearray]:
     masks = []
-    for x in range(size):
-        for y in range(size):
+    for y in range(size):
+        for x in range(size):
+            if qr.is_static(x, y, size):
+                continue
             masks.append(gen_mask([Coordinate(x, y)], Coordinate(size, size)))
     return masks

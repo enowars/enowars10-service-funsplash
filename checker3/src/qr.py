@@ -56,6 +56,95 @@ def decode(img) -> str:
         raise MumbleException(f"couldnt decode flag from image: {e}")
 
 
+def is_static(x: int, y: int, size: int) -> bool:
+    # Position Detection Patterns (7x7 squares at corners)
+    for ox, oy in [(0, 0), (size - 7, 0), (0, size - 7)]:
+        if 0 <= x - ox < 7 and 0 <= y - oy < 7:
+            return True
+
+    # Separators around Position Detection Patterns (always white)
+    # Top-Left
+    if (x == 7 and 0 <= y <= 7) or (y == 7 and 0 <= x <= 7):
+        return True
+    # Top-Right
+    if (x == size - 8 and 0 <= y <= 7) or (y == 7 and size - 8 <= x < size):
+        return True
+    # Bottom-Left
+    if (x == 7 and size - 8 <= y < size) or (y == size - 8 and 0 <= x <= 7):
+        return True
+
+    # Alignment Pattern(s) (5x5)
+    if size == 33:  # Version 4
+        if 24 <= x < 29 and 24 <= y < 29:
+            return True
+    elif size == 29:  # Version 3
+        if 20 <= x < 25 and 20 <= y < 25:
+            return True
+
+    # Timing Patterns (Row 6 and Column 6 between position patterns)
+    if y == 6 or x == 6:
+        return True
+
+    return False
+
+
+def get_static_pixel(x: int, y: int, size: int) -> int:
+    # Position Detection Patterns
+    for ox, oy in [(0, 0), (size - 7, 0), (0, size - 7)]:
+        if 0 <= x - ox < 7 and 0 <= y - oy < 7:
+            dx, dy = x - ox, y - oy
+            if dx == 0 or dx == 6 or dy == 0 or dy == 6:
+                return 0  # Black outer frame
+            if dx == 1 or dx == 5 or dy == 1 or dy == 5:
+                return 255  # White inner frame
+            return 0  # Black center (3x3)
+
+    # Alignment Patterns
+    if size == 33:
+        ox, oy = 24, 24
+    elif size == 29:
+        ox, oy = 20, 20
+    else:
+        return 255
+    if 0 <= x - ox < 5 and 0 <= y - oy < 5:
+        dx, dy = x - ox, y - oy
+        if dx == 0 or dx == 4 or dy == 0 or dy == 4:
+            return 0  # Black outer frame
+        if dx == 1 or dx == 3 or dy == 1 or dy == 3:
+            return 255  # White inner frame
+        return 0  # Black center (1x1)
+
+    # Timing Patterns (alternating black/white)
+    if y == 6 or x == 6:
+        return 0 if (x + y) % 2 == 0 else 255
+
+    # Separators (Always White)
+    return 255
+
+
+def reconstruct_qr(results: list[str], size: int = 33) -> str:
+    pixels = [255] * (size * size)
+    res_idx = 0
+    for y in range(size):
+        for x in range(size):
+            if is_static(x, y, size):
+                pixels[y * size + x] = get_static_pixel(x, y, size)
+            else:
+                if res_idx < len(results):
+                    # Oracle: "ok.size:69" means black (0), otherwise white (255)
+                    pixels[y * size + x] = 0 if results[res_idx] == "ok.size:69" else 255
+                    res_idx += 1
+
+    # Create the image
+    img = Image.new("L", (size, size))
+    img.putdata(pixels)
+
+    # Convert to bytes
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return decode(buf.getvalue())
+
+
 def create_mask(mode: str) -> bytearray:
     width = 29
     height = 29

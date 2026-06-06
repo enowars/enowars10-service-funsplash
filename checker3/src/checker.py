@@ -1,5 +1,6 @@
 import httpx
 import utils
+import time
 from dataclasses import asdict
 import user
 from user import User
@@ -245,13 +246,23 @@ async def exploit_censor(
     addr = await conn.get_addr()
     masks = photo.exploit_masks(33)
     logger.info(f"{len(masks)=}")
+    start_time = time.time()
     res = await photo.censor(addr, p.public_id, masks)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(f"{elapsed_time=}")
     logger.info(f"{len(res)=}")
     logger.info(f"{set(res)=}")
 
-    # logger.info(f"{res=}")
+    start_time = time.time()
+    reconstructed_flag = qr.reconstruct_qr(res, 33)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(f"reconstruction {elapsed_time=}")
+    logger.info(f"{reconstructed_flag=}")
+    logger.info(f"{flag=}")
 
-    return flag
+    return reconstructed_flag
 
 
 if __name__ == "__main__":
