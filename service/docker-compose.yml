@@ -1,20 +1,8 @@
 services:
-  # n0t3b00k:
-  #   build: .
-  #   # The code should be copied into the container using COPY.
-  #   # Mount the data folder writable, so that information can be persisted across restarts.
-  #   volumes:
-  #     - ./data/:/data:rwz
-  #   # Define the port mapping (external:internal port)
-  #   ports:
-  #     - "2323:8000"
-  #   restart: unless-stopped
-  #   mem_limit: 1g
-  #   cpus: 1
-
   funsplash:
     build:
       dockerfile: Dockerfile
+      target: dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,11 +13,12 @@ services:
     networks:
       - funsplash
     restart: unless-stopped
-    # mem_limit: 1g
-    # cpus: 1
-    # volumes:
-    #   - "build:/code:ro,z"
-    # data etc
+    volumes:
+      # Mount the source code so changes are reflected immediately
+      - "./shared:/app/shared:Z"
+      - "./client:/app/client:Z"
+      - "./server:/app/server:Z"
+    command: ["sh", "-c", "cd /app/client && gleam run -m lustre/dev build --minify --outdir=../server/priv/static && cd /app/server && gleam run"]
 
   postgres:
     image: postgres:18-alpine

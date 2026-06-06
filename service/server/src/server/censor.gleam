@@ -10,6 +10,7 @@ import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
+import server/photo
 import server/sql
 import youid/uuid
 
@@ -26,7 +27,7 @@ pub type State {
 // use websocket for future collaborative real-time editing
 pub fn upgrade(
   request: request.Request(mist.Connection),
-  id: String,
+  public_id: String,
   db: pog.Connection,
 ) -> response.Response(mist.ResponseData) {
   let on_init = fn(_connection: mist.WebsocketConnection) -> #(
@@ -35,7 +36,7 @@ pub fn upgrade(
   ) {
     // FIXME: think about authentication
     io.println("Connected")
-    let assert Ok(res) = sql.photo_find_by_public_id(db, id)
+    let assert Ok(res) = sql.photo_find_by_public_id(db, public_id)
 
     let assert Ok(photo) = list.first(res.rows)
     let data = png.parse_photo(photo.data)
@@ -71,7 +72,7 @@ fn handler(
         Ok(censored_png) -> {
           let state = State(..state, out_photo: option.Some(censored_png))
           // TODO: remove only here for debugging
-          let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
+          // let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
           let _ =
             mist.send_text_frame(
               connection,

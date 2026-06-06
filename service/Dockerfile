@@ -1,54 +1,44 @@
 ARG GLEAM_VERSION=v1.16.0
 ARG ERLANG_VERSION=29
 
-# --- Build stage ---
-FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS builder
+# --- Dev / Builder stage ---
+FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS dev
 
-# 1. Install build tools immediately
-RUN apk add --no-cache make gcc musl-dev
+RUN apk add --no-cache make gcc musl-dev curl bash
 
-WORKDIR /build
+WORKDIR /app
 
-# 2. Optimize caching: Copy ONLY manifest files first
+# Download Tools & Hex Packages (Depends ONLY on manifests)
 COPY ./shared/gleam.toml ./shared/manifest.toml ./shared/
 COPY ./client/gleam.toml ./client/manifest.toml ./client/
 COPY ./server/gleam.toml ./server/manifest.toml ./server/
 
-# Download dependencies (Docker will cache this heavily)
-RUN cd shared && gleam deps download
-RUN cd client && gleam deps download
-RUN cd server && gleam deps download
+RUN cd shared && gleam deps download \
+    && cd ../client && gleam deps download \
+    && cd ../server && gleam deps download
 
-# 3. Copy actual source code
-COPY ./shared ./shared
-COPY ./client ./client
-COPY ./server ./server
+# Pre-compile Dependencies (The "Stub" Cache)
+RUN mkdir -p shared/src client/src server/src \
+    && echo "pub fn main() { Nil }" > shared/src/shared.gleam \
+    && echo "pub fn main() { Nil }" > client/src/client.gleam \
+    && echo "pub fn main() { Nil }" > server/src/server.gleam \
+    && cd client && gleam run -m lustre/dev build \
+    && cd ../server && gleam build
 
-# 4. Compile client (assumes lustre_dev_tools is in gleam.toml)
-RUN cd client \
-    && gleam run -m lustre/dev build --minify --outdir=../server/priv/static
+# For prod builds, we copy everything. For dev builds, volume mounts overwrite this anyway.
+COPY . .
 
-# 5. Compile server
-RUN cd server \
-    && gleam export erlang-shipment
+# --- Builder Stage (for Production) ---
+FROM dev AS builder
+RUN cd client && gleam run -m lustre/dev build --minify --outdir=../server/priv/static
+RUN cd server && gleam export erlang-shipment
 
-
-# --- Runtime stage ---
-# Use plain Erlang to avoid shipping the Gleam compiler to production
-FROM erlang:${ERLANG_VERSION}-alpine
-
+# --- Runtime stage (for Production) ---
+FROM erlang:${ERLANG_VERSION}-alpine AS prod
 WORKDIR /app
-
-# Set up non-root user for security
-RUN addgroup --system webapp \
-    && adduser --system webapp -g webapp
-
-# Copy the compiled release and assign ownership to webapp
-COPY --from=builder --chown=webapp:webapp /build/server/build/erlang-shipment /app
-
-# Drop root privileges
+RUN addgroup --system webapp && adduser --system webapp -g webapp
+COPY --from=builder --chown=webapp:webapp /app/server/build/erlang-shipment /app
 USER webapp
-
-# Execute the native shipment script directly
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["run"]
+

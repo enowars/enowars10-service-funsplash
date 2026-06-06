@@ -74,11 +74,11 @@ pub fn get_data_public(
 pub fn get(
   request: wisp.Request,
   context: web.Context,
-  id: String,
+  public_id: String,
 ) -> wisp.Response {
   let result = {
     use res <- result.try(
-      sql.photo_find_by_public_id(context.db, id)
+      sql.photo_find_by_public_id(context.db, public_id)
       |> result.replace_error(wisp.not_found()),
     )
     use photo <- result.try(
