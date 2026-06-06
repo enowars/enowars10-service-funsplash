@@ -5,6 +5,7 @@ import user
 from user import User
 import qr
 import photo
+import uuid
 from photo import Photo
 from logging import LoggerAdapter
 
@@ -50,7 +51,7 @@ CHECKER FUNCTIONS
 
 
 @checker.putflag(0)
-async def putflag(
+async def putflag0(
     task: PutflagCheckerTaskMessage,
     db: ChainDB,
     conn: Connection,
@@ -97,7 +98,7 @@ async def putflag(
 
 
 @checker.getflag(0)
-async def getflag(
+async def getflag0(
     task: GetflagCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
@@ -139,7 +140,7 @@ async def getflag(
 
 
 @checker.putnoise(0)
-async def putnoise0(
+async def upload_image(
     task: PutnoiseCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
@@ -175,7 +176,7 @@ async def putnoise0(
 
 
 @checker.getnoise(0)
-async def getnoise0(
+async def get_image(
     task: GetnoiseCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
@@ -218,14 +219,11 @@ async def create_and_get_user(
 async def get_non_existant_photo(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    # TODO for after python upgrade? uuid.uuid7()
-    await photo.get_data(
-        conn, "00000000-0000-0000-0000-000000000000", expected_code=404
-    )
+    await photo.get_data(conn, uuid.uuid7(), expected_code=404)
 
 
 @checker.exploit(0)
-async def exploit0(
+async def exploit_censor(
     task: ExploitCheckerTaskMessage,
     searcher: FlagSearcher,
     conn: Connection,
@@ -243,6 +241,15 @@ async def exploit0(
     cookies = await user.login(conn, username, "asdf")
     data = await photo.get_data_premium(conn, p.asset_id, cookies)
     flag = qr.decode(data)
+
+    addr = await conn.get_addr()
+    masks = photo.exploit_masks(33)
+    logger.info(f"{len(masks)=}")
+    res = await photo.censor(addr, p.public_id, masks)
+    logger.info(f"{len(res)=}")
+    logger.info(f"{set(res)=}")
+
+    # logger.info(f"{res=}")
 
     return flag
 

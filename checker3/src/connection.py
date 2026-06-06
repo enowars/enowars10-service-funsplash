@@ -3,6 +3,12 @@ from typing import Self, Type, cast
 from logging import LoggerAdapter
 import httpx
 from enochecker3 import MumbleException
+from typing import NamedTuple
+
+
+class Address(NamedTuple):
+    ip: str
+    port: int
 
 
 class Connection(httpx.AsyncClient):
@@ -40,3 +46,9 @@ class Connection(httpx.AsyncClient):
             }
         )
         return wrapped_client
+
+    async def get_addr(self) -> Address:
+        r: httpx.Response = await self.get("/")
+        a = r.extensions.get("network_stream").get_extra_info("server_addr")
+        addr = Address(a[0], a[1])
+        return addr
