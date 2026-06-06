@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/bytes_tree.{type BytesTree}
 import gleam/erlang/process
 import gleam/http/request
@@ -10,15 +11,17 @@ import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
-import server/photo
 import server/sql
 import youid/uuid
+
+const ressource_limit = 900
 
 pub type State {
   State(
     id: uuid.Uuid,
     in_photo: png.Photo(BitArray, Uncompressed),
     out_photo: Option(png.Photo(BytesTree, Compressed)),
+    req_counter: Int,
     z_stream: png.ZStream,
     owner: uuid.Uuid,
   )
@@ -41,7 +44,17 @@ pub fn upgrade(
     let assert Ok(photo) = list.first(res.rows)
     let data = png.parse_photo(photo.data)
     let z_stream = png.init_compressor()
-    #(State(photo.id, data, None, z_stream:, owner: photo.creator), None)
+    #(
+      State(
+        id: photo.id,
+        in_photo: data,
+        out_photo: None,
+        req_counter: 0,
+        z_stream:,
+        owner: photo.creator,
+      ),
+      None,
+    )
   }
 
   mist.websocket(
@@ -64,8 +77,8 @@ fn handler(
   message: mist.WebsocketMessage(b),
   connection: mist.WebsocketConnection,
 ) {
-  io.println("handle")
-  // TODO: rate limit
+  use <- bool.guard(state.req_counter >= ressource_limit, mist.stop())
+  let state = State(..state, req_counter: state.req_counter + 1)
   case message {
     mist.Binary(mask) -> {
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
