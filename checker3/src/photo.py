@@ -118,6 +118,7 @@ async def censor(
     uri = f"ws://{addr.ip}:{addr.port}/censor/{public_id}"
 
     async with websockets.connect(uri, close_timeout=10) as ws:
+
         async def sender():
             for mask in masks:
                 await ws.send(mask)

@@ -1,6 +1,5 @@
 import httpx
 import utils
-import time
 import asyncio
 from dataclasses import asdict
 import user
@@ -43,7 +42,9 @@ app = lambda: checker.app
 
 
 @checker.register_dependency
-async def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> Connection:
+async def _get_connection(
+    client: httpx.AsyncClient, logger: LoggerAdapter
+) -> Connection:
     # Robust wait for service: Try to reach the service root for up to 60 seconds.
     # This ensures the checker doesn't fail just because the service is still booting.
     max_retries = 30
@@ -53,11 +54,11 @@ async def _get_connection(client: httpx.AsyncClient, logger: LoggerAdapter) -> C
             if resp.status_code == 200:
                 logger.info(f"Service is reachable after {i} retries.")
                 return Connection.wrap(client, logger)
-        except (httpx.ConnectError, httpx.ConnectTimeout):
+        except httpx.ConnectError, httpx.ConnectTimeout:
             pass
 
         if i < max_retries - 1:
-            logger.info(f"Waiting for service... ({i+1}/{max_retries})")
+            logger.info(f"Waiting for service... ({i + 1}/{max_retries})")
             await asyncio.sleep(2)
 
     logger.error("Service did not become reachable in time.")
@@ -78,8 +79,7 @@ async def putflag0(
 ) -> None:
     username = random_string(12, CHARSET_ALPHANUMERIC)
     first_name = random_string(10, CHARSET_LETTERS)
-    # password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
-    password = "asdf"
+    password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
     photo_desc = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
 
     await user.register(conn, username, password, first_name)
@@ -251,36 +251,16 @@ async def exploit_censor(
     assert task.attack_info is not None
 
     username = task.attack_info
-
     profile = await user.get_profile(conn, username)
-
     p: Photo = photo.get_by_description_contains(
         profile, "a flag but its premium and you are poor"
     )
-    cookies = await user.login(conn, username, "asdf")
-    data = await photo.get_data_premium(conn, p.asset_id, cookies)
-    flag = qr.decode(data)
 
     addr = await conn.get_addr()
     masks = photo.exploit_masks(33)
-    logger.info(f"{len(masks)=}")
-    start_time = time.time()
     res = await photo.censor(addr, p.public_id, masks)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    logger.info(f"{elapsed_time=}")
-    logger.info(f"{len(res)=}")
-    logger.info(f"{set(res)=}")
-
-    start_time = time.time()
-    reconstructed_flag = qr.reconstruct_qr(res, 33)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    logger.info(f"reconstruction {elapsed_time=}")
-    logger.info(f"{reconstructed_flag=}")
-    logger.info(f"{flag=}")
-
-    return reconstructed_flag
+    img = qr.reconstruct_qr(res, 33)
+    return qr.decode(img)
 
 
 if __name__ == "__main__":

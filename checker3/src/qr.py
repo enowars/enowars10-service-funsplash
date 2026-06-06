@@ -1,4 +1,3 @@
-from logging import LoggerAdapter
 import zlib
 import io
 from PIL import Image
@@ -122,7 +121,7 @@ def get_static_pixel(x: int, y: int, size: int) -> int:
     return 255
 
 
-def reconstruct_qr(results: list[str], size: int = 33) -> str:
+def reconstruct_qr(results: list[str], size: int = 33):
     pixels = [255] * (size * size)
     res_idx = 0
     for y in range(size):
@@ -132,7 +131,9 @@ def reconstruct_qr(results: list[str], size: int = 33) -> str:
             else:
                 if res_idx < len(results):
                     # Oracle: "ok.size:69" means black (0), otherwise white (255)
-                    pixels[y * size + x] = 0 if results[res_idx] == "ok.size:69" else 255
+                    pixels[y * size + x] = (
+                        0 if results[res_idx] == "ok.size:69" else 255
+                    )
                     res_idx += 1
 
     # Create the image
@@ -142,7 +143,7 @@ def reconstruct_qr(results: list[str], size: int = 33) -> str:
     # Convert to bytes
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-    return decode(buf.getvalue())
+    return buf.getvalue()
 
 
 def create_mask(mode: str) -> bytearray:
