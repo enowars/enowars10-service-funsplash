@@ -5,24 +5,22 @@ from enochecker3.utils import assert_equals
 
 @dataclass
 class User:
-    username: str
+    name: str
     password: str
     first_name: str
 
 
 async def register(
     connection: Connection,
-    username: str,
-    password: str,
-    first_name: str,
+    user: User,
     expected_code: int = 200,
 ) -> None:
     r = await connection.post(
         "/join",
         data={
-            "username": username,
-            "password": password,
-            "first_name": first_name,
+            "username": user.name,
+            "password": user.password,
+            "first_name": user.first_name,
         },
     )
     assert_equals(r.status_code, expected_code)
@@ -36,14 +34,12 @@ async def get_profile(
     return r.json()
 
 
-async def login(
-    connection: Connection, username: str, password: str, expected_code: int = 303
-) -> dict:
+async def login(connection: Connection, user: User, expected_code: int = 303) -> dict:
     r = await connection.post(
         "/login",
         data={
-            "username": username,
-            "password": password,
+            "username": user.name,
+            "password": user.password,
         },
     )
 

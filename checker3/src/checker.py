@@ -7,7 +7,7 @@ from user import User
 import qr
 import photo
 import uuid
-from photo import Photo
+from photo import Photo, Coordinate
 from logging import LoggerAdapter
 
 from utils import (
@@ -77,43 +77,33 @@ async def putflag0(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> None:
-    username = random_string(12, CHARSET_ALPHANUMERIC)
-    first_name = random_string(10, CHARSET_LETTERS)
-    password = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
-    photo_desc = random_string(16, CHARSET_ALPHANUMERIC_MIXED)
-
-    await user.register(conn, username, password, first_name)
-    cookies = await user.login(conn, username, password)
-
-    photo_data = qr.generate_qr_flag(task.flag)
-
-    await photo.upload(
-        conn=conn,
-        cookies=cookies,
-        description=f"a flag but its premium and you are poor {photo_desc}",
-        premium=True,
-        private=False,
-        location="Berlin",
-        camera="Sony Beta",
-        tags="flag,secret,premium",
-        photo_name="flag.png",
-        photo_data=photo_data,
+    u: User = User(
+        random_string(12, CHARSET_ALPHANUMERIC),
+        random_string(10, CHARSET_LETTERS),
+        random_string(30, CHARSET_ALPHANUMERIC_MIXED),
     )
+    await user.register(conn, u)
+    cookies = await user.login(conn, u)
 
-    profile = await user.get_profile(conn, username)
+    p: Photo = Photo(
+        description=f"a flag but its premium and you are poor {random_string(16, CHARSET_ALPHANUMERIC_MIXED)}",
+        premium=True,
+        tags=["flag", "secret", "premium"],
+        data=qr.generate_qr_flag(task.flag),
+    )
+    await photo.upload(conn=conn, cookies=cookies, photo=p)
 
-    p: Photo = photo.get_by_description_contains(profile, photo_desc)
-
+    profile = await user.get_profile(conn, u.name)
+    pid: str = photo.get_by_description_contains(profile, p.description).public_id
+    p: Photo = await photo.get(conn, pid)
     data = await photo.get_data_premium(conn, p.asset_id, cookies)
 
     flag_got = qr.decode(data)
     assert_equals(flag_got, task.flag)
 
-    u = user.User(username, password, first_name)
-
-    await db.set("user_data", asdict(u))
-    await db.set("photo_data", asdict(p))
-    return u.username
+    await db.set("user", asdict(u))
+    await db.set("photo", asdict(p))
+    return u.name
 
 
 @checker.getflag(0)
@@ -124,33 +114,26 @@ async def getflag0(
     conn: Connection,
 ) -> None:
     try:
-        ud = await db.get("user_data")
-        u: User = User(**ud)
-        pd = await db.get("photo_data")
-        p: Photo = Photo(**pd)
+        u: User = User(**await db.get("user"))
+        p: Photo = Photo(**await db.get("photo"))
     except KeyError:
         raise MumbleException("Missing database entry from putflag")
 
-    cookies = await user.login(conn, u.username, u.password)
-
-    profile = await user.get_profile(conn, u.username)
-
-    p2: Photo = photo.get_by_description_contains(profile, p.description)
-
+    profile = await user.get_profile(conn, u.name)
+    pid: str = photo.get_by_description_contains(profile, p.description).public_id
+    p2: Photo = await photo.get(conn, pid)
     assert_equals(
         p, p2, "photo was returned differently from profile how it was stored"
     )
 
-    p2: Photo = await photo.get(conn, p.public_id)
-    assert_equals(p, p2, "photo was returned differently from how it was stored")
-
-    pd = await photo.get_data_premium(conn, p.asset_id, cookies)
-    flag_got = qr.decode(pd)
+    cookies = await user.login(conn, u)
+    p_data = await photo.get_data_premium(conn, p.asset_id, cookies)
+    flag_got = qr.decode(p_data)
     assert_equals(flag_got, task.flag)
 
-    pd = await photo.get_data_premium(conn, p.asset_id)
+    p_data = await photo.get_data_premium(conn, p.asset_id)
     try:
-        flag_got = qr.decode(pd)
+        flag_got = qr.decode(p_data)
         assert_equals(flag_got, task.flag)
     except Exception:
         return
@@ -165,33 +148,29 @@ async def upload_image(
     logger: LoggerAdapter,
     conn: Connection,
 ):
-    username = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
-    first_name = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
-    password = random_string(12, CHARSET_UPPER_ALPHANUMERIC)
-    description = random_string(36, CHARSET_UPPER_ALPHANUMERIC)
-
-    await user.register(conn, username, password, first_name)
-    cookies = await user.login(conn, username, password)
-
-    await photo.upload(
-        conn=conn,
-        cookies=cookies,
-        description=description,
-        premium=False,
-        private=False,
-        location="Berlin",
-        camera="Sony Alpha",
-        tags="noise",
-        photo_name="noise.png",
-        photo_data=utils.placeholder_png(),
+    u: User = User(
+        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
+        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
+        random_string(24, CHARSET_UPPER_ALPHANUMERIC),
     )
+    await user.register(conn, u)
+    cookies = await user.login(conn, u)
 
-    profile = await user.get_profile(conn, username)
-    p: Photo = photo.get_by_description_contains(profile, description)
-    await photo.get(conn, p.public_id)
-    await photo.get_data(conn, p.asset_id)
+    p: Photo = photo.Photo(
+        description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
+        camera="Sony Alpha",
+        tags=["idk", "noise"],
+        data=utils.placeholder_png(),
+    )
+    await photo.upload(conn=conn, cookies=cookies, photo=p)
 
-    await db.set("noise_data", (username, password, description))
+    profile = await user.get_profile(conn, u.name)
+    p2: Photo = photo.get_by_description_contains(profile, p.description)
+    p2: Photo = await photo.get(conn, p2.public_id)
+    p2.data = await photo.get_data(conn, p2.asset_id)
+
+    await db.set("user", asdict(u))
+    await db.set("photo", asdict(p2))
 
 
 @checker.getnoise(0)
@@ -202,17 +181,88 @@ async def get_image(
     conn: Connection,
 ):
     try:
-        username, password, description = await db.get("noise_data")
+        u: User = User(**await db.get("user"))
+        p: Photo = Photo(**await db.get("photo"))
     except KeyError:
         raise MumbleException("Missing database entry from putnoise")
 
-    profile = await user.get_profile(conn, username)
-    p: Photo = photo.get_by_description_contains(profile, description)
-    p: Photo = await photo.get(conn, p.public_id)
-    await photo.get_data(conn, p.asset_id)
+    profile = await user.get_profile(conn, u.name)
+    p2: Photo = photo.get_by_description_contains(profile, p.description)
+    p3: Photo = await photo.get(conn, p2.public_id)
+    p3.data = await photo.get_data(conn, p.asset_id)
+    assert_equals(p, p3)
 
-    if description not in p.description:
-        raise MumbleException("Resulting noise was found to be incorrect")
+
+@checker.putnoise(1)
+async def censor_put(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    u: User = User(
+        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
+        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
+        random_string(23, CHARSET_UPPER_ALPHANUMERIC),
+    )
+    await user.register(conn, u)
+    cookies = await user.login(conn, u)
+
+    fake_flag = f"ONE{random_string(48)}"
+
+    p: Photo = photo.Photo(
+        description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
+        premium=True,
+        camera="Sony Alpha",
+        tags=["idk", "flag"],
+        show_on_profile=True,
+        data=qr.generate_qr_flag(fake_flag),
+    )
+    await photo.upload(conn=conn, cookies=cookies, photo=p)
+    profile = await user.get_profile(conn, u.name)
+    p: Photo = photo.get_by_description_contains(profile, p.description)
+
+    await db.set("fake_flag", fake_flag)
+    await db.set("user", asdict(u))
+    await db.set("photo", asdict(p))
+
+
+@checker.getnoise(1)
+async def censor_get(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    try:
+        ff: str = await db.get("fake_flag")
+        u: User = User(**await db.get("user"))
+        p: Photo = Photo(**await db.get("photo"))
+    except KeyError:
+        raise MumbleException("Missing database entry from putnoise")
+
+    dim = 33
+    black = photo.gen_mask([], Coordinate(dim, dim))
+    half = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim // 2), Coordinate(dim, dim)
+    )
+    full = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim), Coordinate(dim, dim)
+    )
+
+    addr = await conn.get_addr()
+    msgs = await photo.censor(addr, p.public_id, [black, half, full])
+
+    def get_size(msg):
+        return int(msg.split(":")[1])
+
+    is_sorted = all(
+        get_size(msgs[i]) < get_size(msgs[i + 1]) for i in range(len(msgs) - 1)
+    )
+
+    # TODO: save image and check if censoring/not censoring worked
+
+    assert_equals(is_sorted, True, "something went wrong with the censoring size")
 
 
 @checker.havoc(0)
@@ -225,13 +275,11 @@ async def index(task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Conn
 async def create_and_get_user(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
-    username = random_string(12)
-    password = random_string(12)
-    first_name = random_string(12)
-    await user.register(conn, username, password, first_name)
-    profile = await user.get_profile(conn, username)
+    u: User = User(random_string(12), random_string(12), random_string(12))
+    await user.register(conn, u)
+    profile = await user.get_profile(conn, u.name)
 
-    assert_in(username, profile["username"], "Username not found in profile")
+    assert_in(u.name, profile["username"], "Username not found in profile")
 
 
 @checker.havoc(2)

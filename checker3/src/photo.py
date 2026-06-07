@@ -6,7 +6,7 @@ import connection
 import websockets
 import asyncio
 import qr
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 
 class Coordinate(NamedTuple):
@@ -16,13 +16,17 @@ class Coordinate(NamedTuple):
 
 @dataclass
 class Photo:
-    public_id: str
-    asset_id: str
     description: str
-    creator: str
-    private: bool
-    premium: bool
-    show_on_profile: bool
+    tags: Optional[list[str]] = None
+    premium: bool = False
+    private: bool = False
+    location: str = "Berlin"
+    camera: str = "Sony Beta"
+    show_on_profile: bool = True
+    public_id: Optional[str] = None
+    asset_id: Optional[str] = None
+    creator: Optional[str] = None
+    data: Optional[bytes] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Photo":
@@ -30,11 +34,15 @@ class Photo:
         return cls(
             public_id=data["public_id"],
             asset_id=data["asset_id"],
-            description=data.get("description", ""),
             creator=data.get("creator", "unknown"),
-            private=bool(data.get("private", False)),
+            description=data.get("description", ""),
             premium=bool(data.get("premium", False)),
+            private=bool(data.get("private", False)),
+            location=data.get("location", ""),
+            camera=data.get("camera", ""),
+            tags=data.get("tags", []),
             show_on_profile=bool(data.get("show_on_profile", True)),
+            data=bytes(data.get("data", [])),
         )
 
 
@@ -75,30 +83,18 @@ def get_by_description_contains(profile_json, description: str) -> Photo:
     )
 
 
-async def upload(
-    conn: Connection,
-    cookies,
-    description: str,
-    premium: bool,
-    private: bool,
-    location: str,
-    camera: str,
-    tags: str,
-    photo_name: str,
-    photo_data: bytes,
-):
+async def upload(conn: Connection, cookies, photo: Photo):
     payload = {
-        "title": photo_name,
-        "description": description,
-        "show_on_profile": "true",
-        "location": location,
-        "camera": camera,
-        "tags": tags,
-        "premium": "true" if premium else "false",
-        "private": "true" if private else "false",
+        "description": photo.description,
+        "premium": "true" if photo.premium else "false",
+        "private": "true" if photo.private else "false",
+        "location": photo.location,
+        "camera": photo.camera,
+        "tags": ",".join(photo.tags),
+        "show_on_profile": "true" if photo.show_on_profile else "true",
     }
 
-    files = {"photo": (photo_name, photo_data, "image/png")}
+    files = {"photo": ("photo_name", photo.data, "image/png")}
 
     r = await conn.post(
         "/upload",
@@ -157,14 +153,40 @@ def gen_mask(keep_list: list[Coordinate], dimensions: Coordinate) -> bytearray:
         for x in range(dimensions.x):
             set_pixel(x, y, a=255)
 
-    # def keep(x1, y1, x2, y2):
-    #     for y in range(y1, y2):
-    #         for x in range(x1, x2):
-    #             set_pixel(x, y, a=0)
-
     for keep in keep_list:
         set_pixel(keep.x, keep.y, a=0)
 
+    return mask
+
+
+def gen_mask_range(
+    keep_start: Coordinate, keep_end: Coordinate, dimensions: Coordinate
+) -> bytearray:
+    row_size = dimensions.x * 4 + 1
+    total_size = dimensions.y * row_size
+    mask = bytearray(total_size)
+
+    def set_pixel(x, y, r=0, g=0, b=0, a=255):
+        if x < 0 or x >= dimensions.x or y < 0 or y >= dimensions.y:
+            return
+        row_start = y * row_size
+        pixel_start = row_start + 1 + (x * 4)
+        mask[pixel_start] = r
+        mask[pixel_start + 1] = g
+        mask[pixel_start + 2] = b
+        mask[pixel_start + 3] = a
+
+    # Initialize all pixels as censored (alpha = 255)
+    for y in range(dimensions.y):
+        for x in range(dimensions.x):
+            set_pixel(x, y, a=255)
+
+    def keep(x1, y1, x2, y2):
+        for y in range(y1, y2):
+            for x in range(x1, x2):
+                set_pixel(x, y, a=0)
+
+    keep(keep_start.x, keep_start.y, keep_end.x, keep_end.y)
     return mask
 
 
