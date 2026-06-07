@@ -138,6 +138,9 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
       result.unwrap(list.key_find(form.values, "premium"), "false") == "true"
     let private =
       result.unwrap(list.key_find(form.values, "private"), "false") == "true"
+    let show_on_profile =
+      result.unwrap(list.key_find(form.values, "show_on_profile"), "true")
+      == "true"
     let location = result.unwrap(list.key_find(form.values, "location"), "")
     let camera = result.unwrap(list.key_find(form.values, "camera"), "")
 
@@ -164,6 +167,7 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
         private,
         location,
         camera,
+        show_on_profile,
       )
       |> result.replace_error(Nil),
     )

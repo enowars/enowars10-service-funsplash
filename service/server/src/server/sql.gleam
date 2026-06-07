@@ -60,20 +60,22 @@ pub fn photo_create(
   arg_5: Bool,
   arg_6: String,
   arg_7: String,
+  arg_8: Bool,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     decode.success(PhotoCreateRow(id:))
   }
 
-  "INSERT INTO photos (description, creator, data, premium, private, location, camera)
+  "INSERT INTO photos (description, creator, data, premium, private, location, camera, show_on_profile)
 VALUES (nullif($1,''),
 	$2,
 	$3,
 	$4,
 	$5,
 	nullif($6,''),
-	nullif($7,''))
+	nullif($7,''),
+	$8)
 RETURNING id;
 "
   |> pog.query
@@ -84,6 +86,7 @@ RETURNING id;
   |> pog.parameter(pog.bool(arg_5))
   |> pog.parameter(pog.text(arg_6))
   |> pog.parameter(pog.text(arg_7))
+  |> pog.parameter(pog.bool(arg_8))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

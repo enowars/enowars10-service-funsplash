@@ -14,12 +14,13 @@ pub type Photo {
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
+    // rename to exif?
     likes_count: Int,
     views: Int,
     downloads: Int,
     created_at: Float,
-    // 
     tags: List(String),
+    // not properly intialized
     user_liked: Bool,
   )
 }
