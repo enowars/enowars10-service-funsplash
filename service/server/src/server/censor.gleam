@@ -36,6 +36,7 @@ pub fn upgrade(
   public_id: String,
   db: pog.Connection,
 ) -> response.Response(mist.ResponseData) {
+  // mist doesnt have built in signed cookie checks so we just dont them here
   // let assert Ok(auth_cookie) =
   //   request.get_cookies(request) |> list.key_find(auth.auth_cookie)
   // let assert Ok(uid) = auth_cookie |> uuid.from_string
