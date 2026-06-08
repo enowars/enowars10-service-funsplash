@@ -6,24 +6,27 @@ import gleam/http/response
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
+import server/photo
 import server/sql
+import utils
 import youid/uuid
 
 const ressource_limit = 900
 
 pub type State {
   State(
-    id: uuid.Uuid,
+    photo: photo.Photo,
     in_photo: png.Photo(BitArray, Uncompressed),
     out_photo: Option(png.Photo(BytesTree, Compressed)),
     req_counter: Int,
     z_stream: png.ZStream,
-    owner: uuid.Uuid,
+    user: uuid.Uuid,
+    db: pog.Connection,
   )
 }
 
@@ -33,25 +36,36 @@ pub fn upgrade(
   public_id: String,
   db: pog.Connection,
 ) -> response.Response(mist.ResponseData) {
+  // let assert Ok(auth_cookie) =
+  //   request.get_cookies(request) |> list.key_find(auth.auth_cookie)
+  // let assert Ok(uid) = auth_cookie |> uuid.from_string
+  let uid = uuid.v7()
+
+  io.println("Connected")
+  let assert Ok(res) = sql.photo_find_by_public_id(db, public_id)
+  let assert Ok(photo_row) = list.first(res.rows)
+  let photo = photo_row |> photo.from_photo_find_by_public_id_row
+
+  use <- bool.guard(
+    photo.private && uid != photo.creator,
+    response.new(403) |> response.set_body(mist.Bytes(bytes_tree.new())),
+  )
+
   let on_init = fn(_connection: mist.WebsocketConnection) -> #(
     State,
     Option(process.Selector(b)),
   ) {
-    // FIXME: think about authentication
-    io.println("Connected")
-    let assert Ok(res) = sql.photo_find_by_public_id(db, public_id)
-
-    let assert Ok(photo) = list.first(res.rows)
-    let data = png.parse_photo(photo.data)
+    let data = png.parse_photo(photo_row.data)
     let z_stream = png.init_compressor()
     #(
       State(
-        id: photo.id,
+        photo:,
         in_photo: data,
         out_photo: None,
         req_counter: 0,
         z_stream:,
-        owner: photo.creator,
+        user: uid,
+        db:,
       ),
       None,
     )
@@ -66,10 +80,29 @@ pub fn upgrade(
 }
 
 fn close_socket(state: State) -> Nil {
-  // TODO: check if user is allowed and write picture to db
-  // copy prev
-  png.close_compressor(state.z_stream)
-  io.println("Disconnected")
+  use <- utils.defer(fn() {
+    png.close_compressor(state.z_stream)
+    io.println("Disconnected")
+  })
+  let p = state.photo
+  // TODO: check if editing allowed
+  use <- bool.guard(state.user != p.creator, Nil)
+  {
+    use data <- option.map(state.out_photo)
+    photo.Upload(
+      creator: p.creator,
+      description: p.description,
+      premium: p.premium,
+      private: p.private,
+      location: p.location,
+      camera: p.camera,
+      show_on_profile: p.show_on_profile,
+      data: data |> png.pack,
+      tags: [],
+    )
+    |> photo.create(state.db)
+  }
+  Nil
 }
 
 fn handler(
@@ -83,7 +116,7 @@ fn handler(
     mist.Binary(mask) -> {
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
-          let state = State(..state, out_photo: option.Some(censored_png))
+          let state = State(..state, out_photo: Some(censored_png))
           // TODO: remove only here for debugging
           // let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
           let _ =
