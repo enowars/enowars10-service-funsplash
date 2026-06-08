@@ -12,8 +12,6 @@ from logging import LoggerAdapter
 
 from utils import (
     random_string,
-    CHARSET_ALPHANUMERIC,
-    CHARSET_LETTERS,
     CHARSET_ALPHANUMERIC_MIXED,
     CHARSET_UPPER_ALPHANUMERIC,
 )
@@ -77,13 +75,10 @@ async def putflag0(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> None:
-    u: User = User(
-        random_string(12, CHARSET_ALPHANUMERIC),
-        random_string(10, CHARSET_LETTERS),
-        random_string(30, CHARSET_ALPHANUMERIC_MIXED),
-    )
+    u: User = user.random_user()
     await user.register(conn, u)
     cookies = await user.login(conn, u)
+    logger.info(f"{cookies=}")
 
     p: Photo = Photo(
         description=f"a flag but its premium and you are poor {random_string(16, CHARSET_ALPHANUMERIC_MIXED)}",
@@ -148,11 +143,7 @@ async def upload_image(
     logger: LoggerAdapter,
     conn: Connection,
 ):
-    u: User = User(
-        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
-        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
-        random_string(24, CHARSET_UPPER_ALPHANUMERIC),
-    )
+    u: User = user.random_user()
     await user.register(conn, u)
     cookies = await user.login(conn, u)
 
@@ -200,11 +191,7 @@ async def censor_put(
     logger: LoggerAdapter,
     conn: Connection,
 ):
-    u: User = User(
-        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
-        random_string(12, CHARSET_UPPER_ALPHANUMERIC),
-        random_string(23, CHARSET_UPPER_ALPHANUMERIC),
-    )
+    u: User = user.random_user()
     await user.register(conn, u)
     cookies = await user.login(conn, u)
 
@@ -297,6 +284,10 @@ async def exploit_censor(
     logger: LoggerAdapter,
 ) -> str:
     assert task.attack_info is not None
+
+    # u: user = user.random_user()
+    # await user.register(conn, u)
+    # cookie_header = await user.login(conn, u)
 
     username = task.attack_info
     profile = await user.get_profile(conn, username)
