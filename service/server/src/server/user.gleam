@@ -1,21 +1,34 @@
 import gleam/list
-import gleam/option.{type Option, Some}
+import gleam/option.{type Option}
 import gleam/result
 import pog
 import server/sql
 import shared/shared_photo
 import shared/shared_user
-import wisp
 import youid/uuid
 
 pub type User =
-  sql.UserFindByNameRow
+  sql.UserFindByIdRow
+
+pub fn from_user_find_by_name_row(user u: sql.UserFindByNameRow) -> User {
+  sql.UserFindByIdRow(
+    id: u.id,
+    username: u.username,
+    first_name: u.first_name,
+    last_name: u.last_name,
+    bio: u.bio,
+    available_for_hire: u.available_for_hire,
+    premium: u.premium,
+    password: u.password,
+    created_at: u.created_at,
+    updated_at: u.updated_at,
+  )
+}
 
 pub fn to_shared(
   user: User,
   photos: List(shared_photo.Photo),
 ) -> shared_user.User {
-  //let images = list.map(image_ids, fn(id) { "./photos/" <> uuid.to_string(id) })
   shared_user.User(
     username: user.username,
     first_name: user.first_name,
@@ -24,16 +37,25 @@ pub fn to_shared(
     available_for_hire: user.available_for_hire,
     premium: user.premium,
     photos:,
+    // TODO: change to most recent 3 for pagination
   )
 }
 
-pub fn get_user(db: pog.Connection, name: String) -> Option(User) {
-  // TODO: use ETP
+pub fn get_by_id(db: pog.Connection, id: String) -> Option(User) {
   let user = {
-    use res <- result.try(
-      sql.user_find_by_name(db, name) |> result.replace_error(Nil),
-    )
-    list.first(res.rows)
+    use id <- result.try(id |> uuid.from_string)
+    sql.user_find_by_id(db, id)
+    |> result.map(fn(res) { list.first(res.rows) })
+    |> result.unwrap(Error(Nil))
+    |> result.replace_error(Nil)
   }
-  option.from_result(user)
+  user |> option.from_result
+}
+
+pub fn get_by_name(db: pog.Connection, name: String) -> Option(User) {
+  sql.user_find_by_name(db, name)
+  |> result.map(fn(res) { list.first(res.rows) })
+  |> result.unwrap(Error(Nil))
+  |> result.map(from_user_find_by_name_row)
+  |> option.from_result
 }

@@ -9,8 +9,9 @@ import server/sql
 import server/user
 import server/web
 import wisp
+import youid/uuid
 
-const auth_cookie = "uid"
+pub const auth_cookie = "uid"
 
 pub fn require_login(
   context: web.Context,
@@ -58,7 +59,7 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> wisp.set_cookie(
         request,
         auth_cookie,
-        user.username,
+        user.id |> uuid.to_string,
         wisp.Signed,
         60 * 60,
       )
@@ -121,7 +122,7 @@ pub fn get_user_from_session(
 ) -> wisp.Response {
   let user: Result(Option(user.User), Nil) =
     wisp.get_cookie(request, auth_cookie, wisp.Signed)
-    |> result.map(user.get_user(db, _))
+    |> result.map(user.get_by_id(db, _))
 
   case user {
     Ok(Some(user)) -> next(Some(user))
@@ -132,24 +133,6 @@ pub fn get_user_from_session(
   }
 }
 
-// pub fn get_user_from_session_try(
-//   request,
-//   db: pog.Connection,
-//   next: fn(Option(user.User)) -> wisp.Response,
-// ) -> wisp.Response {
-//   let user: Result(Option(user.User), Nil) =
-//     wisp.get_cookie(request, auth_cookie, wisp.Signed)
-//     |> result.map(user.get_user(db, _))
-
-//   case user {
-//     Ok(Some(user)) -> next(Some(user))
-//     Ok(None) ->
-//       wisp.response(403)
-//       |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
-//     Error(_) -> next(None)
-//   }
-// }
-
 pub fn get_user_from_session_try(
   request,
   db: pog.Connection,
@@ -157,7 +140,7 @@ pub fn get_user_from_session_try(
 ) -> wisp.Response {
   let user: Result(Option(user.User), Nil) =
     wisp.get_cookie(request, auth_cookie, wisp.Signed)
-    |> result.map(user.get_user(db, _))
+    |> result.map(user.get_by_id(db, _))
 
   case user {
     Ok(Some(user)) -> next(user)

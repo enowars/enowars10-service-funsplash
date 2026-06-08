@@ -112,3 +112,17 @@ pub fn photo_decoder() -> decode.Decoder(Photo) {
     user_liked:,
   ))
 }
+
+pub type UploadError {
+  FileMissing
+  FileReadError
+  DatabaseError
+}
+
+pub fn upload_error_to_string(err: UploadError) -> String {
+  case err {
+    FileMissing -> "No photo file was selected."
+    FileReadError -> "An error occurred while reading the uploaded file."
+    DatabaseError -> "An internal database error occurred while saving."
+  }
+}
