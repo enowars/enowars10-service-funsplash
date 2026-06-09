@@ -11,7 +11,9 @@ import server/web
 import wisp
 import youid/uuid
 
-pub const auth_cookie = "uid"
+pub const uid_cookie = "uid"
+
+pub const uname_cookie = "uname"
 
 pub fn require_login(
   context: web.Context,
@@ -32,7 +34,8 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
 }
 
 pub fn logout(request, context) -> wisp.Response {
-  todo
+  wisp.redirect("/?" <> wisp.escape_html("logged out"))
+  |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
 }
 
 fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
@@ -58,8 +61,15 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
       wisp.redirect("/")
       |> wisp.set_cookie(
         request,
-        auth_cookie,
+        uid_cookie,
         user.id |> uuid.to_string,
+        wisp.Signed,
+        60 * 60,
+      )
+      |> wisp.set_cookie(
+        request,
+        uname_cookie,
+        user.username,
         wisp.Signed,
         60 * 60,
       )
@@ -78,7 +88,6 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
     use first_name <- result.try(list.key_find(form.values, "first_name"))
     let last_name = result.unwrap(list.key_find(form.values, "last_name"), "")
 
-    // TODO: think about using insecure salt
     use pass_hash <- result.try(
       argus.hasher()
       |> argus.hash(password, argus.gen_salt())
@@ -101,51 +110,21 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
 }
 
-// pub fn get_user_from_session(
-//   request,
-//   db: pog.Connection,
-// ) -> Result(user.User, Nil) {
-//   let user: Result(Option(user.User), Nil) =
-//     wisp.get_cookie(request, auth_cookie, wisp.Signed)
-//     |> result.map(user.get_user(db, _))
-
-//   case user {
-//     Ok(Some(user)) -> Ok(user)
-//     _ -> Error(Nil)
-//   }
-// }
-
 pub fn get_user_from_session(
   request,
   db: pog.Connection,
   next: fn(Option(user.User)) -> wisp.Response,
 ) -> wisp.Response {
+  // TODO: use ets instead of hitting db everytime
   let user: Result(Option(user.User), Nil) =
-    wisp.get_cookie(request, auth_cookie, wisp.Signed)
+    wisp.get_cookie(request, uid_cookie, wisp.Signed)
     |> result.map(user.get_by_id(db, _))
 
   case user {
     Ok(Some(user)) -> next(Some(user))
     Ok(None) ->
       wisp.response(403)
-      |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
+      |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
     Error(_) -> next(None)
-  }
-}
-
-pub fn get_user_from_session_try(
-  request,
-  db: pog.Connection,
-  next: fn(user.User) -> wisp.Response,
-) -> wisp.Response {
-  let user: Result(Option(user.User), Nil) =
-    wisp.get_cookie(request, auth_cookie, wisp.Signed)
-    |> result.map(user.get_by_id(db, _))
-
-  case user {
-    Ok(Some(user)) -> next(user)
-    _ ->
-      wisp.response(403)
-      |> wisp.set_cookie(request, auth_cookie, "", wisp.PlainText, 0)
   }
 }

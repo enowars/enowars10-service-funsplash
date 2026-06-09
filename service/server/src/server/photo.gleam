@@ -1,19 +1,10 @@
-import gleam/bit_array
-import gleam/bytes_tree
-import gleam/http
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
 import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
-import server/web
-import server/web/auth
-import shared/shared_error
 import shared/shared_photo
-import simplifile
-import wisp
 import youid/uuid.{type Uuid}
 
 pub type Upload {
@@ -185,4 +176,8 @@ pub fn create(photo p: Upload, db_connection db: pog.Connection) {
     sql.photo_add_tag(db, tag, new_photo.id)
     |> result.replace_error(Nil)
   })
+}
+
+pub fn get() {
+  todo
 }
