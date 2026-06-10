@@ -14,7 +14,7 @@ pub fn handle_request(
   case wisp.path_segments(request) {
     [] ->
       wisp.ok()
-      |> wisp.html_body("<h1>funsplash is running 🦎</h1>")
+      |> wisp.html_body("<h1>🦦 🦐 funsplash is running!! 🦎 🐜</h1>")
     ["@" <> user] -> profile.get(request, context, user)
     ["photos", public_id] -> photo.get(request, context, public_id)
     ["collections", collection] -> collection.get(request, context, collection)
