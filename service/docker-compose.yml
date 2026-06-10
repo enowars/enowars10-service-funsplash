@@ -33,8 +33,6 @@ services:
       - .env
     networks:
       - funsplash
-    ports:
-      - "${PGPORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql:z
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
