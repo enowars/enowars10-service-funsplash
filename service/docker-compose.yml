@@ -15,16 +15,10 @@ services:
     restart: unless-stopped
     volumes:
       # Mount the source code so changes are reflected immediately
-      - "./shared:/app/shared:z"
-      - "./client:/app/client:z"
-      - "./server:/app/server:z"
-      # Mask the build directories so they don't sync with the host.
-      # These are anonymous volumes and don't need :z.
-      - /app/shared/build
-      - /app/client/build
-      - /app/server/build
-      - /app/client/.lustre
-    command: ["sh", "-c", "cd /app/client && gleam run -m lustre/dev build --minify --outdir=../server/priv/static && cd /app/server && gleam run"]
+      - "./shared:/app/shared:Z"
+      - "./client:/app/client:Z"
+      - "./server:/app/server:Z"
+    command: ["sh", "-c", "cd /app/server && gleam run"]
 
   postgres:
     image: postgres:18-alpine
@@ -33,8 +27,6 @@ services:
       - .env
     networks:
       - funsplash
-    ports:
-      - "${PGPORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql:z
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
