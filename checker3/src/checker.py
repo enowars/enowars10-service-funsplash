@@ -50,7 +50,7 @@ async def _get_connection(
             if resp.status_code == 200:
                 logger.info(f"Service is reachable after {i} retries.")
                 return Connection.wrap(client, logger)
-        except (httpx.ConnectError, httpx.ConnectTimeout):
+        except httpx.ConnectError, httpx.ConnectTimeout:
             pass
 
         if i < max_retries - 1:
@@ -200,7 +200,6 @@ async def censor_put(
         premium=True,
         camera="Sony Alpha",
         tags=["idk", "flag"],
-        show_on_profile=True,
         data=qr.generate_qr_flag(fake_flag),
     )
     await photo.upload(conn=conn, cookies=cookies, photo=p)
