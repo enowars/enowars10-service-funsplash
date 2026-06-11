@@ -2,6 +2,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
 import shared/shared_photo
+import shared/shared_thumbnail
 
 pub type User {
   User(
@@ -11,7 +12,7 @@ pub type User {
     bio: Option(String),
     available_for_hire: Bool,
     premium: Bool,
-    photos: List(shared_photo.Photo),
+    photos: List(shared_thumbnail.Thumbnail),
     // think about using thumbnail shared type
   )
 }
@@ -39,7 +40,7 @@ pub fn user_to_json(user: User) -> json.Json {
     }),
     #("available_for_hire", json.bool(available_for_hire)),
     #("premium", json.bool(premium)),
-    #("photos", json.array(photos, shared_photo.photo_to_json)),
+    #("photos", json.array(photos, shared_thumbnail.thumbnail_to_json)),
   ])
 }
 
@@ -52,7 +53,7 @@ pub fn user_decoder() -> decode.Decoder(User) {
   use premium <- decode.field("premium", decode.bool)
   use photos <- decode.field(
     "photos",
-    decode.list(shared_photo.photo_decoder()),
+    decode.list(shared_thumbnail.thumbnail_decoder()),
   )
   decode.success(User(
     username:,
