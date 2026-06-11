@@ -27,10 +27,34 @@ class Photo:
     asset_id: Optional[str] = None
     creator: Optional[str] = None
     data: Optional[bytes] = None
+    views: int = 0
+    likes: int = 0
+    downloads: int = 0
 
     @classmethod
     def from_dict(cls, data: dict) -> "Photo":
         """Creates a Photo instance from a dictionary (JSON response)."""
+        # If it's a full Photo response, it has 'thumbnail'
+        if "thumbnail" in data:
+            t = data["thumbnail"]
+            s = data.get("stats", {})
+            return cls(
+                public_id=t["public_id"],
+                asset_id=t["asset_id"],
+                creator=t.get("creator", "unknown"),
+                description=t.get("description", ""),
+                premium=bool(t.get("premium", False)),
+                private=bool(t.get("private", False)),
+                location=data.get("location", ""),
+                camera=data.get("camera", ""),
+                tags=data.get("tags", []),
+                show_on_profile=bool(t.get("show_on_profile", True)),
+                data=bytes(data.get("data", [])),
+                views=s.get("views", 0),
+                likes=s.get("likes", 0),
+                downloads=s.get("downloads", 0),
+            )
+        # Otherwise assume it's a Thumbnail (e.g. from profile)
         return cls(
             public_id=data["public_id"],
             asset_id=data["asset_id"],
@@ -43,6 +67,9 @@ class Photo:
             tags=data.get("tags", []),
             show_on_profile=bool(data.get("show_on_profile", True)),
             data=bytes(data.get("data", [])),
+            views=data.get("views", 0),
+            likes=data.get("likes", 0),
+            downloads=data.get("downloads", 0),
         )
 
 
@@ -86,13 +113,17 @@ def get_by_description_contains(profile_json, description: str) -> Photo:
 async def upload(conn: Connection, cookies, photo: Photo):
     payload = {
         "description": photo.description,
-        "premium": "true" if photo.premium else "false",
-        "private": "true" if photo.private else "false",
         "location": photo.location,
         "camera": photo.camera,
         "tags": ",".join(photo.tags),
-        "show_on_profile": "true" if photo.show_on_profile else "true",
     }
+
+    if photo.premium:
+        payload["premium"] = "true"
+    if photo.private:
+        payload["private"] = "true"
+    if photo.show_on_profile:
+        payload["show_on_profile"] = "true"
 
     files = {"photo": ("photo_name", photo.data, "image/png")}
 
