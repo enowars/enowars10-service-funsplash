@@ -13,7 +13,12 @@ services:
     networks:
       - funsplash
     restart: unless-stopped
-    command: ["sh", "-c", "cd /app/server && gleam run"]
+    volumes:
+      # Mount the source code so changes are reflected immediately
+      - "./shared:/app/shared:Z"
+      - "./client:/app/client:Z"
+      - "./server:/app/server:Z"
+    command: ["sh", "-c", "cd /app/client && gleam run -m lustre/dev build --minify --outdir=../server/priv/static && cd /app/server && gleam run"]
 
   postgres:
     image: postgres:18-alpine
