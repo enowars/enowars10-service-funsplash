@@ -10,6 +10,7 @@ pub type UploadError {
   FileMissing
   FileReadError
   DatabaseError
+  InvalidForm
 }
 
 pub fn upload_error_to_string(err: UploadError) -> String {
@@ -17,5 +18,6 @@ pub fn upload_error_to_string(err: UploadError) -> String {
     FileMissing -> "No photo file was selected."
     FileReadError -> "An error occurred while reading the uploaded file."
     DatabaseError -> "An internal database error occurred while saving."
+    InvalidForm -> "The form data provided was invalid."
   }
 }
