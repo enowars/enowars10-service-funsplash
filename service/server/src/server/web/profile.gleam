@@ -31,7 +31,7 @@ pub fn get(
 
 // TODO: pagination
 fn get_own(request: wisp.Request, context: web.Context, username: String) {
-  todo
+  get_other(request, context, username)
 }
 
 fn get_other(request: wisp.Request, context: web.Context, username: String) {
@@ -48,7 +48,7 @@ fn get_other(request: wisp.Request, context: web.Context, username: String) {
     list.map(photos.rows, fn(photo) {
       photo
       |> photo.from_photos_list_by_user_row
-      |> photo.to_shared(user.username, [], False)
+      |> photo.to_shared_thumbnail(user.username, False)
     })
   Ok(user.to_shared(user, photos))
 }
