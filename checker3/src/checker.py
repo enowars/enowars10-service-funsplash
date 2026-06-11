@@ -40,9 +40,24 @@ app = lambda: checker.app
 
 
 @checker.register_dependency
-def _get_connection(
+async def _get_connection(
     client: httpx.AsyncClient, logger: LoggerAdapter
 ) -> Connection:
+    max_retries = 30
+    for i in range(max_retries):
+        try:
+            resp = await client.get("/")
+            if resp.status_code == 200:
+                logger.info(f"Service is reachable after {i} retries.")
+                return Connection.wrap(client, logger)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            pass
+
+        if i < max_retries - 1:
+            logger.info(f"Waiting for service... ({i + 1}/{max_retries})")
+            await asyncio.sleep(2)
+
+    logger.error("Service did not become reachable in time.")
     return Connection.wrap(client, logger)
 
 
