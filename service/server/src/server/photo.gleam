@@ -5,6 +5,8 @@ import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
 import shared/shared_photo
+import shared/shared_stats
+import shared/shared_thumbnail
 import youid/uuid.{type Uuid}
 
 pub type Upload {
@@ -62,23 +64,38 @@ pub fn to_shared(
   user_liked: Bool,
 ) -> shared_photo.Photo {
   shared_photo.Photo(
-    public_id: photo.public_id,
-    asset_id: photo.asset_id |> uuid.to_string,
+    thumbnail: to_shared_thumbnail(photo, creator, user_liked),
+    stats: to_shared_stats(photo),
     description: photo.description,
     title: photo.title,
-    creator:,
-    premium: photo.premium,
-    private: photo.private,
-    show_on_profile: photo.show_on_profile,
     location: photo.location,
     camera: photo.camera,
-    likes_count: photo.likes_count,
-    views: photo.views,
-    downloads: photo.downloads,
     created_at: photo.created_at |> timestamp.to_unix_seconds,
-    //
     tags:,
+  )
+}
+
+pub fn to_shared_stats(p: Photo) -> shared_stats.Stats {
+  shared_stats.Stats(
+    views: p.views,
+    likes: p.likes_count,
+    downloads: p.downloads,
+  )
+}
+
+pub fn to_shared_thumbnail(
+  p: Photo,
+  creator: String,
+  user_liked: Bool,
+) -> shared_thumbnail.Thumbnail {
+  shared_thumbnail.Thumbnail(
+    public_id: p.public_id,
+    asset_id: p.public_id,
+    creator: creator,
+    premium: p.premium,
+    private: p.private,
     user_liked:,
+    show_on_profile: p.show_on_profile,
   )
 }
 
@@ -177,7 +194,6 @@ pub fn create(photo p: Upload, db_connection db: pog.Connection) {
     |> result.replace_error(Nil)
   })
 }
-
-pub fn get() {
-  todo
-}
+// pub fn get() {
+//   todo
+// }
