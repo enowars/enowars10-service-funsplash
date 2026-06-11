@@ -41,20 +41,8 @@ jobs:
     - name: obtain Docker host IP
       run: |
         echo "ENOCHECKER_SERVICE_ADDRESS=$(ip -4 address show dev eth0 | grep inet | awk '{ print $2 }' | sed 's|/.*$||')" >> $GITHUB_ENV
-    - name: Wait for service to be ready
-      run: |
-        echo "Waiting for funsplash service on port 1337..."
-        for i in $(seq 1 60); do
-          if curl -s "http://${ENOCHECKER_SERVICE_ADDRESS}:1337/" > /dev/null; then
-            echo "Service is up and running!"
-            exit 0
-          fi
-          echo "waiting.. $i"
-          sleep 4
-        done
-        echo "Service failed to start within timeout."
-        docker compose -f service/docker-compose.yml logs
-        exit 1
+    - name: Wait for 10 seconds
+      run: for i in $(seq 1 60); do echo "waiting.. $i"; sleep 1; done
     - name: run enochecker_test
       run: |
         enochecker_test
