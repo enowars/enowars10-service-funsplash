@@ -8,7 +8,6 @@ pub type Photo {
   Photo(
     thumbnail: shared_thumbnail.Thumbnail,
     stats: shared_stats.Stats,
-    description: Option(String),
     title: Option(String),
     location: Option(String),
     camera: Option(String),
@@ -18,23 +17,11 @@ pub type Photo {
 }
 
 pub fn photo_to_json(photo: Photo) -> json.Json {
-  let Photo(
-    thumbnail:,
-    stats:,
-    description:,
-    title:,
-    location:,
-    camera:,
-    created_at:,
-    tags:,
-  ) = photo
+  let Photo(thumbnail:, stats:, title:, location:, camera:, created_at:, tags:) =
+    photo
   json.object([
     #("thumbnail", shared_thumbnail.thumbnail_to_json(thumbnail)),
     #("stats", shared_stats.stats_to_json(stats)),
-    #("description", case description {
-      option.None -> json.null()
-      option.Some(value) -> json.string(value)
-    }),
     #("title", case title {
       option.None -> json.null()
       option.Some(value) -> json.string(value)
@@ -58,7 +45,6 @@ pub fn photo_decoder() -> decode.Decoder(Photo) {
     shared_thumbnail.thumbnail_decoder(),
   )
   use stats <- decode.field("stats", shared_stats.stats_decoder())
-  use description <- decode.field("description", decode.optional(decode.string))
   use title <- decode.field("title", decode.optional(decode.string))
   use location <- decode.field("location", decode.optional(decode.string))
   use camera <- decode.field("camera", decode.optional(decode.string))
@@ -67,7 +53,6 @@ pub fn photo_decoder() -> decode.Decoder(Photo) {
   decode.success(Photo(
     thumbnail:,
     stats:,
-    description:,
     title:,
     location:,
     camera:,
