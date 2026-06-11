@@ -1,6 +1,6 @@
 //// This module contains the code to run the sql queries defined in
 //// `./src/server/sql`.
-//// > 🐿️ This module was generated automatically using v4.6.0 of
+//// > 🐿️ This module was generated automatically using v4.7.0 of
 //// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ////
 
@@ -13,7 +13,7 @@ import youid/uuid.{type Uuid}
 /// Runs the `photo_add_tag` query
 /// defined in `./src/server/sql/photo_add_tag.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_add_tag(
@@ -38,7 +38,7 @@ INSERT INTO photos_tags (tag, photo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
 /// A row you get from running the `photo_create` query
 /// defined in `./src/server/sql/photo_create.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoCreateRow {
@@ -48,7 +48,7 @@ pub type PhotoCreateRow {
 /// Runs the `photo_create` query
 /// defined in `./src/server/sql/photo_create.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_create(
@@ -94,7 +94,7 @@ RETURNING id;
 /// A row you get from running the `photo_find_by_public_id` query
 /// defined in `./src/server/sql/photo_find_by_public_id.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoFindByPublicIdRow {
@@ -121,12 +121,12 @@ pub type PhotoFindByPublicIdRow {
 /// Runs the `photo_find_by_public_id` query
 /// defined in `./src/server/sql/photo_find_by_public_id.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_find_by_public_id(
   db: pog.Connection,
-  arg_1: String,
+  public_id: String,
 ) -> Result(pog.Returned(PhotoFindByPublicIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -171,7 +171,7 @@ WHERE public_id = $1
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(public_id))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -179,7 +179,7 @@ LIMIT 1;
 /// A row you get from running the `photo_find_data_by_asset_id` query
 /// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoFindDataByAssetIdRow {
@@ -206,13 +206,13 @@ pub type PhotoFindDataByAssetIdRow {
 /// Runs the `photo_find_data_by_asset_id` query
 /// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_find_data_by_asset_id(
   db: pog.Connection,
-  arg_1: Uuid,
-  arg_2: Bool,
+  asset_id: Uuid,
+  premium: Bool,
 ) -> Result(pog.Returned(PhotoFindDataByAssetIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -258,8 +258,8 @@ AND premium = $2
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.bool(arg_2))
+  |> pog.parameter(pog.text(uuid.to_string(asset_id)))
+  |> pog.parameter(pog.bool(premium))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -267,7 +267,7 @@ LIMIT 1;
 /// A row you get from running the `photo_find_meta_by_public_id` query
 /// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoFindMetaByPublicIdRow {
@@ -293,12 +293,12 @@ pub type PhotoFindMetaByPublicIdRow {
 /// Runs the `photo_find_meta_by_public_id` query
 /// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_find_meta_by_public_id(
   db: pog.Connection,
-  arg_1: String,
+  public_id: String,
 ) -> Result(pog.Returned(PhotoFindMetaByPublicIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -356,7 +356,7 @@ WHERE public_id = $1
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(public_id))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -364,12 +364,12 @@ LIMIT 1;
 /// Runs the `photo_remove_tag` query
 /// defined in `./src/server/sql/photo_remove_tag.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photo_remove_tag(
   db: pog.Connection,
-  arg_1: String,
+  tag: String,
   arg_2: Uuid,
 ) -> Result(pog.Returned(Nil), pog.QueryError) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
@@ -378,7 +378,7 @@ pub fn photo_remove_tag(
 WHERE tag = $1 AND photo_id = $2;
 "
   |> pog.query
-  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(tag))
   |> pog.parameter(pog.text(uuid.to_string(arg_2)))
   |> pog.returning(decoder)
   |> pog.execute(db)
@@ -387,7 +387,7 @@ WHERE tag = $1 AND photo_id = $2;
 /// A row you get from running the `photos_list_by_tag` query
 /// defined in `./src/server/sql/photos_list_by_tag.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotosListByTagRow {
@@ -397,7 +397,7 @@ pub type PhotosListByTagRow {
 /// Runs the `photos_list_by_tag` query
 /// defined in `./src/server/sql/photos_list_by_tag.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photos_list_by_tag(
@@ -423,7 +423,7 @@ WHERE photos_tags.tag = $1;
 /// A row you get from running the `photos_list_by_user` query
 /// defined in `./src/server/sql/photos_list_by_user.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotosListByUserRow {
@@ -449,12 +449,12 @@ pub type PhotosListByUserRow {
 /// Runs the `photos_list_by_user` query
 /// defined in `./src/server/sql/photos_list_by_user.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photos_list_by_user(
   db: pog.Connection,
-  arg_1: Uuid,
+  creator: Uuid,
   arg_2: Bool,
 ) -> Result(pog.Returned(PhotosListByUserRow), pog.QueryError) {
   let decoder = {
@@ -513,7 +513,7 @@ WHERE creator = $1
 AND show_on_profile = $2;
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
   |> pog.parameter(pog.bool(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
@@ -522,7 +522,7 @@ AND show_on_profile = $2;
 /// A row you get from running the `photos_list_by_user_cursor_date` query
 /// defined in `./src/server/sql/photos_list_by_user_cursor_date.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotosListByUserCursorDateRow {
@@ -547,13 +547,13 @@ pub type PhotosListByUserCursorDateRow {
 /// Runs the `photos_list_by_user_cursor_date` query
 /// defined in `./src/server/sql/photos_list_by_user_cursor_date.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn photos_list_by_user_cursor_date(
   db: pog.Connection,
-  arg_1: Uuid,
-  arg_2: Bool,
+  creator: Uuid,
+  show_on_profile: Bool,
   arg_3: Timestamp,
 ) -> Result(pog.Returned(PhotosListByUserCursorDateRow), pog.QueryError) {
   let decoder = {
@@ -612,8 +612,8 @@ ORDER BY created_at DESC
 LIMIT 50;
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.bool(arg_2))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
+  |> pog.parameter(pog.bool(show_on_profile))
   |> pog.parameter(pog.timestamp(arg_3))
   |> pog.returning(decoder)
   |> pog.execute(db)
@@ -622,7 +622,7 @@ LIMIT 50;
 /// A row you get from running the `tags_list_by_photo` query
 /// defined in `./src/server/sql/tags_list_by_photo.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type TagsListByPhotoRow {
@@ -632,7 +632,7 @@ pub type TagsListByPhotoRow {
 /// Runs the `tags_list_by_photo` query
 /// defined in `./src/server/sql/tags_list_by_photo.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn tags_list_by_photo(
@@ -657,7 +657,7 @@ WHERE photo_id = $1;
 /// A row you get from running the `user_create` query
 /// defined in `./src/server/sql/user_create.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type UserCreateRow {
@@ -667,7 +667,7 @@ pub type UserCreateRow {
 /// Runs the `user_create` query
 /// defined in `./src/server/sql/user_create.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_create(
@@ -676,6 +676,8 @@ pub fn user_create(
   arg_2: String,
   arg_3: String,
   arg_4: String,
+  arg_5: String,
+  arg_6: Bool,
 ) -> Result(pog.Returned(UserCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -683,11 +685,13 @@ pub fn user_create(
     decode.success(UserCreateRow(id:, username:))
   }
 
-  "INSERT INTO users (username, first_name, last_name, password)
+  "INSERT INTO users (username, first_name, last_name, password, bio, available_for_hire)
 VALUES ($1,
 	$2,
        	nullif($3,''),
-	$4
+	$4,
+	nullif($5,''),
+	$6
 )
 RETURNING id, username;
 "
@@ -696,6 +700,8 @@ RETURNING id, username;
   |> pog.parameter(pog.text(arg_2))
   |> pog.parameter(pog.text(arg_3))
   |> pog.parameter(pog.text(arg_4))
+  |> pog.parameter(pog.text(arg_5))
+  |> pog.parameter(pog.bool(arg_6))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -703,7 +709,7 @@ RETURNING id, username;
 /// A row you get from running the `user_find_by_id` query
 /// defined in `./src/server/sql/user_find_by_id.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type UserFindByIdRow {
@@ -724,12 +730,12 @@ pub type UserFindByIdRow {
 /// Runs the `user_find_by_id` query
 /// defined in `./src/server/sql/user_find_by_id.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_find_by_id(
   db: pog.Connection,
-  arg_1: Uuid,
+  id: Uuid,
 ) -> Result(pog.Returned(UserFindByIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -762,7 +768,7 @@ WHERE id=$1
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(uuid.to_string(id)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -770,7 +776,7 @@ LIMIT 1;
 /// A row you get from running the `user_find_by_name` query
 /// defined in `./src/server/sql/user_find_by_name.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type UserFindByNameRow {
@@ -791,12 +797,12 @@ pub type UserFindByNameRow {
 /// Runs the `user_find_by_name` query
 /// defined in `./src/server/sql/user_find_by_name.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_find_by_name(
   db: pog.Connection,
-  arg_1: String,
+  username: String,
 ) -> Result(pog.Returned(UserFindByNameRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -829,7 +835,7 @@ WHERE username = $1
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(arg_1))
+  |> pog.parameter(pog.text(username))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -837,7 +843,7 @@ LIMIT 1;
 /// A row you get from running the `user_liked_photo` query
 /// defined in `./src/server/sql/user_liked_photo.sql`.
 ///
-/// > 🐿️ This type definition was generated automatically using v4.6.0 of the
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type UserLikedPhotoRow {
@@ -847,12 +853,12 @@ pub type UserLikedPhotoRow {
 /// Runs the `user_liked_photo` query
 /// defined in `./src/server/sql/user_liked_photo.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_liked_photo(
   db: pog.Connection,
-  arg_1: Uuid,
+  user_id: Uuid,
   arg_2: Uuid,
 ) -> Result(pog.Returned(UserLikedPhotoRow), pog.QueryError) {
   let decoder = {
@@ -866,7 +872,7 @@ WHERE user_id = $1
 AND photo_id = $2;
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(uuid.to_string(user_id)))
   |> pog.parameter(pog.text(uuid.to_string(arg_2)))
   |> pog.returning(decoder)
   |> pog.execute(db)
@@ -875,13 +881,13 @@ AND photo_id = $2;
 /// Runs the `user_likes_photo` query
 /// defined in `./src/server/sql/user_likes_photo.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_likes_photo(
   db: pog.Connection,
   arg_1: Uuid,
-  arg_2: Uuid,
+  id: Uuid,
 ) -> Result(pog.Returned(Nil), pog.QueryError) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
 
@@ -898,7 +904,7 @@ WHERE id = $2
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.parameter(pog.text(uuid.to_string(id)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -906,13 +912,13 @@ WHERE id = $2
 /// Runs the `user_unlikes_photo` query
 /// defined in `./src/server/sql/user_unlikes_photo.sql`.
 ///
-/// > 🐿️ This function was generated automatically using v4.6.0 of
+/// > 🐿️ This function was generated automatically using v4.7.0 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn user_unlikes_photo(
   db: pog.Connection,
-  arg_1: Uuid,
-  arg_2: Uuid,
+  user_id: Uuid,
+  photo_id: Uuid,
 ) -> Result(pog.Returned(Nil), pog.QueryError) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
 
@@ -927,8 +933,8 @@ WHERE id = $2
 AND EXISTS (SELECT 1 FROM deleted_like);
 "
   |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.parameter(pog.text(uuid.to_string(user_id)))
+  |> pog.parameter(pog.text(uuid.to_string(photo_id)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

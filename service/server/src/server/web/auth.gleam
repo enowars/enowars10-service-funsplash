@@ -1,4 +1,5 @@
 import argus
+import formal/form
 import gleam/bool
 import gleam/http
 import gleam/list
@@ -8,6 +9,7 @@ import pog
 import server/sql
 import server/user
 import server/web
+import shared/shared_user
 import wisp
 import youid/uuid
 
@@ -39,18 +41,22 @@ pub fn logout(request, context) -> wisp.Response {
 }
 
 fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
-  use form <- wisp.require_form(request)
+  use form_data <- wisp.require_form(request)
 
   let login_result = {
-    use username <- result.try(list.key_find(form.values, "username"))
-    use password <- result.try(list.key_find(form.values, "password"))
+    use validated_form <- result.try(
+      shared_user.login_form()
+      |> form.add_values(form_data.values)
+      |> form.run
+      |> result.replace_error(Nil),
+    )
     use res <- result.try(
-      sql.user_find_by_name(context.db, username)
+      sql.user_find_by_name(context.db, validated_form.username)
       |> result.replace_error(Nil),
     )
     use user <- result.try(list.first(res.rows))
     use <- bool.guard(
-      when: argus.verify(user.password, password) != Ok(True),
+      when: argus.verify(user.password, validated_form.password) != Ok(True),
       return: Error(Nil),
     )
     Ok(user)
@@ -81,25 +87,29 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
 }
 
 pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
-  use form <- wisp.require_form(request)
+  use form_data <- wisp.require_form(request)
   let res = {
-    use username <- result.try(list.key_find(form.values, "username"))
-    use password <- result.try(list.key_find(form.values, "password"))
-    use first_name <- result.try(list.key_find(form.values, "first_name"))
-    let last_name = result.unwrap(list.key_find(form.values, "last_name"), "")
+    use validated_form <- result.try(
+      shared_user.signup_form()
+      |> form.add_values(form_data.values)
+      |> form.run
+      |> result.replace_error(Nil),
+    )
 
     use pass_hash <- result.try(
       argus.hasher()
-      |> argus.hash(password, argus.gen_salt())
+      |> argus.hash(validated_form.password, argus.gen_salt())
       |> result.replace_error(Nil),
     )
 
     sql.user_create(
       context.db,
-      username,
-      first_name,
-      last_name,
+      validated_form.username,
+      validated_form.first_name,
+      validated_form.last_name |> option.unwrap(""),
       pass_hash.encoded_hash,
+      validated_form.bio |> option.unwrap(""),
+      validated_form.available_for_hire,
     )
     |> result.replace_error(Nil)
   }
