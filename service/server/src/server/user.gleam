@@ -3,7 +3,7 @@ import gleam/option.{type Option}
 import gleam/result
 import pog
 import server/sql
-import shared/shared_photo
+import shared/shared_thumbnail
 import shared/shared_user
 import youid/uuid
 
@@ -27,7 +27,7 @@ pub fn from_user_find_by_name_row(user u: sql.UserFindByNameRow) -> User {
 
 pub fn to_shared(
   user: User,
-  photos: List(shared_photo.Photo),
+  photos: List(shared_thumbnail.Thumbnail),
 ) -> shared_user.User {
   shared_user.User(
     username: user.username,

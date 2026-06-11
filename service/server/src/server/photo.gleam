@@ -1,41 +1,15 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 import pog
+import server/premium
 import server/sql
 import shared/shared_photo
 import shared/shared_stats
 import shared/shared_thumbnail
+import shared/shared_upload
 import youid/uuid.{type Uuid}
-
-pub type Upload {
-  Upload(
-    creator: Uuid,
-    description: Option(String),
-    premium: Bool,
-    private: Bool,
-    location: Option(String),
-    camera: Option(String),
-    show_on_profile: Bool,
-    data: BitArray,
-    tags: List(String),
-  )
-}
-
-pub fn default_upload(creator: Uuid, data: BitArray) -> Upload {
-  Upload(
-    creator:,
-    description: None,
-    premium: False,
-    private: False,
-    location: None,
-    camera: None,
-    show_on_profile: True,
-    data:,
-    tags: [],
-  )
-}
 
 pub type Photo {
   Photo(
@@ -66,7 +40,6 @@ pub fn to_shared(
   shared_photo.Photo(
     thumbnail: to_shared_thumbnail(photo, creator, user_liked),
     stats: to_shared_stats(photo),
-    description: photo.description,
     title: photo.title,
     location: photo.location,
     camera: photo.camera,
@@ -90,7 +63,8 @@ pub fn to_shared_thumbnail(
 ) -> shared_thumbnail.Thumbnail {
   shared_thumbnail.Thumbnail(
     public_id: p.public_id,
-    asset_id: p.public_id,
+    asset_id: p.asset_id |> uuid.to_string,
+    description: p.description,
     creator: creator,
     premium: p.premium,
     private: p.private,
@@ -171,7 +145,7 @@ pub fn user_liked(
   }
 }
 
-pub fn create(photo p: Upload, db_connection db: pog.Connection) {
+pub fn upload(photo p: shared_upload.Upload, db_connection db: pog.Connection) {
   use res <- result.try(
     sql.photo_create(
       db,
@@ -194,6 +168,3 @@ pub fn create(photo p: Upload, db_connection db: pog.Connection) {
     |> result.replace_error(Nil)
   })
 }
-// pub fn get() {
-//   todo
-// }

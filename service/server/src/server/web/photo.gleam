@@ -1,9 +1,9 @@
+import formal/form
 import gleam/bytes_tree
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
 import server/photo
 import server/premium
 import server/sql
@@ -11,6 +11,7 @@ import server/web
 import server/web/auth
 import shared/shared_error
 import shared/shared_photo
+import shared/shared_upload
 import simplifile
 import wisp
 
@@ -105,11 +106,11 @@ pub fn get(
 pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   use user <- auth.require_login(context)
 
-  use form <- wisp.require_form(request)
+  use multipart <- wisp.require_form(request)
 
   let upload_result = {
     use photo_file <- result.try(
-      list.key_find(form.files, "photo")
+      list.key_find(multipart.files, "photo")
       |> result.replace_error(shared_error.FileMissing),
     )
     use data <- result.try(
@@ -117,36 +118,15 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> result.replace_error(shared_error.FileReadError),
     )
 
-    let tags_str = result.unwrap(list.key_find(form.values, "tags"), "")
-    let tags =
-      string.split(tags_str, ",")
-      |> list.map(string.trim)
-      |> list.filter(fn(t) { t != "" })
-
-    let get_bool = fn(key: String, default: Bool) -> Bool {
-      list.key_find(form.values, key)
-      |> result.map(fn(val) { val == "true" })
-      |> result.unwrap(default)
-    }
-    let get_string = fn(key: String) -> Option(String) {
-      list.key_find(form.values, key)
-      |> option.from_result
-    }
-
-    let defaults = photo.default_upload(user.id, data)
-
-    photo.Upload(
-      ..defaults,
-      description: get_string("description"),
-      premium: get_bool("premium", defaults.premium),
-      private: get_bool("private", defaults.private),
-      location: get_string("location"),
-      camera: get_string("camera"),
-      show_on_profile: get_bool("show_on_profile", defaults.show_on_profile),
-      data:,
-      tags:,
+    use form <- result.try(
+      shared_upload.upload_form(user.id, data)
+      |> form.add_values(multipart.values)
+      |> form.run
+      |> result.replace_error(shared_error.InvalidForm),
     )
-    |> photo.create(context.db)
+
+    form
+    |> photo.upload(context.db)
     |> result.replace_error(shared_error.DatabaseError)
   }
 
@@ -154,7 +134,7 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
     Ok(_) -> wisp.redirect("/?upload_successful")
     Error(err) ->
       wisp.bad_request(
-        "Upload failed" <> shared_error.upload_error_to_string(err),
+        "Upload failed: " <> shared_error.upload_error_to_string(err),
       )
   }
 }

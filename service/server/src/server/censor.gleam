@@ -13,6 +13,7 @@ import png/png.{type Compressed, type Uncompressed}
 import pog
 import server/photo
 import server/sql
+import shared/shared_upload
 import utils
 import youid/uuid
 
@@ -90,7 +91,7 @@ fn close_socket(state: State) -> Nil {
   use <- bool.guard(state.user != p.creator, Nil)
   {
     use data <- option.map(state.out_photo)
-    photo.Upload(
+    shared_upload.Upload(
       creator: p.creator,
       description: p.description,
       premium: p.premium,
@@ -101,7 +102,7 @@ fn close_socket(state: State) -> Nil {
       data: data |> png.pack,
       tags: [],
     )
-    |> photo.create(state.db)
+    |> photo.upload(state.db)
   }
   Nil
 }
