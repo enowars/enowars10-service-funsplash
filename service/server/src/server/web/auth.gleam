@@ -81,7 +81,7 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
       )
     Error(_) ->
       wisp.redirect(
-        "/login?error" <> wisp.escape_html("username or password wrong"),
+        "/login?error=" <> wisp.escape_html("username or password wrong"),
       )
   }
 }
@@ -115,8 +115,15 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
   // TODO: give better error messages
   case res {
-    Ok(_) -> wisp.ok()
-    Error(_) -> wisp.bad_request("Invalid data")
+    Ok(_) ->
+      wisp.redirect(
+        "/login?success="
+        <> wisp.escape_html("Account created successfully. Please log in."),
+      )
+    Error(_) ->
+      wisp.redirect(
+        "/join?error=" <> wisp.escape_html("Invalid registration data."),
+      )
   }
 }
 

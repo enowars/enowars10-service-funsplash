@@ -131,10 +131,13 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
 
   case upload_result {
-    Ok(_) -> wisp.redirect("/?upload_successful")
+    Ok(_) -> wisp.redirect("/?success=" <> wisp.escape_html("Photo uploaded successfully!"))
     Error(err) ->
-      wisp.bad_request(
-        "Upload failed: " <> shared_error.upload_error_to_string(err),
+      wisp.redirect(
+        "/upload?error="
+        <> wisp.escape_html(
+          "Upload failed: " <> shared_error.upload_error_to_string(err),
+        ),
       )
   }
 }

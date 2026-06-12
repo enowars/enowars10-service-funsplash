@@ -16,7 +16,7 @@ fn server(db: pog.Connection, config: Config) -> Nil {
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
     use user <- auth.get_user_from_session(request, db)
-    let context = web.Context(db, "/public", user)
+    let context = web.Context(db, "priv/static", user)
     router.handle_request(request, context)
   }
 
