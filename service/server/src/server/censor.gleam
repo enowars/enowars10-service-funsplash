@@ -11,6 +11,7 @@ import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
+import prng/random
 import server/photo
 import server/sql
 import shared/shared_upload
@@ -121,10 +122,11 @@ fn handler(
           let state = State(..state, out_photo: Some(censored_png))
           // TODO: remove only here for debugging
           // let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
+          let #(value, _) = random.step(random.int(0, 5), random.new_seed(11))
           let _ =
             mist.send_text_frame(
               connection,
-              "ok.size:" <> int.to_string(png.size(censored_png)),
+              "ok.size:" <> int.to_string(png.size(censored_png) + value),
             )
           mist.continue(state)
         }
