@@ -31,7 +31,7 @@ async def register(
     expected_code: int = 200,
 ) -> None:
     r = await connection.post(
-        "/join",
+        "/napi/join",
         data={
             "username": user.name,
             "password": user.password,
@@ -44,14 +44,14 @@ async def register(
 async def get_profile(
     connection: Connection, username: str, cookie=None, expected_code: int = 200
 ):
-    r = await connection.get(f"/@{username}", cookies=cookie)
+    r = await connection.get(f"/napi/users/{username}", cookies=cookie)
     assert_equals(r.status_code, expected_code)
     return r.json()
 
 
 async def login(connection: Connection, user: User, expected_code: int = 303) -> dict:
     r = await connection.post(
-        "/login",
+        "/napi/login",
         data={
             "username": user.name,
             "password": user.password,

@@ -76,7 +76,7 @@ class Photo:
 async def get_data_premium(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
-    r = await conn.get(f"/premium_photo-{asset_id}", cookies=cookies)
+    r = await conn.get(f"/images/premium_photo-{asset_id}", cookies=cookies)
     assert_equals(r.status_code, expected_code)
     return r.content
 
@@ -84,7 +84,7 @@ async def get_data_premium(
 async def get_data(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
-    r = await conn.get(f"/photo-{asset_id}", cookies=cookies)
+    r = await conn.get(f"/images/photo-{asset_id}", cookies=cookies)
     assert_equals(r.status_code, expected_code)
     return r.content
 
@@ -92,7 +92,7 @@ async def get_data(
 async def get(
     conn: Connection, public_id: str, cookies=None, expected_code: int = 200
 ) -> Photo:
-    r = await conn.get(f"/photos/{public_id}", cookies=cookies)
+    r = await conn.get(f"/napi/photos/{public_id}", cookies=cookies)
     assert_equals(r.status_code, expected_code)
     try:
         return Photo.from_dict(r.json())
@@ -128,7 +128,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
     files = {"photo": ("photo_name", photo.data, "image/png")}
 
     r = await conn.post(
-        "/upload",
+        "/napi/upload",
         data=payload,
         files=files,
         cookies=cookies,
