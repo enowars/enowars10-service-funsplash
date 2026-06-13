@@ -2,7 +2,7 @@ import formal/form
 import gleam/bytes_tree
 import gleam/json
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/result
 import server/photo
 import server/premium
@@ -41,7 +41,7 @@ pub fn get_data_premium(
 }
 
 pub fn get_data_public(
-  request: wisp.Request,
+  _request: wisp.Request,
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
@@ -56,7 +56,7 @@ pub fn get_data_public(
 }
 
 pub fn get(
-  request: wisp.Request,
+  _request: wisp.Request,
   context: web.Context,
   public_id: String,
 ) -> wisp.Response {
