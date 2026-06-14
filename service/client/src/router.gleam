@@ -1,53 +1,62 @@
-import gleam/int
-import gleam/uri
-import lustre/attribute
+import gleam/uri.{type Uri}
+import lustre/effect.{type Effect}
+import lustre/element.{type Element}
+import pages/photo
+import pages/profile
+import route
 
-type Route {
-  Index
-  PhotoById(id: Int)
-  CollectionById(id: Int)
-  UserByName(name: String)
-  Login
-  Join
-  NotFound(uri: uri.Uri)
+pub fn init(initial_uri: Result(Uri, Nil)) -> #(Page, Effect(Message)) {
+  case initial_uri {
+    Ok(uri) -> route.parse(uri)
+    Error(_) -> route.Index
+  }
+  |> page_from_route
 }
 
-fn parse_route(uri: uri.Uri) -> Route {
-  case uri.path_segments(uri.path) {
-    [] | [""] -> Index
+pub type Page {
+  PhotoPage(model: photo.Model)
+  ProfilePage(model: profile.Model)
+}
 
-    ["photo", photo_id] ->
-      case int.parse(photo_id) {
-        Ok(photo_id) -> PhotoById(id: photo_id)
-        Error(_) -> NotFound(uri:)
-      }
+pub type Message {
+  OnRouteChanged(route: route.Route)
+  PhotoPageSentMessage(message: photo.Message)
+  ProfilePageSentMessage(message: profile.Message)
+}
 
-    ["@", username] -> UserByName(name: username)
-
-    ["collection", collection_id] ->
-      case int.parse(collection_id) {
-        Ok(collection_id) -> CollectionById(id: collection_id)
-        Error(_) -> NotFound(uri:)
-      }
-
-    ["login"] -> Login
-    ["join"] -> Join
-    [username] -> UserByName(username)
-
-    _ -> NotFound(uri:)
+pub fn update(page: Page, msg: Message) -> #(Page, Effect(Message)) {
+  case msg, page {
+    OnRouteChanged(route), _ -> page_from_route(route)
+    PhotoPageSentMessage(p_msg), PhotoPage(p_model) -> {
+      let #(model, effect) = photo.update(p_model, p_msg)
+      #(PhotoPage(model), effect.map(effect, PhotoPageSentMessage))
+    }
+    ProfilePageSentMessage(p_msg), ProfilePage(p_model) -> {
+      let #(model, effect) = profile.update(p_model, p_msg)
+      #(ProfilePage(model), effect.map(effect, ProfilePageSentMessage))
+    }
+    _, _ -> panic as "wrong page sent wrong message"
   }
 }
 
-fn href(route: Route) -> attribute.Attribute(message) {
-  let url = case route {
-    Index -> "/"
-    PhotoById(id:) -> "/photos/" <> int.to_string(id)
-    CollectionById(id:) -> "/collections/" <> int.to_string(id)
-    UserByName(name:) -> "/@/" <> name
-    Login -> "/login/"
-    Join -> "/join/"
-    NotFound(uri:) -> "/404"
+pub fn page_from_route(route: route.Route) -> #(Page, Effect(Message)) {
+  case route {
+    route.Photo(id) -> {
+      let #(page_model, effect) = photo.init(id)
+      #(PhotoPage(page_model), effect.map(effect, PhotoPageSentMessage))
+    }
+    _ -> todo
   }
+}
 
-  attribute.href(url)
+pub fn view(page: Page) -> Element(Message) {
+  case page {
+    PhotoPage(model:) -> photo.view(model) |> element.map(PhotoPageSentMessage)
+    ProfilePage(model:) ->
+      profile.view(model) |> element.map(ProfilePageSentMessage)
+  }
+}
+
+pub fn on_url_change(uri: Uri) -> Message {
+  OnRouteChanged(route.parse(uri))
 }

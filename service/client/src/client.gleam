@@ -1,41 +1,40 @@
-import gleam/io
 import lustre
-import lustre/effect
-import lustre/element
+import lustre/effect.{type Effect}
+import lustre/element.{type Element}
+import modem
 import router
+
+// MAIN ------------------------------------------------------------------------
 
 pub fn main() -> Nil {
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", [])
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
   Nil
 }
 
 // MODEL -----------------------------------------------------------------------
 
 type Model {
-  Model
+  Model(page: router.Page)
 }
 
-fn init(_) -> #(Model, effect.Effect(c)) {
-  let model = Model
-  #(model, effect.none())
+fn init(_) -> #(Model, Effect(router.Message)) {
+  let #(page, effect) = router.init(modem.initial_uri())
+
+  #(Model(page:), effect.batch([modem.init(router.on_url_change), effect]))
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-fn update(value: a, value_2: b) -> #(a, effect.Effect(b)) {
-  todo
+fn update(
+  model: Model,
+  message: router.Message,
+) -> #(Model, Effect(router.Message)) {
+  let #(page, effect) = router.update(model.page, message)
+  #(Model(page:), effect)
 }
 
 // VIEW ------------------------------------------------------------------------
-fn view(value: a) -> element.Element(b) {
-  let styles = [
-    #("max-width", "30ch"),
-    #("margin", "0 auto"),
-    #("display", "flex"),
-    #("flex-direction", "column"),
-    #("gap", "1em"),
-  ]
-
-  todo
+fn view(model: Model) -> Element(router.Message) {
+  router.view(model.page)
 }
