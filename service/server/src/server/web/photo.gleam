@@ -11,20 +11,42 @@ import server/web
 import server/web/auth
 import shared/shared_error
 import shared/shared_photo
+import shared/shared_privacy.{Premium, Private, Public}
 import shared/shared_upload
 import simplifile
 import wisp
 
-pub fn get_data_premium(
-  request: wisp.Request,
+pub fn get_data_private(
+  _request: wisp.Request,
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  use user <- auth.get_user_from_session(request, context.db)
+  use user <- auth.require_login(context)
 
-  case photo.get_data(asset_id, context.db, True) {
+  case photo.get_data(asset_id, context.db, Private) {
     Ok(photo) -> {
-      let body = case user {
+      let body = case user.id {
+        id if id == photo.creator ->
+          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
+        _ ->
+          wisp.Bytes(photo.data |> premium.censor |> bytes_tree.from_bit_array)
+      }
+      wisp.ok()
+      |> wisp.set_header("content-type", "image/png")
+      |> wisp.set_body(body)
+    }
+    Error(_) -> wisp.not_found()
+  }
+}
+
+pub fn get_data_premium(
+  _request: wisp.Request,
+  context: web.Context,
+  asset_id: String,
+) -> wisp.Response {
+  case photo.get_data(asset_id, context.db, Premium) {
+    Ok(photo) -> {
+      let body = case context.user {
         Some(user) if user.premium == True ->
           wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
         Some(user) if user.id == photo.creator ->
@@ -45,7 +67,7 @@ pub fn get_data_public(
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  case photo.get_data(asset_id, context.db, False) {
+  case photo.get_data(asset_id, context.db, Public) {
     Ok(photo) -> {
       wisp.ok()
       |> wisp.set_header("content-type", "image/png")

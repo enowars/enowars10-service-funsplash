@@ -1,6 +1,7 @@
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
+import shared/shared_privacy.{type Privacy}
 
 pub type Thumbnail {
   Thumbnail(
@@ -8,8 +9,7 @@ pub type Thumbnail {
     asset_id: String,
     description: Option(String),
     creator: String,
-    premium: Bool,
-    private: Bool,
+    privacy: Privacy,
     user_liked: Bool,
     show_on_profile: Bool,
   )
@@ -21,8 +21,7 @@ pub fn thumbnail_to_json(thumbnail: Thumbnail) -> json.Json {
     asset_id:,
     description:,
     creator:,
-    premium:,
-    private:,
+    privacy:,
     user_liked:,
     show_on_profile:,
   ) = thumbnail
@@ -34,8 +33,7 @@ pub fn thumbnail_to_json(thumbnail: Thumbnail) -> json.Json {
       option.Some(value) -> json.string(value)
     }),
     #("creator", json.string(creator)),
-    #("premium", json.bool(premium)),
-    #("private", json.bool(private)),
+    #("privacy", shared_privacy.privacy_to_json(privacy)),
     #("user_liked", json.bool(user_liked)),
     #("show_on_profile", json.bool(show_on_profile)),
   ])
@@ -46,8 +44,7 @@ pub fn thumbnail_decoder() -> decode.Decoder(Thumbnail) {
   use asset_id <- decode.field("asset_id", decode.string)
   use description <- decode.field("description", decode.optional(decode.string))
   use creator <- decode.field("creator", decode.string)
-  use premium <- decode.field("premium", decode.bool)
-  use private <- decode.field("private", decode.bool)
+  use privacy <- decode.field("privacy", shared_privacy.privacy_decoder())
   use user_liked <- decode.field("user_liked", decode.bool)
   use show_on_profile <- decode.field("show_on_profile", decode.bool)
   decode.success(Thumbnail(
@@ -55,8 +52,7 @@ pub fn thumbnail_decoder() -> decode.Decoder(Thumbnail) {
     asset_id:,
     description:,
     creator:,
-    premium:,
-    private:,
+    privacy:,
     user_liked:,
     show_on_profile:,
   ))

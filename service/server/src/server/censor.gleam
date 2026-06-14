@@ -13,6 +13,7 @@ import png/png.{type Compressed, type Uncompressed}
 import pog
 import server/photo
 import server/sql
+import shared/shared_privacy.{Private}
 import shared/shared_upload
 import utils
 import youid/uuid
@@ -49,7 +50,7 @@ pub fn upgrade(
   let photo = photo_row |> photo.from_photo_find_by_public_id_row
 
   use <- bool.guard(
-    photo.private && uid != photo.creator,
+    photo.privacy == Private && uid != photo.creator,
     response.new(403) |> response.set_body(mist.Bytes(bytes_tree.new())),
   )
 
@@ -94,8 +95,7 @@ fn close_socket(state: State) -> Nil {
     shared_upload.Upload(
       creator: p.creator,
       description: p.description,
-      premium: p.premium,
-      private: p.private,
+      privacy: p.privacy,
       location: p.location,
       camera: p.camera,
       show_on_profile: p.show_on_profile,

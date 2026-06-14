@@ -15,6 +15,7 @@ created_at TIMESTAMP NOT NULL DEFAULT now(),
 updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TYPE photo_privacy AS ENUM ('private', 'premium', 'public');
 
 CREATE TABLE photos (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -26,8 +27,7 @@ title CITEXT,
 creator UUID NOT NULL,
 	FOREIGN KEY (creator) REFERENCES users(id) ON DELETE CASCADE,
 data BYTEA NOT NULL,		--TODO: move out and into seperate table or fs
-premium BOOLEAN NOT NULL,
-private BOOLEAN NOT NULL,
+privacy photo_privacy NOT NULL DEFAULT 'public',
 show_on_profile BOOLEAN NOT NULL DEFAULT true,
 location TEXT,
 camera TEXT,

@@ -56,37 +56,34 @@ pub fn photo_create(
   arg_1: String,
   arg_2: Uuid,
   arg_3: BitArray,
-  arg_4: Bool,
-  arg_5: Bool,
+  arg_4: PhotoPrivacy,
+  arg_5: String,
   arg_6: String,
-  arg_7: String,
-  arg_8: Bool,
+  arg_7: Bool,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     decode.success(PhotoCreateRow(id:))
   }
 
-  "INSERT INTO photos (description, creator, data, premium, private, location, camera, show_on_profile)
+  "INSERT INTO photos (description, creator, data, privacy, location, camera, show_on_profile)
 VALUES (nullif($1,''),
 	$2,
 	$3,
 	$4,
-	$5,
+	nullif($5,''),
 	nullif($6,''),
-	nullif($7,''),
-	$8)
+	$7)
 RETURNING id;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
   |> pog.parameter(pog.text(uuid.to_string(arg_2)))
   |> pog.parameter(pog.bytea(arg_3))
-  |> pog.parameter(pog.bool(arg_4))
-  |> pog.parameter(pog.bool(arg_5))
+  |> pog.parameter(photo_privacy_encoder(arg_4))
+  |> pog.parameter(pog.text(arg_5))
   |> pog.parameter(pog.text(arg_6))
-  |> pog.parameter(pog.text(arg_7))
-  |> pog.parameter(pog.bool(arg_8))
+  |> pog.parameter(pog.bool(arg_7))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -106,8 +103,7 @@ pub type PhotoFindByPublicIdRow {
     title: Option(String),
     creator: Uuid,
     data: BitArray,
-    premium: Bool,
-    private: Bool,
+    privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -136,15 +132,14 @@ pub fn photo_find_by_public_id(
     use title <- decode.field(4, decode.optional(decode.string))
     use creator <- decode.field(5, uuid_decoder())
     use data <- decode.field(6, decode.bit_array)
-    use premium <- decode.field(7, decode.bool)
-    use private <- decode.field(8, decode.bool)
-    use show_on_profile <- decode.field(9, decode.bool)
-    use location <- decode.field(10, decode.optional(decode.string))
-    use camera <- decode.field(11, decode.optional(decode.string))
-    use likes_count <- decode.field(12, decode.int)
-    use views <- decode.field(13, decode.int)
-    use downloads <- decode.field(14, decode.int)
-    use created_at <- decode.field(15, pog.timestamp_decoder())
+    use privacy <- decode.field(7, photo_privacy_decoder())
+    use show_on_profile <- decode.field(8, decode.bool)
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotoFindByPublicIdRow(
       id:,
       public_id:,
@@ -153,8 +148,7 @@ pub fn photo_find_by_public_id(
       title:,
       creator:,
       data:,
-      premium:,
-      private:,
+      privacy:,
       show_on_profile:,
       location:,
       camera:,
@@ -191,8 +185,7 @@ pub type PhotoFindDataByAssetIdRow {
     title: Option(String),
     creator: Uuid,
     data: BitArray,
-    premium: Bool,
-    private: Bool,
+    privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -212,7 +205,7 @@ pub type PhotoFindDataByAssetIdRow {
 pub fn photo_find_data_by_asset_id(
   db: pog.Connection,
   asset_id: Uuid,
-  premium: Bool,
+  privacy: PhotoPrivacy,
 ) -> Result(pog.Returned(PhotoFindDataByAssetIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -222,15 +215,14 @@ pub fn photo_find_data_by_asset_id(
     use title <- decode.field(4, decode.optional(decode.string))
     use creator <- decode.field(5, uuid_decoder())
     use data <- decode.field(6, decode.bit_array)
-    use premium <- decode.field(7, decode.bool)
-    use private <- decode.field(8, decode.bool)
-    use show_on_profile <- decode.field(9, decode.bool)
-    use location <- decode.field(10, decode.optional(decode.string))
-    use camera <- decode.field(11, decode.optional(decode.string))
-    use likes_count <- decode.field(12, decode.int)
-    use views <- decode.field(13, decode.int)
-    use downloads <- decode.field(14, decode.int)
-    use created_at <- decode.field(15, pog.timestamp_decoder())
+    use privacy <- decode.field(7, photo_privacy_decoder())
+    use show_on_profile <- decode.field(8, decode.bool)
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotoFindDataByAssetIdRow(
       id:,
       public_id:,
@@ -239,8 +231,7 @@ pub fn photo_find_data_by_asset_id(
       title:,
       creator:,
       data:,
-      premium:,
-      private:,
+      privacy:,
       show_on_profile:,
       location:,
       camera:,
@@ -254,12 +245,12 @@ pub fn photo_find_data_by_asset_id(
   "SELECT *
 FROM photos
 WHERE asset_id = $1
-AND premium = $2
+AND privacy = $2
 LIMIT 1;
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(asset_id)))
-  |> pog.parameter(pog.bool(premium))
+  |> pog.parameter(photo_privacy_encoder(privacy))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -278,8 +269,7 @@ pub type PhotoFindMetaByPublicIdRow {
     title: Option(String),
     description: Option(String),
     creator: Uuid,
-    premium: Bool,
-    private: Bool,
+    privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -307,15 +297,14 @@ pub fn photo_find_meta_by_public_id(
     use title <- decode.field(3, decode.optional(decode.string))
     use description <- decode.field(4, decode.optional(decode.string))
     use creator <- decode.field(5, uuid_decoder())
-    use premium <- decode.field(6, decode.bool)
-    use private <- decode.field(7, decode.bool)
-    use show_on_profile <- decode.field(8, decode.bool)
-    use location <- decode.field(9, decode.optional(decode.string))
-    use camera <- decode.field(10, decode.optional(decode.string))
-    use likes_count <- decode.field(11, decode.int)
-    use views <- decode.field(12, decode.int)
-    use downloads <- decode.field(13, decode.int)
-    use created_at <- decode.field(14, pog.timestamp_decoder())
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
     decode.success(PhotoFindMetaByPublicIdRow(
       id:,
       public_id:,
@@ -323,8 +312,7 @@ pub fn photo_find_meta_by_public_id(
       title:,
       description:,
       creator:,
-      premium:,
-      private:,
+      privacy:,
       show_on_profile:,
       location:,
       camera:,
@@ -342,8 +330,7 @@ pub fn photo_find_meta_by_public_id(
     title,
     description,
     creator,
-    premium,
-    private,
+    privacy,
     show_on_profile,
     location,
     camera,
@@ -434,8 +421,7 @@ pub type PhotosListByUserRow {
     title: Option(String),
     description: Option(String),
     creator: Uuid,
-    premium: Bool,
-    private: Bool,
+    privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -464,15 +450,14 @@ pub fn photos_list_by_user(
     use title <- decode.field(3, decode.optional(decode.string))
     use description <- decode.field(4, decode.optional(decode.string))
     use creator <- decode.field(5, uuid_decoder())
-    use premium <- decode.field(6, decode.bool)
-    use private <- decode.field(7, decode.bool)
-    use show_on_profile <- decode.field(8, decode.bool)
-    use location <- decode.field(9, decode.optional(decode.string))
-    use camera <- decode.field(10, decode.optional(decode.string))
-    use likes_count <- decode.field(11, decode.int)
-    use views <- decode.field(12, decode.int)
-    use downloads <- decode.field(13, decode.int)
-    use created_at <- decode.field(14, pog.timestamp_decoder())
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
     decode.success(PhotosListByUserRow(
       id:,
       public_id:,
@@ -480,8 +465,7 @@ pub fn photos_list_by_user(
       title:,
       description:,
       creator:,
-      premium:,
-      private:,
+      privacy:,
       show_on_profile:,
       location:,
       camera:,
@@ -499,8 +483,7 @@ pub fn photos_list_by_user(
     title,
     description,
     creator,
-    premium,
-    private,
+    privacy,
     show_on_profile,
     location,
     camera,
@@ -532,8 +515,7 @@ pub type PhotosListByUserCursorDateRow {
     title: Option(String),
     description: Option(String),
     creator: Uuid,
-    premium: Bool,
-    private: Bool,
+    privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -562,23 +544,21 @@ pub fn photos_list_by_user_cursor_date(
     use title <- decode.field(2, decode.optional(decode.string))
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
-    use premium <- decode.field(5, decode.bool)
-    use private <- decode.field(6, decode.bool)
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use privacy <- decode.field(5, photo_privacy_decoder())
+    use show_on_profile <- decode.field(6, decode.bool)
+    use location <- decode.field(7, decode.optional(decode.string))
+    use camera <- decode.field(8, decode.optional(decode.string))
+    use likes_count <- decode.field(9, decode.int)
+    use views <- decode.field(10, decode.int)
+    use downloads <- decode.field(11, decode.int)
+    use created_at <- decode.field(12, pog.timestamp_decoder())
     decode.success(PhotosListByUserCursorDateRow(
       public_id:,
       asset_id:,
       title:,
       description:,
       creator:,
-      premium:,
-      private:,
+      privacy:,
       show_on_profile:,
       location:,
       camera:,
@@ -595,8 +575,7 @@ pub fn photos_list_by_user_cursor_date(
     title,
     description,
     creator,
-    premium,
-    private,
+    privacy,
     show_on_profile,
     location,
     camera,
@@ -937,6 +916,38 @@ AND EXISTS (SELECT 1 FROM deleted_like);
   |> pog.parameter(pog.text(uuid.to_string(photo_id)))
   |> pog.returning(decoder)
   |> pog.execute(db)
+}
+
+// --- Enums -------------------------------------------------------------------
+
+/// Corresponds to the Postgres `photo_privacy` enum.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoPrivacy {
+  Public
+  Premium
+  Private
+}
+
+fn photo_privacy_decoder() -> decode.Decoder(PhotoPrivacy) {
+  use photo_privacy <- decode.then(decode.string)
+  case photo_privacy {
+    "public" -> decode.success(Public)
+    "premium" -> decode.success(Premium)
+    "private" -> decode.success(Private)
+    _ -> decode.failure(Public, "PhotoPrivacy")
+  }
+}
+
+fn photo_privacy_encoder(photo_privacy) -> pog.Value {
+  case photo_privacy {
+    Public -> "public"
+    Premium -> "premium"
+    Private -> "private"
+  }
+  |> pog.text
 }
 
 // --- Encoding/decoding utils -------------------------------------------------

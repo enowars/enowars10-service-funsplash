@@ -14,9 +14,12 @@ import wisp/wisp_mist
 fn server(db: pog.Connection, config: Config) -> Nil {
   wisp.configure_logger()
 
+  let assert Ok(priv_directory) = wisp.priv_directory("server")
+  let static_directory = priv_directory <> "/static"
+
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
     use user <- auth.get_user_from_session(request, db)
-    let context = web.Context(db, "/public", user)
+    let context = web.Context(db, static_directory, user)
     router.handle_request(request, context)
   }
 

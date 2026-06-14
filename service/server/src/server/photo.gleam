@@ -3,13 +3,29 @@ import gleam/option.{type Option}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 import pog
-import server/premium
 import server/sql
 import shared/shared_photo
+import shared/shared_privacy.{type Privacy, Premium, Private, Public}
 import shared/shared_stats
 import shared/shared_thumbnail
 import shared/shared_upload
 import youid/uuid.{type Uuid}
+
+fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
+  case priv {
+    Public -> sql.Public
+    Premium -> sql.Premium
+    Private -> sql.Private
+  }
+}
+
+fn sql_to_privacy(priv: sql.PhotoPrivacy) -> Privacy {
+  case priv {
+    sql.Public -> Public
+    sql.Premium -> Premium
+    sql.Private -> Private
+  }
+}
 
 pub type Photo {
   Photo(
@@ -19,8 +35,7 @@ pub type Photo {
     description: Option(String),
     title: Option(String),
     creator: Uuid,
-    premium: Bool,
-    private: Bool,
+    privacy: Privacy,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -66,14 +81,15 @@ pub fn to_shared_thumbnail(
     asset_id: p.asset_id |> uuid.to_string,
     description: p.description,
     creator: creator,
-    premium: p.premium,
-    private: p.private,
+    privacy: p.privacy,
     user_liked:,
     show_on_profile: p.show_on_profile,
   )
 }
 
-pub fn from_photo_find_by_public_id_row(p: sql.PhotoFindByPublicIdRow) -> Photo {
+pub fn from_photo_find_by_public_id_row(
+  p: sql.PhotoFindByPublicIdRow,
+) -> Photo {
   Photo(
     id: p.id,
     public_id: p.public_id,
@@ -81,8 +97,7 @@ pub fn from_photo_find_by_public_id_row(p: sql.PhotoFindByPublicIdRow) -> Photo 
     description: p.description,
     title: p.title,
     creator: p.creator,
-    premium: p.premium,
-    private: p.private,
+    privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
     location: p.location,
     camera: p.camera,
@@ -101,8 +116,7 @@ pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
     description: p.description,
     title: p.title,
     creator: p.creator,
-    premium: p.premium,
-    private: p.private,
+    privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
     location: p.location,
     camera: p.camera,
@@ -116,11 +130,11 @@ pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
 pub fn get_data(
   asset_id: String,
   db: pog.Connection,
-  premium: Bool,
+  privacy: Privacy,
 ) -> Result(sql.PhotoFindDataByAssetIdRow, Nil) {
   use id <- result.try(uuid.from_string(asset_id))
   use res <- result.try(
-    sql.photo_find_data_by_asset_id(db, id, premium)
+    sql.photo_find_data_by_asset_id(db, id, privacy |> privacy_to_sql)
     |> result.replace_error(Nil),
   )
   use photo <- result.try(res.rows |> list.first)
@@ -152,8 +166,7 @@ pub fn upload(photo p: shared_upload.Upload, db_connection db: pog.Connection) {
       p.description |> option.unwrap(""),
       p.creator,
       p.data,
-      p.premium,
-      p.private,
+      p.privacy |> privacy_to_sql,
       p.location |> option.unwrap(""),
       p.camera |> option.unwrap(""),
       p.show_on_profile,

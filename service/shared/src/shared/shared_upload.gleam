@@ -1,7 +1,6 @@
 import formal/form.{type Form}
-import gleam/list
-import gleam/option.{type Option, None, Some}
-import gleam/string
+import gleam/option.{type Option}
+import shared/shared_privacy.{type Privacy}
 import youid/uuid.{type Uuid}
 
 pub type Upload {
@@ -9,8 +8,7 @@ pub type Upload {
     creator: Uuid,
     data: BitArray,
     description: Option(String),
-    premium: Bool,
-    private: Bool,
+    privacy: Privacy,
     location: Option(String),
     camera: Option(String),
     show_on_profile: Bool,
@@ -24,8 +22,8 @@ pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
       "description",
       form.parse_optional(form.parse_string),
     )
-    use premium <- form.field("premium", form.parse_checkbox)
-    use private <- form.field("private", form.parse_checkbox)
+    use privacy_str <- form.field("privacy_level", form.parse_string)
+    let privacy = shared_privacy.from_string(privacy_str)
     use location <- form.field(
       "location",
       form.parse_optional(form.parse_string),
@@ -33,21 +31,13 @@ pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
     use camera <- form.field("camera", form.parse_optional(form.parse_string))
     use show_on_profile <- form.field("show_on_profile", form.parse_checkbox)
 
-    use tags <- form.field("tags", {
-      form.parse_string
-      |> form.map(fn(raw) {
-        string.split(raw, ",")
-        |> list.map(string.trim)
-        |> list.filter(fn(s) { s != "" })
-      })
-    })
+    use tags <- form.field("tags", form.parse_list(form.parse_string))
 
     form.success(Upload(
       creator:,
       data:,
       description:,
-      premium:,
-      private:,
+      privacy:,
       location:,
       camera:,
       show_on_profile:,
