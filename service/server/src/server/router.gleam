@@ -33,7 +33,8 @@ pub fn handle_request(
           photo.get_data_public(request, context, asset_id)
         ["premium_photo-" <> asset_id] ->
           photo.get_data_premium(request, context, asset_id)
-        ["private_photo-" <> _asset_id] -> wisp.not_found()
+        ["private_photo-" <> asset_id] ->
+          photo.get_data_private(request, context, asset_id)
         _ -> wisp.not_found()
       }
     _ if request.method == http.Get -> serve_index(context)

@@ -50,7 +50,8 @@ pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
 }
 
 pub fn logout(request, _context) -> wisp.Response {
-  wisp.redirect("/?" <> wisp.escape_html("logged out"))
+  //wisp.redirect("/?" <> wisp.escape_html("logged out"))
+  wisp.ok()
   |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
 }
 
@@ -78,12 +79,7 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
 
   case login_result {
     Ok(user) -> {
-      user
-      |> user.from_user_find_by_name_row()
-      |> user.to_shared([])
-      |> shared_user.user_to_json()
-      |> json.to_string()
-      |> wisp.json_response(200)
+      wisp.redirect("/")
       |> wisp.set_cookie(
         request,
         uid_cookie,
@@ -99,13 +95,7 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
         60 * 60,
       )
     }
-    Error(_) ->
-      wisp.json_response(
-        json.to_string(
-          shared_error.InvalidCredentials |> shared_error.auth_error_to_json,
-        ),
-        401,
-      )
+    Error(_) -> wisp.redirect("/login?error=invalid_credentials")
   }
 }
 
@@ -138,11 +128,8 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
   // TODO: give better error messages
   case res {
-    Ok(_) -> wisp.ok()
-    Error(_) ->
-      wisp.bad_request(shared_error.auth_error_to_string(
-        shared_error.InvalidData,
-      ))
+    Ok(_) -> wisp.redirect("/login?registered=true")
+    Error(_) -> wisp.redirect("/join?error=invalid_data")
   }
 }
 

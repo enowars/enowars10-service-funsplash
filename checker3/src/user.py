@@ -28,7 +28,7 @@ def random_user() -> User:
 async def register(
     connection: Connection,
     user: User,
-    expected_code: int = 200,
+    expected_code: int = 303,
 ) -> None:
     r = await connection.post(
         "/napi/join",
