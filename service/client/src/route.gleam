@@ -5,6 +5,7 @@ import lustre/attribute
 pub type Route {
   Index
   Photo(id: String)
+  Censor(id: String)
   Collection(id: Int)
   User(name: String)
   UserCollections(name: String)
@@ -23,6 +24,7 @@ pub fn parse(uri: uri.Uri) -> Route {
     ["@" <> username, "collections"] -> UserCollections(name: username)
     ["@" <> username, "stats"] -> UserStats(name: username)
     ["photos", photo_id] -> Photo(id: photo_id)
+    ["photos", photo_id, "censor"] -> Censor(id: photo_id)
 
     ["collections", collection_id] -> {
       let result = int.parse(collection_id)
@@ -45,6 +47,7 @@ pub fn href(route: Route) -> attribute.Attribute(message) {
   let url = case route {
     Index -> "/"
     Photo(id:) -> "/photos/" <> id
+    Censor(id:) -> "/photos/" <> id <> "/censor"
     Collection(id:) -> "/collections/" <> int.to_string(id)
     User(name:) -> "/@" <> name
     UserCollections(name:) -> "/@" <> name <> "/collections"

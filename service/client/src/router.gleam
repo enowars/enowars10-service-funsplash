@@ -7,6 +7,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import modem
 import pages/auth as auth_page
+import pages/censor
 import pages/home
 import pages/not_found
 import pages/photo
@@ -30,6 +31,7 @@ pub type Page {
   ProfilePage(model: profile.Model)
   AuthPage(model: auth_page.Model)
   UploadPage(model: upload.Model)
+  CensorPage(model: censor.Model)
   NotFoundPage
 }
 
@@ -40,6 +42,7 @@ pub type Message {
   ProfilePageSentMessage(message: profile.Message)
   AuthPageSentMessage(message: auth_page.Message)
   UploadPageSentMessage(message: upload.Message)
+  CensorPageSentMessage(message: censor.Message)
   NavbarSentMessage(message: navbar.Message)
 }
 
@@ -49,7 +52,13 @@ pub fn update(
   auth: Auth,
 ) -> #(Page, Effect(Message)) {
   case msg, page {
-    OnRouteChanged(route), _ -> page_from_route(route, auth)
+    OnRouteChanged(route), current_page -> {
+      case current_page {
+        CensorPage(_) -> censor.close_censor_ws()
+        _ -> Nil
+      }
+      page_from_route(route, auth)
+    }
     NavbarSentMessage(nav_msg), _ -> {
       let effect = navbar.update(nav_msg)
       #(page, effect.map(effect, NavbarSentMessage))
@@ -74,6 +83,10 @@ pub fn update(
       let #(model, effect) = upload.update(p_model, p_msg)
       #(UploadPage(model), effect.map(effect, UploadPageSentMessage))
     }
+    CensorPageSentMessage(p_msg), CensorPage(p_model) -> {
+      let #(model, effect) = censor.update(p_model, p_msg)
+      #(CensorPage(model), effect.map(effect, CensorPageSentMessage))
+    }
     _, _ -> #(page, effect.none())
   }
 }
@@ -90,6 +103,10 @@ pub fn page_from_route(
     Photo(id), _ -> {
       let #(model, eff) = photo.init(id)
       #(PhotoPage(model), effect.map(eff, PhotoPageSentMessage))
+    }
+    route.Censor(id), _ -> {
+      let #(model, eff) = censor.init(id)
+      #(CensorPage(model), effect.map(eff, CensorPageSentMessage))
     }
     User(name), _ | route.UserCollections(name), _ | route.UserStats(name), _ -> {
       let #(model, eff) = profile.init(name)
@@ -155,6 +172,8 @@ pub fn view(page: Page, auth: Auth) -> Element(Message) {
         auth_page.view(model) |> element.map(AuthPageSentMessage)
       UploadPage(model) ->
         upload.view(model) |> element.map(UploadPageSentMessage)
+      CensorPage(model) ->
+        censor.view(model) |> element.map(CensorPageSentMessage)
       NotFoundPage -> not_found.view()
     },
   ])

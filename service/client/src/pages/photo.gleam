@@ -87,6 +87,11 @@ fn photo_view(
   liked: Bool,
   auth: Auth,
 ) -> Element(Message) {
+  let is_owner = case auth {
+    auth.LoggedIn(user) -> user.username == photo.thumbnail.creator
+    _ -> False
+  }
+
   div([class("space-y-6")], [
     // Header with creator
     div([class("flex items-center justify-between")], [
@@ -132,27 +137,42 @@ fn photo_view(
           True -> element.none()
         },
       ]),
-      case auth.is_logged_in(auth) {
-        True ->
-          button(
-            [
-              event.on_click(UserClickedLike),
-              class(case liked {
-                True ->
-                  "flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-100"
-                False ->
-                  "flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-              }),
-            ],
-            [
-              text(case liked {
-                True -> "♥ Liked"
-                False -> "♡ Like"
-              }),
-            ],
-          )
-        False -> element.none()
-      },
+      div([class("flex items-center gap-2")], [
+        case is_owner {
+          True ->
+            a(
+              [
+                route.href(route.Censor(photo.thumbnail.public_id)),
+                class(
+                  "flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100",
+                ),
+              ],
+              [text("Censor Image")],
+            )
+          False -> element.none()
+        },
+        case auth.is_logged_in(auth) {
+          True ->
+            button(
+              [
+                event.on_click(UserClickedLike),
+                class(case liked {
+                  True ->
+                    "flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                  False ->
+                    "flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                }),
+              ],
+              [
+                text(case liked {
+                  True -> "♥ Liked"
+                  False -> "♡ Like"
+                }),
+              ],
+            )
+          False -> element.none()
+        },
+      ]),
     ]),
     // Photo image
     img([
