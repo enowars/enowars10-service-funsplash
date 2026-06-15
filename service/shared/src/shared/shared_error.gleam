@@ -1,14 +1,32 @@
 import gleam/dynamic/decode
 import gleam/fetch
 import gleam/int
+import gleam/json
 
-pub type InvalidData
+pub type AuthError {
+  InvalidData
+  UserNotFound
+  InvalidCredentials
+  Unauthorized
+}
 
-pub type UserNotFound
+pub fn auth_error_to_json(auth_error: AuthError) -> json.Json {
+  case auth_error {
+    InvalidData -> json.string("invalid_data")
+    UserNotFound -> json.string("user_not_found")
+    InvalidCredentials -> json.string("invalid_credentials")
+    Unauthorized -> json.string("unauthorized")
+  }
+}
 
-pub type InvalidCredentials
-
-pub type Unauthorized
+pub fn auth_error_to_string(err: AuthError) -> String {
+  case err {
+    InvalidData -> "Invalid data"
+    UserNotFound -> "User not found"
+    InvalidCredentials -> "username or password wrong"
+    Unauthorized -> "Unauthorized"
+  }
+}
 
 pub type UploadError {
   FileMissing

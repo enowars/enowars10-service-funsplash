@@ -2,6 +2,7 @@ import argus
 import formal/form
 import gleam/bool
 import gleam/http
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -9,6 +10,7 @@ import pog
 import server/sql
 import server/user
 import server/web
+import shared/shared_error
 import shared/shared_user
 import wisp
 import youid/uuid
@@ -23,19 +25,31 @@ pub fn require_login(
 ) -> wisp.Response {
   case context.user {
     Some(user) -> next(user)
-    None -> wisp.redirect("/" <> wisp.escape_html("User needs to be logged in"))
+    None ->
+      shared_error.Unauthorized
+      |> shared_error.auth_error_to_json
+      |> json.to_string
+      |> wisp.json_response(401)
   }
 }
 
 pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
   case request.method {
-    http.Get -> todo
     http.Post -> login_attempt(request, context)
-    _ -> wisp.method_not_allowed([http.Get, http.Post])
+    _ -> wisp.method_not_allowed([http.Post])
   }
 }
 
-pub fn logout(request, context) -> wisp.Response {
+pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
+  use user <- require_login(context)
+  user
+  |> user.to_shared([])
+  |> shared_user.user_to_json()
+  |> json.to_string()
+  |> wisp.json_response(200)
+}
+
+pub fn logout(request, _context) -> wisp.Response {
   wisp.redirect("/?" <> wisp.escape_html("logged out"))
   |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
 }
@@ -63,8 +77,13 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
 
   case login_result {
-    Ok(user) ->
-      wisp.redirect("/")
+    Ok(user) -> {
+      user
+      |> user.from_user_find_by_name_row()
+      |> user.to_shared([])
+      |> shared_user.user_to_json()
+      |> json.to_string()
+      |> wisp.json_response(200)
       |> wisp.set_cookie(
         request,
         uid_cookie,
@@ -79,9 +98,13 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
         wisp.Signed,
         60 * 60,
       )
+    }
     Error(_) ->
-      wisp.redirect(
-        "/login?error" <> wisp.escape_html("username or password wrong"),
+      wisp.json_response(
+        json.to_string(
+          shared_error.InvalidCredentials |> shared_error.auth_error_to_json,
+        ),
+        401,
       )
   }
 }
@@ -116,7 +139,10 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   // TODO: give better error messages
   case res {
     Ok(_) -> wisp.ok()
-    Error(_) -> wisp.bad_request("Invalid data")
+    Error(_) ->
+      wisp.bad_request(shared_error.auth_error_to_string(
+        shared_error.InvalidData,
+      ))
   }
 }
 

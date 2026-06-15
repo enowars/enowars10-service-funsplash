@@ -1,10 +1,10 @@
 import gleam/json
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{Some}
 import gleam/result
 import server/photo
 import server/sql
-import server/user.{type User}
+import server/user
 import server/web
 import shared/shared_user
 import wisp
@@ -34,7 +34,7 @@ fn get_own(request: wisp.Request, context: web.Context, username: String) {
   get_other(request, context, username)
 }
 
-fn get_other(request: wisp.Request, context: web.Context, username: String) {
+fn get_other(_request: wisp.Request, context: web.Context, username: String) {
   use user <- result.try(option.to_result(
     user.get_by_name(context.db, username),
     Nil,

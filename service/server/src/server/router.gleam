@@ -24,6 +24,7 @@ pub fn handle_request(
         ["logout"] -> auth.logout(request, context)
         ["join"] -> auth.sign_up(request, context)
         ["upload"] -> photo.upload(request, context)
+        ["me"] -> auth.me(request, context)
         _ -> wisp.not_found()
       }
     ["images", ..images] ->
