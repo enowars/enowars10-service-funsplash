@@ -16,6 +16,8 @@ pub type User {
   )
 }
 
+pub const logout = "LOGOUT"
+
 pub type LoginForm {
   LoginForm(username: String, password: String)
 }
@@ -44,7 +46,8 @@ pub fn signup_form() -> Form(SignUpForm) {
     use username <- form.field("username", form.parse_string)
     use password <- form.field(
       "password",
-      form.parse_string |> form.check_string_length_more_than(8),
+      form.parse_string,
+      // |> form.check_string_length_more_than(8),
     )
     use first_name <- form.field("first_name", form.parse_string)
     use last_name <- form.field(

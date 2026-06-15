@@ -13,3 +13,7 @@ export function reload_page() {
 export function add_body_class(class_name) {
   document.body.classList.add(class_name);
 }
+
+export function navigate_to(url) {
+  window.location.href = url;
+}

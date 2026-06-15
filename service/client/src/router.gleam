@@ -1,32 +1,63 @@
+import auth.{type Auth}
+import components/layout
+import components/navbar
+import gleam/option.{None}
 import gleam/uri.{type Uri}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
+import modem
+import pages/auth as auth_page
+import pages/home
+import pages/not_found
 import pages/photo
 import pages/profile
-import route
+import pages/upload
+import route.{
+  Collection, Index, Join, Login, NotFound, Photo, Redirect, Upload, User,
+}
 
 pub fn init(initial_uri: Result(Uri, Nil)) -> #(Page, Effect(Message)) {
   case initial_uri {
     Ok(uri) -> route.parse(uri)
-    Error(_) -> route.Index
+    Error(_) -> Index
   }
-  |> page_from_route
+  |> page_from_route(auth.Unknown)
 }
 
 pub type Page {
+  HomePage(model: home.Model)
   PhotoPage(model: photo.Model)
   ProfilePage(model: profile.Model)
+  AuthPage(model: auth_page.Model)
+  UploadPage(model: upload.Model)
+  NotFoundPage
 }
 
 pub type Message {
   OnRouteChanged(route: route.Route)
+  HomePageSentMessage(message: home.Message)
   PhotoPageSentMessage(message: photo.Message)
   ProfilePageSentMessage(message: profile.Message)
+  AuthPageSentMessage(message: auth_page.Message)
+  UploadPageSentMessage(message: upload.Message)
+  NavbarSentMessage(message: navbar.Message)
 }
 
-pub fn update(page: Page, msg: Message) -> #(Page, Effect(Message)) {
+pub fn update(
+  page: Page,
+  msg: Message,
+  auth: Auth,
+) -> #(Page, Effect(Message)) {
   case msg, page {
-    OnRouteChanged(route), _ -> page_from_route(route)
+    OnRouteChanged(route), _ -> page_from_route(route, auth)
+    NavbarSentMessage(nav_msg), _ -> {
+      let effect = navbar.update(nav_msg)
+      #(page, effect.map(effect, NavbarSentMessage))
+    }
+    HomePageSentMessage(p_msg), HomePage(p_model) -> {
+      let #(model, effect) = home.update(p_model, p_msg)
+      #(HomePage(model), effect.map(effect, HomePageSentMessage))
+    }
     PhotoPageSentMessage(p_msg), PhotoPage(p_model) -> {
       let #(model, effect) = photo.update(p_model, p_msg)
       #(PhotoPage(model), effect.map(effect, PhotoPageSentMessage))
@@ -35,28 +66,111 @@ pub fn update(page: Page, msg: Message) -> #(Page, Effect(Message)) {
       let #(model, effect) = profile.update(p_model, p_msg)
       #(ProfilePage(model), effect.map(effect, ProfilePageSentMessage))
     }
-    _, _ -> panic as "wrong page sent wrong message"
-  }
-}
-
-pub fn page_from_route(route: route.Route) -> #(Page, Effect(Message)) {
-  case route {
-    route.Photo(id) -> {
-      let #(page_model, effect) = photo.init(id)
-      #(PhotoPage(page_model), effect.map(effect, PhotoPageSentMessage))
+    AuthPageSentMessage(p_msg), AuthPage(p_model) -> {
+      let #(model, effect) = auth_page.update(p_model, p_msg)
+      #(AuthPage(model), effect.map(effect, AuthPageSentMessage))
     }
-    _ -> todo
+    UploadPageSentMessage(p_msg), UploadPage(p_model) -> {
+      let #(model, effect) = upload.update(p_model, p_msg)
+      #(UploadPage(model), effect.map(effect, UploadPageSentMessage))
+    }
+    _, _ -> #(page, effect.none())
   }
 }
 
-pub fn view(page: Page) -> Element(Message) {
-  case page {
-    PhotoPage(model:) -> photo.view(model) |> element.map(PhotoPageSentMessage)
-    ProfilePage(model:) ->
-      profile.view(model) |> element.map(ProfilePageSentMessage)
+pub fn page_from_route(
+  route: route.Route,
+  auth: Auth,
+) -> #(Page, Effect(Message)) {
+  case route, auth {
+    Index, _ -> {
+      let #(model, eff) = home.init()
+      #(HomePage(model), effect.map(eff, HomePageSentMessage))
+    }
+    Photo(id), _ -> {
+      let #(model, eff) = photo.init(id)
+      #(PhotoPage(model), effect.map(eff, PhotoPageSentMessage))
+    }
+    User(name), _ | route.UserCollections(name), _ | route.UserStats(name), _ -> {
+      let #(model, eff) = profile.init(name)
+      #(ProfilePage(model), effect.map(eff, ProfilePageSentMessage))
+    }
+    // Logged in → redirect away from auth pages
+    Login, auth.LoggedIn(_) | Join, auth.LoggedIn(_) -> redirect_home()
+    Login, _ -> {
+      let #(model, eff) = auth_page.init(auth_page.LoginMode, None)
+      #(AuthPage(model), effect.map(eff, AuthPageSentMessage))
+    }
+    Join, _ -> {
+      let #(model, eff) = auth_page.init(auth_page.SignUpMode, None)
+      #(AuthPage(model), effect.map(eff, AuthPageSentMessage))
+    }
+    // Logged in → allow upload
+    Upload, auth.LoggedIn(_) -> {
+      let #(model, eff) = upload.init()
+      #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
+    }
+    // Not logged in → redirect to login
+    Upload, _ -> redirect_login()
+    Collection(_), _ | NotFound(_), _ -> #(NotFoundPage, effect.none())
+    Redirect(url), _ -> {
+      let target = route.parse(uri.Uri(..uri.empty, path: url))
+      let #(page, page_effect) = page_from_route(target, auth)
+      #(page, effect.batch([page_effect, modem.replace(url, None, None)]))
+    }
   }
+}
+
+fn redirect_home() -> #(Page, Effect(Message)) {
+  let #(model, eff) = home.init()
+  #(
+    HomePage(model),
+    effect.batch([
+      effect.map(eff, HomePageSentMessage),
+      modem.replace("/", None, None),
+    ]),
+  )
+}
+
+fn redirect_login() -> #(Page, Effect(Message)) {
+  let #(model, eff) = auth_page.init(auth_page.LoginMode, None)
+  #(
+    AuthPage(model),
+    effect.batch([
+      effect.map(eff, AuthPageSentMessage),
+      modem.replace("/login", None, None),
+    ]),
+  )
+}
+
+pub fn view(page: Page, auth: Auth) -> Element(Message) {
+  layout.page_layout(auth, NavbarSentMessage, [
+    case page {
+      HomePage(model) -> home.view(model) |> element.map(HomePageSentMessage)
+      PhotoPage(model) ->
+        photo.view(model, auth) |> element.map(PhotoPageSentMessage)
+      ProfilePage(model) ->
+        profile.view(model, auth) |> element.map(ProfilePageSentMessage)
+      AuthPage(model) ->
+        auth_page.view(model) |> element.map(AuthPageSentMessage)
+      UploadPage(model) ->
+        upload.view(model) |> element.map(UploadPageSentMessage)
+      NotFoundPage -> not_found.view()
+    },
+  ])
 }
 
 pub fn on_url_change(uri: Uri) -> Message {
   OnRouteChanged(route.parse(uri))
+}
+
+/// Re-check the current page after auth state changes.
+/// If the user is now logged in but on an auth page, redirect home.
+/// If the user is logged out but on upload, redirect to login.
+pub fn check_auth_redirect(page: Page, auth: Auth) -> #(Page, Effect(Message)) {
+  case page, auth {
+    AuthPage(_), auth.LoggedIn(_) -> redirect_home()
+    UploadPage(_), auth.LoggedOut -> redirect_login()
+    _, _ -> #(page, effect.none())
+  }
 }

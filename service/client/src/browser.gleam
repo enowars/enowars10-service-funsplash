@@ -9,3 +9,6 @@ pub fn reload_page() -> Nil
 
 @external(javascript, "./browser_ffi.js", "add_body_class")
 pub fn add_body_class(class_name: String) -> Nil
+
+@external(javascript, "./browser_ffi.js", "navigate_to")
+pub fn navigate_to(url: String) -> Nil

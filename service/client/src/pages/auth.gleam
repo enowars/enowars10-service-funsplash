@@ -1,100 +1,201 @@
-import formal/form.{type Form}
-import gleam/io
+import formal/form
 import gleam/list
-import gleam/option.{None}
-import lustre
-import lustre/attribute
+import gleam/option.{type Option, None, Some}
+import gleam/uri
+import lustre/attribute.{class, name, type_}
 import lustre/effect.{type Effect}
-import lustre/element.{type Element}
-import lustre/element/html
-import lustre/event
-import shared/shared_upload
+import lustre/element.{type Element, text}
+import lustre/element/html.{button, div, h1, input, label, p, small}
 import shared/shared_user
 
 // MODEL -----------------------------------------------------------------------
 
-pub type Model {
-  User(user: shared_user.SignUpForm)
+pub type Mode {
+  LoginMode
+  SignUpMode
 }
 
-pub fn init() -> #(Model, Effect(Message)) {
-  #(
-    User(shared_user.SignUpForm(
-      username: "",
-      first_name: "",
-      password: "",
-      last_name: None,
-      bio: None,
-      available_for_hire: False,
-    )),
-    effect.none(),
-  )
+pub type Model {
+  Model(mode: Mode, error: Option(String), success: Option(String))
+}
+
+pub fn init(mode: Mode, query: Option(String)) -> #(Model, Effect(Message)) {
+  let params = case query {
+    Some(q) -> uri.parse_query(q) |> result.unwrap([])
+    None -> []
+  }
+  let error = list.key_find(params, "error") |> option.from_result
+  let success = list.key_find(params, "registered") |> option.from_result
+  let error_msg = case error {
+    Some("invalid_credentials") -> Some("Invalid username or password.")
+    Some("invalid_data") ->
+      Some("Could not create account. Username may be taken.")
+    Some(_) -> Some("An error occurred.")
+    None -> None
+  }
+  let success_msg = case success {
+    Some("true") -> Some("Account created! Please log in.")
+    _ -> None
+  }
+  #(Model(mode:, error: error_msg, success: success_msg), effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub type Message {
-  UserSubmittedSignupForm(
-    result: Result(shared_user.SignUpForm, Form(shared_user.SignUpForm)),
-  )
-}
+pub type Message
 
-pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
-  case message {
-    UserSubmittedSignupForm(result: Ok(signup)) -> todo
-    UserSubmittedSignupForm(result: Error(form)) -> todo
-  }
+pub fn update(model: Model, _message: Message) -> #(Model, Effect(Message)) {
+  #(model, effect.none())
 }
 
 // VIEW ------------------------------------------------------------------------
 
 pub fn view(model: Model) -> Element(Message) {
-  todo
-}
-
-fn signup_page_view(form: Form(shared_user.SignUpForm)) -> Element(Message) {
-  let submitted = fn(fields) {
-    form |> form.add_values(fields) |> form.run |> UserSubmittedSignupForm
-  }
-  html.form([attribute.method("POST"), event.on_submit(submitted)], [
-    field_input(form, "username", kind: "text", label: "Username"),
-    field_input(form, "first_name", kind: "text", label: "First Name"),
-    field_input(form, "last_name", kind: "text", label: "Last Name (Optional)"),
-    field_input(form, "bio", kind: "text", label: "Bio (Optional)"),
-    field_input(form, "password", kind: "password", label: "Password"),
-    field_input(form, "confirm", kind: "password", label: "Confirmation"),
-    field_input(
-      form,
-      "available_for_hire",
-      kind: "checkbox",
-      label: "Available for Hire",
-    ),
-    html.div([], [html.input([attribute.type_("submit")])]),
-  ])
-}
-
-fn field_input(
-  form: Form(t),
-  name name: String,
-  kind kind: String,
-  label label_text: String,
-) -> Element(a) {
-  let errors = form.field_error_messages(form, name)
-
-  html.label([], [
-    // The label text, for the user to read
-    element.text(label_text),
-    // The input, for the user to type into
-    html.input([
-      attribute.type_(kind),
-      attribute.name(name),
-      attribute.default_value(form.field_value(form, name)),
-      case errors {
-        [] -> attribute.none()
-        _ -> attribute.aria_invalid("true")
+  div([class("flex items-center justify-center min-h-[80vh] px-4")], [
+    div([class("w-full max-w-sm")], [
+      case model.mode {
+        LoginMode -> login_view(model)
+        SignUpMode -> signup_view(model)
       },
     ]),
-    // Any errors presented below
-    ..list.map(errors, fn(msg) { html.small([], [element.text(msg)]) })
   ])
 }
+
+fn login_view(model: Model) -> Element(Message) {
+  let form = shared_user.login_form()
+  div([], [
+    h1([class("text-2xl font-bold text-center mb-1")], [text("Login")]),
+    p([class("text-sm text-gray-500 text-center mb-6")], [
+      text("Welcome back."),
+    ]),
+    success_banner(model.success),
+    error_banner(model.error),
+    html.form(
+      [
+        attribute.action("/napi/login"),
+        attribute.method("POST"),
+        class("space-y-4"),
+      ],
+      [
+        field(form, "username", "Username", "text"),
+        field(form, "password", "Password", "password"),
+        button(
+          [
+            type_("submit"),
+            class(
+              "w-full rounded-md bg-black py-2.5 text-sm font-medium text-white hover:bg-gray-800",
+            ),
+          ],
+          [text("Log in")],
+        ),
+        p([class("text-center text-sm text-gray-500 mt-4")], [
+          text("Don't have an account? "),
+          html.a([attribute.href("/join"), class("text-black underline")], [
+            text("Join"),
+          ]),
+        ]),
+      ],
+    ),
+  ])
+}
+
+fn signup_view(model: Model) -> Element(Message) {
+  let form = shared_user.signup_form()
+  div([], [
+    h1([class("text-2xl font-bold text-center mb-1")], [text("Join funsplash")]),
+    p([class("text-sm text-gray-500 text-center mb-6")], [
+      text("Create your free account."),
+    ]),
+    error_banner(model.error),
+    html.form(
+      [
+        attribute.action("/napi/join"),
+        attribute.method("POST"),
+        class("space-y-4"),
+      ],
+      [
+        field(form, "username", "Username", "text"),
+        field(form, "first_name", "First name", "text"),
+        field(form, "last_name", "Last name (optional)", "text"),
+        field(form, "bio", "Bio (optional)", "text"),
+        field(form, "password", "Password", "password"),
+        button(
+          [
+            type_("submit"),
+            class(
+              "w-full rounded-md bg-black py-2.5 text-sm font-medium text-white hover:bg-gray-800",
+            ),
+          ],
+          [text("Join")],
+        ),
+        p([class("text-center text-sm text-gray-500 mt-4")], [
+          text("Already have an account? "),
+          html.a([attribute.href("/login"), class("text-black underline")], [
+            text("Log in"),
+          ]),
+        ]),
+      ],
+    ),
+  ])
+}
+
+fn field(
+  form: form.Form(t),
+  field_name: String,
+  label_text: String,
+  kind: String,
+) -> Element(msg) {
+  let errors = form.field_error_messages(form, field_name)
+  div([], [
+    label([class("block text-sm font-medium text-gray-700 mb-1")], [
+      text(label_text),
+    ]),
+    input([
+      type_(kind),
+      name(field_name),
+      attribute.default_value(form.field_value(form, field_name)),
+      class(
+        "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:ring-1 focus:ring-black focus:outline-none",
+      ),
+      case errors {
+        [] -> attribute.none()
+        _ -> attribute.attribute("aria-invalid", "true")
+      },
+    ]),
+    ..list.map(errors, fn(msg) {
+      small([class("text-xs text-red-600")], [text(msg)])
+    })
+  ])
+}
+
+fn error_banner(error: Option(String)) -> Element(msg) {
+  case error {
+    Some(msg) ->
+      div(
+        [
+          class(
+            "rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4",
+          ),
+        ],
+        [text(msg)],
+      )
+    None -> element.none()
+  }
+}
+
+fn success_banner(success: Option(String)) -> Element(msg) {
+  case success {
+    Some(msg) ->
+      div(
+        [
+          class(
+            "rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 mb-4",
+          ),
+        ],
+        [text(msg)],
+      )
+    None -> element.none()
+  }
+}
+
+import gleam/result

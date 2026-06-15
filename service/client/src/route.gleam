@@ -4,27 +4,25 @@ import lustre/attribute
 
 pub type Route {
   Index
-  Photo(id: Int)
+  Photo(id: String)
   Collection(id: Int)
   User(name: String)
   UserCollections(name: String)
   UserStats(name: String)
   Login
   Join
+  Upload
   NotFound(uri: uri.Uri)
+  Redirect(url: String)
 }
 
 pub fn parse(uri: uri.Uri) -> Route {
   case uri.path_segments(uri.path) {
     [] | [""] -> Index
-    ["@", username] -> User(name: username)
-    ["@", username, "collections"] -> UserCollections(name: username)
-    ["@", username, "stats"] -> UserStats(name: username)
-    ["photos", photo_id] ->
-      case int.parse(photo_id) {
-        Ok(photo_id) -> Photo(id: photo_id)
-        Error(_) -> NotFound(uri:)
-      }
+    ["@" <> username] -> User(name: username)
+    ["@" <> username, "collections"] -> UserCollections(name: username)
+    ["@" <> username, "stats"] -> UserStats(name: username)
+    ["photos", photo_id] -> Photo(id: photo_id)
 
     ["collections", collection_id] -> {
       let result = int.parse(collection_id)
@@ -36,7 +34,8 @@ pub fn parse(uri: uri.Uri) -> Route {
 
     ["login"] -> Login
     ["join"] -> Join
-    [username] -> User(username)
+    ["upload"] -> Upload
+    [username] -> Redirect("/@" <> username)
 
     _ -> NotFound(uri:)
   }
@@ -45,14 +44,16 @@ pub fn parse(uri: uri.Uri) -> Route {
 pub fn href(route: Route) -> attribute.Attribute(message) {
   let url = case route {
     Index -> "/"
-    Photo(id:) -> "/photos/" <> int.to_string(id)
+    Photo(id:) -> "/photos/" <> id
     Collection(id:) -> "/collections/" <> int.to_string(id)
-    User(name:) -> "/@/" <> name
-    UserCollections(name:) -> "/@/" <> name <> "/collections"
-    UserStats(name:) -> "/@/" <> name <> "/stats"
+    User(name:) -> "/@" <> name
+    UserCollections(name:) -> "/@" <> name <> "/collections"
+    UserStats(name:) -> "/@" <> name <> "/stats"
     Login -> "/login/"
     Join -> "/join/"
+    Upload -> "/upload/"
     NotFound(uri: _) -> "/404?"
+    Redirect(url:) -> url
   }
 
   attribute.href(url)
