@@ -7,6 +7,7 @@ import websockets
 import asyncio
 import qr
 from typing import NamedTuple, Optional
+from enum import StrEnum
 
 
 class Coordinate(NamedTuple):
@@ -14,12 +15,17 @@ class Coordinate(NamedTuple):
     y: int
 
 
+class Privacy(StrEnum):
+    Private = "private"
+    Premium = "premium"
+    Public = "public"
+
+
 @dataclass
 class Photo:
     description: str
     tags: Optional[list[str]] = None
-    premium: bool = False
-    private: bool = False
+    privacy: Privacy = Privacy.Public
     location: str = "Berlin"
     camera: str = "Sony Beta"
     show_on_profile: bool = True
@@ -43,8 +49,7 @@ class Photo:
                 asset_id=t["asset_id"],
                 creator=t.get("creator", "unknown"),
                 description=t.get("description", ""),
-                premium=bool(t.get("premium", False)),
-                private=bool(t.get("private", False)),
+                privacy=Privacy(t.get("privacy", "public")),
                 location=data.get("location", ""),
                 camera=data.get("camera", ""),
                 tags=data.get("tags", []),
@@ -60,8 +65,7 @@ class Photo:
             asset_id=data["asset_id"],
             creator=data.get("creator", "unknown"),
             description=data.get("description", ""),
-            premium=bool(data.get("premium", False)),
-            private=bool(data.get("private", False)),
+            privacy=Privacy(data.get("privacy", "public")),
             location=data.get("location", ""),
             camera=data.get("camera", ""),
             tags=data.get("tags", []),
@@ -118,10 +122,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         "tags": ",".join(photo.tags),
     }
 
-    if photo.premium:
-        payload["premium"] = "true"
-    if photo.private:
-        payload["private"] = "true"
+    payload["privacy"] = str(photo.privacy)
     if photo.show_on_profile:
         payload["show_on_profile"] = "true"
 

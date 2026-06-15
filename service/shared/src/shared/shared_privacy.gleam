@@ -13,17 +13,17 @@ pub fn to_list() -> List(Privacy) {
 
 pub fn from_string(privacy: String) -> Privacy {
   case privacy {
-    "Premium" -> Premium
-    "Private" -> Private
-    "Public" | _ -> Public
+    "premium" -> Premium
+    "private" -> Private
+    "public" | _ -> Public
   }
 }
 
 pub fn to_string(privacy: Privacy) -> String {
   case privacy {
-    Public -> "Public"
-    Premium -> "Premium"
-    Private -> "Private"
+    Public -> "public"
+    Premium -> "premium"
+    Private -> "private"
   }
 }
 
@@ -33,7 +33,7 @@ pub fn privacy_decoder() -> decode.Decoder(Privacy) {
     "private" -> decode.success(Private)
     "premium" -> decode.success(Premium)
     "public" -> decode.success(Public)
-    _ -> decode.failure(Private, "Privacy")
+    _ -> decode.failure(Private, "privacy")
   }
 }
 

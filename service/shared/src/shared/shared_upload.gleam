@@ -22,7 +22,7 @@ pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
       "description",
       form.parse_optional(form.parse_string),
     )
-    use privacy_str <- form.field("privacy_level", form.parse_string)
+    use privacy_str <- form.field("privacy", form.parse_string)
     let privacy = shared_privacy.from_string(privacy_str)
     use location <- form.field(
       "location",

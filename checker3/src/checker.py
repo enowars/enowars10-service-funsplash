@@ -7,7 +7,7 @@ from user import User
 import qr
 import photo
 import uuid
-from photo import Photo, Coordinate
+from photo import Photo, Coordinate, Privacy
 from logging import LoggerAdapter
 
 from utils import (
@@ -80,7 +80,7 @@ async def putflag0(
 
     p: Photo = Photo(
         description=f"a flag but its premium and you are poor {random_string(16, CHARSET_ALPHANUMERIC_MIXED)}",
-        premium=True,
+        privacy=Privacy.Premium,
         tags=["flag", "secret", "premium"],
         data=qr.generate_qr_flag(task.flag),
     )
@@ -197,7 +197,7 @@ async def censor_put(
 
     p: Photo = photo.Photo(
         description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
-        premium=True,
+        privacy=Privacy.Premium,
         camera="Sony Alpha",
         tags=["idk", "flag"],
         data=qr.generate_qr_flag(fake_flag),
