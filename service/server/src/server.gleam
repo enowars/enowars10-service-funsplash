@@ -27,7 +27,7 @@ fn server(db: pog.Connection, config: Config) -> Nil {
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
     case request.path_segments(request) {
-      ["censor", photo_id] -> censor.upgrade(request, photo_id, db)
+      ["napi", "censor", photo_id] -> censor.upgrade(request, photo_id, db)
       _ -> wisp_app(request)
     }
   }

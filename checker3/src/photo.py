@@ -142,7 +142,7 @@ async def censor(
     addr: connection.Address, public_id: str, masks: list[bytearray]
 ) -> list[str]:
     responses: list[str] = []
-    uri = f"ws://{addr.ip}:{addr.port}/censor/{public_id}"
+    uri = f"ws://{addr.ip}:{addr.port}/napi/censor/{public_id}"
 
     async with websockets.connect(uri, close_timeout=10) as ws:
 
