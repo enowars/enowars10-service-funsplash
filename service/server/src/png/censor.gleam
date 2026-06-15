@@ -1,7 +1,4 @@
-import gleam/bit_array
 import gleam/bytes_tree.{type BytesTree}
-import gleam/int
-import gleam/io
 import png/png.{type Compressed, type Uncompressed}
 
 @external(erlang, "censor", "apply_mask")

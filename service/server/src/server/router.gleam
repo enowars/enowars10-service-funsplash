@@ -1,12 +1,10 @@
 import gleam/http
-import lustre/attribute
-import lustre/element
-import lustre/element/html
 import server/collection
 import server/web
 import server/web/auth
 import server/web/photo
 import server/web/profile
+import simplifile
 import wisp
 
 pub fn handle_request(
@@ -37,26 +35,14 @@ pub fn handle_request(
         ["private_photo-" <> _asset_id] -> wisp.not_found()
         _ -> wisp.not_found()
       }
-    _ if request.method == http.Get -> serve_index()
-
+    _ if request.method == http.Get -> serve_index(context)
     _ -> wisp.not_found()
   }
 }
 
-fn serve_index() -> wisp.Response {
-  let html =
-    html.html([], [
-      html.head([], [
-        html.title([], "funsplash"),
-        html.script(
-          [attribute.type_("module"), attribute.src("/static/client.js")],
-          "",
-        ),
-      ]),
-      html.body([], [html.div([attribute.id("app")], [])]),
-    ])
-
-  html
-  |> element.to_document_string
-  |> wisp.html_response(200)
+fn serve_index(context: web.Context) -> wisp.Response {
+  case simplifile.read(context.static_dir <> "/index.html") {
+    Ok(html) -> wisp.ok() |> wisp.html_body(html)
+    Error(_) -> wisp.internal_server_error()
+  }
 }
