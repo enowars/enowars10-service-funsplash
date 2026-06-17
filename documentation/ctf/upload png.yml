@@ -1,0 +1,36 @@
+info:
+  name: upload png
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/napi/upload
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - /home/felix/Pictures/barbapapa.png
+      - name: description
+        type: text
+        value: barba papa
+      - name: private
+        type: text
+        value: "false"
+        disabled: true
+      - name: premium
+        type: text
+        value: "false"
+        disabled: true
+      - name: show_on_profile
+        type: text
+        value: "true"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

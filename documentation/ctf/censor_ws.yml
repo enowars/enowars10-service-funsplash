@@ -1,0 +1,12 @@
+info:
+  name: censor_ws
+  type: websocket
+  seq: 1
+
+websocket:
+  url: 127.0.0.1:1337/censor/4bqoHEeWQ24
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

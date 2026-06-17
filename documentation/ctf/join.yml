@@ -1,0 +1,33 @@
+info:
+  name: join
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/join
+  body:
+    type: multipart-form
+    data:
+      - name: username
+        type: text
+        value: felix
+      - name: password
+        type: text
+        value: felixfelix
+      - name: first_name
+        type: text
+        value: Felix
+      - name: last_name
+        type: text
+        value: Dumbeck
+      - name: bio
+        type: text
+        value: the big boss creator
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

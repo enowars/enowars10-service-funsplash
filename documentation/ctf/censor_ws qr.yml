@@ -1,0 +1,12 @@
+info:
+  name: censor_ws qr
+  type: websocket
+  seq: 2
+
+websocket:
+  url: 127.0.0.1:1337/censor/LgyNjLSI5A5
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

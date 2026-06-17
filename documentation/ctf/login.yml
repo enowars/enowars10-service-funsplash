@@ -1,0 +1,24 @@
+info:
+  name: login
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/napi/login
+  body:
+    type: multipart-form
+    data:
+      - name: username
+        type: text
+        value: felix
+      - name: password
+        type: text
+        value: felixfelix
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,25 @@
+info:
+  name: upload png qr
+  type: http
+  seq: 12
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/napi/upload
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - /home/felix/uni/ctf/test_01_baseline.png
+      - name: description
+        type: text
+        value: qr
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

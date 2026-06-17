@@ -1,0 +1,28 @@
+info:
+  name: upload png qr premium
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/napi/upload
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - /home/felix/uni/ctf/test_01_baseline.png
+      - name: description
+        type: text
+        value: premium qr
+      - name: privacy
+        type: text
+        value: premium
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

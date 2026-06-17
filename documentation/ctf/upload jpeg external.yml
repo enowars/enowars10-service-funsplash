@@ -1,0 +1,25 @@
+info:
+  name: upload jpeg external
+  type: http
+  seq: 16
+
+http:
+  method: POST
+  url: http://127.0.0.1:1337/napi/upload
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - /home/felix/Pictures/react/iguane-pose-photo-grossesse-2270525782.jpg
+      - name: description
+        type: text
+        value: iguanas
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
