@@ -6,8 +6,9 @@ compress(Data) ->
     Z = zlib:open(),
     ok = zlib:deflateInit(Z, 1),
     Compressed = zlib:deflate(Z, Data, finish),
+    ok = zlib:deflateEnd(Z),
     ok = zlib:close(Z),
-    iolist_to_binary(Compressed).
+    Compressed.
 
 %% for socket
 init_compressor() ->
@@ -22,5 +23,5 @@ compress_stream(Z, Data) ->
 close_compressor(Z) ->
     %% Must finish the stream before ending it
     _ = zlib:deflate(Z, <<>>, finish),
-    zlib:deflateEnd(Z),
+    ok = zlib:deflateEnd(Z),
     zlib:close(Z).

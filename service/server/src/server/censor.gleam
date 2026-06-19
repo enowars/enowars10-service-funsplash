@@ -119,8 +119,6 @@ fn handler(
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
           let state = State(..state, out_photo: Some(censored_png))
-          // TODO: remove only here for debugging
-          // let _ = mist.send_binary_frame(connection, censored_png |> png.pack)
           let _ =
             mist.send_text_frame(
               connection,
