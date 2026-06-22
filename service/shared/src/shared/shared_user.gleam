@@ -16,8 +16,6 @@ pub type User {
   )
 }
 
-pub const logout = "LOGOUT"
-
 pub type LoginForm {
   LoginForm(username: String, password: String)
 }
@@ -39,6 +37,22 @@ pub type SignUpForm {
     bio: Option(String),
     available_for_hire: Bool,
   )
+}
+
+pub type AuthError {
+  InvalidData
+  UserNotFound
+  InvalidCredentials
+  Unauthorized
+}
+
+pub fn auth_error_to_string(err: AuthError) -> String {
+  case err {
+    InvalidData -> "Invalid data"
+    UserNotFound -> "User not found"
+    InvalidCredentials -> "username or password wrong"
+    Unauthorized -> "Unauthorized"
+  }
 }
 
 pub fn signup_form() -> Form(SignUpForm) {

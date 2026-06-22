@@ -4,12 +4,12 @@ import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
+import gleam/uri
 import server/photo
 import server/premium
 import server/sql
 import server/web
 import server/web/auth
-import shared/shared_error
 import shared/shared_photo
 import shared/shared_privacy.{Premium, Private, Public}
 import shared/shared_upload
@@ -133,30 +133,29 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   let upload_result = {
     use photo_file <- result.try(
       list.key_find(multipart.files, "photo")
-      |> result.replace_error(shared_error.FileMissing),
+      |> result.replace_error(shared_upload.FileMissing),
     )
     use data <- result.try(
       simplifile.read_bits(photo_file.path)
-      |> result.replace_error(shared_error.FileReadError),
+      |> result.replace_error(shared_upload.FileReadError),
     )
 
     use form <- result.try(
       shared_upload.upload_form(user.id, data)
       |> form.add_values(multipart.values)
       |> form.run
-      |> result.replace_error(shared_error.InvalidForm),
+      |> result.replace_error(shared_upload.InvalidForm),
     )
 
     form
     |> photo.upload(context.db)
-    |> result.replace_error(shared_error.DatabaseError)
   }
 
   case upload_result {
     Ok(_) -> wisp.redirect("/?upload_successful")
-    Error(err) ->
-      wisp.bad_request(
-        "Upload failed: " <> shared_error.upload_error_to_string(err),
-      )
+    Error(err) -> {
+      let err_str = shared_upload.upload_error_to_string(err)
+      wisp.redirect("/upload?error=" <> uri.percent_encode(err_str))
+    }
   }
 }

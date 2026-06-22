@@ -1,6 +1,7 @@
 import api/api_photo
 import auth.{type Auth}
 import browser
+import gleam/option
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -48,7 +49,7 @@ pub fn navbar(auth: Auth) -> Element(Message) {
         auth.LoggedIn(user) -> [
           a(
             [
-              route.href(route.Upload),
+              route.href(route.Upload(option.None)),
               class("text-sm text-gray-600 hover:text-black"),
             ],
             [text("Upload")],
@@ -71,14 +72,14 @@ pub fn navbar(auth: Auth) -> Element(Message) {
         _ -> [
           a(
             [
-              route.href(route.Login),
+              route.href(route.Login(option.None)),
               class("text-sm text-gray-600 hover:text-black"),
             ],
             [text("Log in")],
           ),
           a(
             [
-              route.href(route.Join),
+              route.href(route.Join(option.None)),
               class(
                 "rounded-md bg-black px-4 py-1.5 text-sm text-white hover:bg-gray-800",
               ),

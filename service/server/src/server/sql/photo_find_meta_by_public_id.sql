@@ -2,7 +2,6 @@ SELECT
     id,
     public_id,
     asset_id,
-    title,
     description,
     creator,
     privacy,

@@ -177,18 +177,12 @@ fn photo_view(
     // Photo image
     img([
       src(api_photo.src_url(photo.thumbnail, auth)),
-      alt(case photo.title {
+      alt(case photo.description {
         option.Some(t) -> t
         option.None -> "Photo"
       }),
       class("w-full rounded-lg"),
     ]),
-    // Title
-    case photo.title {
-      option.Some(title) ->
-        h1([class("text-xl font-semibold text-gray-900")], [text(title)])
-      option.None -> element.none()
-    },
     // Description
     case photo.thumbnail.description {
       option.Some(desc) -> p([class("text-sm text-gray-600")], [text(desc)])

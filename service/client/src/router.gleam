@@ -113,22 +113,22 @@ pub fn page_from_route(
       #(ProfilePage(model), effect.map(eff, ProfilePageSentMessage))
     }
     // Logged in → redirect away from auth pages
-    Login, auth.LoggedIn(_) | Join, auth.LoggedIn(_) -> redirect_home()
-    Login, _ -> {
-      let #(model, eff) = auth_page.init(auth_page.LoginMode, None)
+    Login(_), auth.LoggedIn(_) | Join(_), auth.LoggedIn(_) -> redirect_home()
+    Login(query), _ -> {
+      let #(model, eff) = auth_page.init(auth_page.LoginMode, query)
       #(AuthPage(model), effect.map(eff, AuthPageSentMessage))
     }
-    Join, _ -> {
-      let #(model, eff) = auth_page.init(auth_page.SignUpMode, None)
+    Join(query), _ -> {
+      let #(model, eff) = auth_page.init(auth_page.SignUpMode, query)
       #(AuthPage(model), effect.map(eff, AuthPageSentMessage))
     }
     // Logged in → allow upload
-    Upload, auth.LoggedIn(_) -> {
-      let #(model, eff) = upload.init()
+    Upload(query), auth.LoggedIn(_) -> {
+      let #(model, eff) = upload.init(query)
       #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
     }
     // Not logged in → redirect to login
-    Upload, _ -> redirect_login()
+    Upload(_), _ -> redirect_login()
     Collection(_), _ | NotFound(_), _ -> #(NotFoundPage, effect.none())
     Redirect(url), _ -> {
       let target = route.parse(uri.Uri(..uri.empty, path: url))

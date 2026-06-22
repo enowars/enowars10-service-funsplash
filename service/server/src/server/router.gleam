@@ -21,7 +21,7 @@ pub fn handle_request(
         ["collections", collection] ->
           collection.get(request, context, collection)
         ["login"] -> auth.login(request, context)
-        ["logout"] -> auth.logout(request, context)
+        ["logout"] -> auth.logout(request)
         ["join"] -> auth.sign_up(request, context)
         ["upload"] -> photo.upload(request, context)
         ["me"] -> auth.me(request, context)

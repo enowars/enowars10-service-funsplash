@@ -3,18 +3,26 @@ import lustre/attribute.{class, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  button, div, h1, input, label, option, select, textarea,
+  button, div, h1, input, label, option, select, textarea, p, small,
 }
 import shared/shared_privacy
+import gleam/option.{type Option, None, Some}
+import gleam/uri
 
 // MODEL -----------------------------------------------------------------------
 
 pub type Model {
-  Model
+  Model(error: Option(String))
 }
 
-pub fn init() -> #(Model, Effect(Message)) {
-  #(Model, effect.none())
+pub fn init(query: Option(String)) -> #(Model, Effect(Message)) {
+  let params = case query {
+    Some(q) -> uri.parse_query(q) |> result.unwrap([])
+    None -> []
+  }
+  let error_msg = list.key_find(params, "error") |> option.from_result
+
+  #(Model(error: error_msg), effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -27,9 +35,10 @@ pub fn update(model: Model, _message: Message) -> #(Model, Effect(Message)) {
 
 // VIEW ------------------------------------------------------------------------
 
-pub fn view(_model: Model) -> Element(Message) {
+pub fn view(model: Model) -> Element(Message) {
   div([class("max-w-lg mx-auto py-12 px-4")], [
     h1([class("text-2xl font-bold mb-6")], [text("Upload a photo")]),
+    error_banner(model.error),
     html.form(
       [
         attribute.action("/napi/upload"),
@@ -167,3 +176,20 @@ fn privacy_select() -> Element(msg) {
     option_elements,
   )
 }
+
+fn error_banner(error: Option(String)) -> Element(msg) {
+  case error {
+    Some(msg) ->
+      div(
+        [
+          class(
+            "rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4",
+          ),
+        ],
+        [text(msg)],
+      )
+    None -> element.none()
+  }
+}
+
+import gleam/result

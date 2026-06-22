@@ -13,10 +13,10 @@ import png/png.{type Compressed, type Uncompressed}
 import pog
 import server/photo
 import server/sql
+import server/user
 import shared/shared_privacy.{Private}
 import shared/shared_upload
 import utils
-import youid/uuid
 
 const ressource_limit = 900
 
@@ -27,7 +27,7 @@ pub type State {
     out_photo: Option(png.Photo(BytesTree, Compressed)),
     req_counter: Int,
     z_stream: png.ZStream,
-    user: uuid.Uuid,
+    user: user.User,
     db: pog.Connection,
   )
 }
@@ -42,15 +42,16 @@ pub fn upgrade(
   // let assert Ok(auth_cookie) =
   //   request.get_cookies(request) |> list.key_find(auth.auth_cookie)
   // let assert Ok(uid) = auth_cookie |> uuid.from_string
-  let uid = uuid.v7()
 
   io.println("Connected")
   let assert Ok(res) = sql.photo_find_by_public_id(db, public_id)
   let assert Ok(photo_row) = list.first(res.rows)
   let photo = photo_row |> photo.from_photo_find_by_public_id_row
 
+  let assert Ok(user) = user.get_by_id(db, photo.creator)
+
   use <- bool.guard(
-    photo.privacy == Private && uid != photo.creator,
+    photo.privacy == Private,
     response.new(403) |> response.set_body(mist.Bytes(bytes_tree.new())),
   )
 
@@ -67,7 +68,7 @@ pub fn upgrade(
         out_photo: None,
         req_counter: 0,
         z_stream:,
-        user: uid,
+        user:,
         db:,
       ),
       None,
@@ -89,7 +90,6 @@ fn close_socket(state: State) -> Nil {
   })
   let p = state.photo
   // TODO: check if editing allowed
-  use <- bool.guard(state.user != p.creator, Nil)
   {
     use data <- option.map(state.out_photo)
     shared_upload.Upload(
@@ -119,11 +119,14 @@ fn handler(
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
           let state = State(..state, out_photo: Some(censored_png))
-          let _ =
-            mist.send_text_frame(
-              connection,
-              "ok.size:" <> int.to_string(png.size(censored_png)),
-            )
+          let new_quota = state.user.storage_quota_used + png.size(censored_png)
+          let response = case new_quota < state.user.storage_quota {
+            True -> "ok;"
+            False ->
+              "quota_exceeded_by:"
+              <> int.to_string(new_quota - state.user.storage_quota)
+          }
+          let _ = mist.send_text_frame(connection, response)
           mist.continue(state)
         }
         Error(e) -> {
@@ -135,7 +138,6 @@ fn handler(
     mist.Shutdown -> mist.stop()
     mist.Closed -> mist.stop()
     mist.Text(_) -> mist.continue(state)
-    // save
     _ -> mist.continue(state)
   }
 }

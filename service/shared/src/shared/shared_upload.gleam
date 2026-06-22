@@ -16,6 +16,29 @@ pub type Upload {
   )
 }
 
+pub type Error {
+  FileMissing
+  FileReadError
+  DatabaseError
+  InvalidForm
+  QuotaExceeded
+  ImageTooLarge
+  AuthorizationError
+}
+
+pub fn upload_error_to_string(err: Error) -> String {
+  case err {
+    FileMissing -> "No photo file was selected."
+    FileReadError -> "An error occurred while reading the uploaded file."
+    DatabaseError -> "An internal database error occurred while saving."
+    InvalidForm -> "The form data provided was invalid."
+    QuotaExceeded ->
+      "Storage quota exceeded. Please delete some photos to upload more."
+    ImageTooLarge -> "Image is too large"
+    AuthorizationError -> "Something wrong with your user account"
+  }
+}
+
 pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
   form.new({
     use description <- form.field(

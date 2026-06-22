@@ -12,7 +12,10 @@ available_for_hire BOOLEAN NOT NULL DEFAULT false,
 premium BOOLEAN NOT NULL DEFAULT false,
 password TEXT NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT now(),
-updated_at TIMESTAMP NOT NULL DEFAULT now()
+updated_at TIMESTAMP NOT NULL DEFAULT now(),
+storage_quota BIGINT NOT NULL DEFAULT 5120, --5MB
+storage_quota_used BIGINT NOT NULL DEFAULT 0,
+CONSTRAINT storage_quota_not_exceeded CHECK (storage_quota_used <= storage_quota)
 );
 
 CREATE TYPE photo_privacy AS ENUM ('private', 'premium', 'public');
@@ -23,10 +26,11 @@ public_id VARCHAR(12) NOT NULL UNIQUE DEFAULT
 	substring(translate(encode(gen_random_bytes(9), 'base64'), '+/', '-_'), 1, 11),
 asset_id UUID NOT NULL UNIQUE DEFAULT uuidv7(),
 description TEXT,
-title CITEXT,
 creator UUID NOT NULL,
 	FOREIGN KEY (creator) REFERENCES users(id) ON DELETE CASCADE,
-data BYTEA NOT NULL,		--TODO: move out and into seperate table or fs
+data BYTEA NOT NULL,	--TODO: move out and into seperate table or fs
+file_size INT NOT NULL,
+CONSTRAINT max_file_size CHECK (file_size < 2048), --2MB
 privacy photo_privacy NOT NULL DEFAULT 'public',
 show_on_profile BOOLEAN NOT NULL DEFAULT true,
 location TEXT,

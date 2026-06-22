@@ -6,11 +6,11 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/uri
 import pog
 import server/sql
 import server/user
 import server/web
-import shared/shared_error
 import shared/shared_user
 import wisp
 import youid/uuid
@@ -26,10 +26,12 @@ pub fn require_login(
   case context.user {
     Some(user) -> next(user)
     None ->
-      shared_error.Unauthorized
-      |> shared_error.auth_error_to_json
-      |> json.to_string
-      |> wisp.json_response(401)
+      wisp.redirect(
+        "/upload?error="
+        <> shared_user.Unauthorized
+        |> shared_user.auth_error_to_string
+        |> uri.percent_encode(),
+      )
   }
 }
 
@@ -49,7 +51,7 @@ pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
   |> wisp.json_response(200)
 }
 
-pub fn logout(request, _context) -> wisp.Response {
+pub fn logout(request) -> wisp.Response {
   //wisp.redirect("/?" <> wisp.escape_html("logged out"))
   wisp.ok()
   |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
@@ -139,15 +141,21 @@ pub fn get_user_from_session(
   next: fn(Option(user.User)) -> wisp.Response,
 ) -> wisp.Response {
   // TODO: use ets instead of hitting db everytime
-  let user: Result(Option(user.User), Nil) =
-    wisp.get_cookie(request, uid_cookie, wisp.Signed)
-    |> result.map(user.get_by_id(db, _))
+
+  let user = {
+    use id <- result.try(
+      wisp.get_cookie(request, uid_cookie, wisp.Signed)
+      |> result.replace_error(user.NotFound),
+    )
+    use id <- result.try(
+      id |> uuid.from_string |> result.replace_error(user.Invalid),
+    )
+    user.get_by_id(db, id) |> result.replace_error(user.NotFound)
+  }
 
   case user {
-    Ok(Some(user)) -> next(Some(user))
-    Ok(None) ->
-      wisp.response(403)
-      |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
-    Error(_) -> next(None)
+    Ok(user) -> next(Some(user))
+    Error(user.NotFound) -> next(None)
+    Error(_) -> logout(request)
   }
 }

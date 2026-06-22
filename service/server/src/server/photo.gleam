@@ -1,14 +1,18 @@
+import gleam/bit_array
+import gleam/bool
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
+import server/user
 import shared/shared_photo
 import shared/shared_privacy.{type Privacy, Premium, Private, Public}
 import shared/shared_stats
 import shared/shared_thumbnail
 import shared/shared_upload
+import utils
 import youid/uuid.{type Uuid}
 
 fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
@@ -33,7 +37,6 @@ pub type Photo {
     public_id: String,
     asset_id: Uuid,
     description: Option(String),
-    title: Option(String),
     creator: Uuid,
     privacy: Privacy,
     show_on_profile: Bool,
@@ -42,6 +45,7 @@ pub type Photo {
     likes_count: Int,
     views: Int,
     downloads: Int,
+    file_size: Int,
     created_at: Timestamp,
   )
 }
@@ -54,8 +58,8 @@ pub fn to_shared(
 ) -> shared_photo.Photo {
   shared_photo.Photo(
     thumbnail: to_shared_thumbnail(photo, creator, user_liked),
+    description: photo.description,
     stats: to_shared_stats(photo),
-    title: photo.title,
     location: photo.location,
     camera: photo.camera,
     created_at: photo.created_at |> timestamp.to_unix_seconds,
@@ -95,7 +99,6 @@ pub fn from_photo_find_by_public_id_row(
     public_id: p.public_id,
     asset_id: p.asset_id,
     description: p.description,
-    title: p.title,
     creator: p.creator,
     privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
@@ -105,6 +108,7 @@ pub fn from_photo_find_by_public_id_row(
     views: p.views,
     downloads: p.downloads,
     created_at: p.created_at,
+    file_size: p.file_size,
   )
 }
 
@@ -114,7 +118,6 @@ pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
     public_id: p.public_id,
     asset_id: p.asset_id,
     description: p.description,
-    title: p.title,
     creator: p.creator,
     privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
@@ -124,6 +127,7 @@ pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
     views: p.views,
     downloads: p.downloads,
     created_at: p.created_at,
+    file_size: p.file_size,
   )
 }
 
@@ -148,6 +152,15 @@ pub fn get_tags(db: pog.Connection, photo_id: Uuid) -> List(String) {
   }
 }
 
+pub fn get(db, public_id) -> Result(Photo, Nil) {
+  use res <- result.try(
+    sql.photo_find_by_public_id(db, public_id)
+    |> result.replace_error(Nil),
+  )
+  use photo <- utils.db_limit(res, Nil)
+  Ok(photo |> from_photo_find_by_public_id_row)
+}
+
 pub fn user_liked(
   db: pog.Connection,
   photo_id pid: Uuid,
@@ -159,7 +172,22 @@ pub fn user_liked(
   }
 }
 
-pub fn upload(photo p: shared_upload.Upload, db_connection db: pog.Connection) {
+pub fn upload(
+  photo p: shared_upload.Upload,
+  db_connection db: pog.Connection,
+) -> Result(Nil, shared_upload.Error) {
+  let size = bit_array.byte_size(p.data)
+  use <- bool.guard(size > 2048, Error(shared_upload.ImageTooLarge))
+
+  use user <- result.try(
+    user.get_by_id(db, p.creator)
+    |> result.replace_error(shared_upload.AuthorizationError),
+  )
+  use <- bool.guard(
+    user.storage_quota_used + size > user.storage_quota,
+    Error(shared_upload.QuotaExceeded),
+  )
+
   use res <- result.try(
     sql.photo_create(
       db,
@@ -170,14 +198,15 @@ pub fn upload(photo p: shared_upload.Upload, db_connection db: pog.Connection) {
       p.location |> option.unwrap(""),
       p.camera |> option.unwrap(""),
       p.show_on_profile,
+      size,
     )
-    |> result.replace_error(Nil),
+    |> result.replace_error(shared_upload.DatabaseError),
   )
 
-  use new_photo <- result.try(list.first(res.rows))
+  use new_photo <- utils.db_limit(res, shared_upload.DatabaseError)
 
   list.try_each(p.tags, fn(tag) {
     sql.photo_add_tag(db, tag, new_photo.id)
-    |> result.replace_error(Nil)
+    |> result.replace_error(shared_upload.DatabaseError)
   })
 }

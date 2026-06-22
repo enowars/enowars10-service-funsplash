@@ -1,8 +1,7 @@
 SELECT
-	id,
+    id,
     public_id,
     asset_id,
-    title,
     description,
     creator,
     privacy,
@@ -12,7 +11,8 @@ SELECT
     likes_count,
     views,
     downloads,
-    created_at
+    created_at,
+    file_size
 FROM photos
 WHERE creator = $1
 AND show_on_profile = $2;

@@ -54,36 +54,44 @@ pub type PhotoCreateRow {
 pub fn photo_create(
   db: pog.Connection,
   arg_1: String,
-  arg_2: Uuid,
+  id: Uuid,
   arg_3: BitArray,
   arg_4: PhotoPrivacy,
   arg_5: String,
   arg_6: String,
   arg_7: Bool,
+  arg_8: Int,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     decode.success(PhotoCreateRow(id:))
   }
 
-  "INSERT INTO photos (description, creator, data, privacy, location, camera, show_on_profile)
+  "WITH updated_user AS (
+     UPDATE users
+     SET storage_quota_used = storage_quota_used + $8
+     WHERE id = $2
+)
+INSERT INTO photos (description, creator, data, privacy, location, camera, show_on_profile, file_size)
 VALUES (nullif($1,''),
 	$2,
 	$3,
 	$4,
 	nullif($5,''),
 	nullif($6,''),
-	$7)
+	$7,
+	$8)
 RETURNING id;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
-  |> pog.parameter(pog.text(uuid.to_string(arg_2)))
+  |> pog.parameter(pog.text(uuid.to_string(id)))
   |> pog.parameter(pog.bytea(arg_3))
   |> pog.parameter(photo_privacy_encoder(arg_4))
   |> pog.parameter(pog.text(arg_5))
   |> pog.parameter(pog.text(arg_6))
   |> pog.parameter(pog.bool(arg_7))
+  |> pog.parameter(pog.int(arg_8))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -100,9 +108,9 @@ pub type PhotoFindByPublicIdRow {
     public_id: String,
     asset_id: Uuid,
     description: Option(String),
-    title: Option(String),
     creator: Uuid,
     data: BitArray,
+    file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
@@ -129,9 +137,9 @@ pub fn photo_find_by_public_id(
     use public_id <- decode.field(1, decode.string)
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
-    use title <- decode.field(4, decode.optional(decode.string))
-    use creator <- decode.field(5, uuid_decoder())
-    use data <- decode.field(6, decode.bit_array)
+    use creator <- decode.field(4, uuid_decoder())
+    use data <- decode.field(5, decode.bit_array)
+    use file_size <- decode.field(6, decode.int)
     use privacy <- decode.field(7, photo_privacy_decoder())
     use show_on_profile <- decode.field(8, decode.bool)
     use location <- decode.field(9, decode.optional(decode.string))
@@ -145,9 +153,9 @@ pub fn photo_find_by_public_id(
       public_id:,
       asset_id:,
       description:,
-      title:,
       creator:,
       data:,
+      file_size:,
       privacy:,
       show_on_profile:,
       location:,
@@ -182,9 +190,9 @@ pub type PhotoFindDataByAssetIdRow {
     public_id: String,
     asset_id: Uuid,
     description: Option(String),
-    title: Option(String),
     creator: Uuid,
     data: BitArray,
+    file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
@@ -212,9 +220,9 @@ pub fn photo_find_data_by_asset_id(
     use public_id <- decode.field(1, decode.string)
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
-    use title <- decode.field(4, decode.optional(decode.string))
-    use creator <- decode.field(5, uuid_decoder())
-    use data <- decode.field(6, decode.bit_array)
+    use creator <- decode.field(4, uuid_decoder())
+    use data <- decode.field(5, decode.bit_array)
+    use file_size <- decode.field(6, decode.int)
     use privacy <- decode.field(7, photo_privacy_decoder())
     use show_on_profile <- decode.field(8, decode.bool)
     use location <- decode.field(9, decode.optional(decode.string))
@@ -228,9 +236,9 @@ pub fn photo_find_data_by_asset_id(
       public_id:,
       asset_id:,
       description:,
-      title:,
       creator:,
       data:,
+      file_size:,
       privacy:,
       show_on_profile:,
       location:,
@@ -266,7 +274,6 @@ pub type PhotoFindMetaByPublicIdRow {
     id: Uuid,
     public_id: String,
     asset_id: Uuid,
-    title: Option(String),
     description: Option(String),
     creator: Uuid,
     privacy: PhotoPrivacy,
@@ -294,22 +301,20 @@ pub fn photo_find_meta_by_public_id(
     use id <- decode.field(0, uuid_decoder())
     use public_id <- decode.field(1, decode.string)
     use asset_id <- decode.field(2, uuid_decoder())
-    use title <- decode.field(3, decode.optional(decode.string))
-    use description <- decode.field(4, decode.optional(decode.string))
-    use creator <- decode.field(5, uuid_decoder())
-    use privacy <- decode.field(6, photo_privacy_decoder())
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use privacy <- decode.field(5, photo_privacy_decoder())
+    use show_on_profile <- decode.field(6, decode.bool)
+    use location <- decode.field(7, decode.optional(decode.string))
+    use camera <- decode.field(8, decode.optional(decode.string))
+    use likes_count <- decode.field(9, decode.int)
+    use views <- decode.field(10, decode.int)
+    use downloads <- decode.field(11, decode.int)
+    use created_at <- decode.field(12, pog.timestamp_decoder())
     decode.success(PhotoFindMetaByPublicIdRow(
       id:,
       public_id:,
       asset_id:,
-      title:,
       description:,
       creator:,
       privacy:,
@@ -327,7 +332,6 @@ pub fn photo_find_meta_by_public_id(
     id,
     public_id,
     asset_id,
-    title,
     description,
     creator,
     privacy,
@@ -418,7 +422,6 @@ pub type PhotosListByUserRow {
     id: Uuid,
     public_id: String,
     asset_id: Uuid,
-    title: Option(String),
     description: Option(String),
     creator: Uuid,
     privacy: PhotoPrivacy,
@@ -429,6 +432,7 @@ pub type PhotosListByUserRow {
     views: Int,
     downloads: Int,
     created_at: Timestamp,
+    file_size: Int,
   )
 }
 
@@ -447,22 +451,21 @@ pub fn photos_list_by_user(
     use id <- decode.field(0, uuid_decoder())
     use public_id <- decode.field(1, decode.string)
     use asset_id <- decode.field(2, uuid_decoder())
-    use title <- decode.field(3, decode.optional(decode.string))
-    use description <- decode.field(4, decode.optional(decode.string))
-    use creator <- decode.field(5, uuid_decoder())
-    use privacy <- decode.field(6, photo_privacy_decoder())
-    use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use privacy <- decode.field(5, photo_privacy_decoder())
+    use show_on_profile <- decode.field(6, decode.bool)
+    use location <- decode.field(7, decode.optional(decode.string))
+    use camera <- decode.field(8, decode.optional(decode.string))
+    use likes_count <- decode.field(9, decode.int)
+    use views <- decode.field(10, decode.int)
+    use downloads <- decode.field(11, decode.int)
+    use created_at <- decode.field(12, pog.timestamp_decoder())
+    use file_size <- decode.field(13, decode.int)
     decode.success(PhotosListByUserRow(
       id:,
       public_id:,
       asset_id:,
-      title:,
       description:,
       creator:,
       privacy:,
@@ -473,14 +476,14 @@ pub fn photos_list_by_user(
       views:,
       downloads:,
       created_at:,
+      file_size:,
     ))
   }
 
   "SELECT
-	id,
+    id,
     public_id,
     asset_id,
-    title,
     description,
     creator,
     privacy,
@@ -490,7 +493,8 @@ pub fn photos_list_by_user(
     likes_count,
     views,
     downloads,
-    created_at
+    created_at,
+    file_size
 FROM photos
 WHERE creator = $1
 AND show_on_profile = $2;
@@ -512,7 +516,6 @@ pub type PhotosListByUserCursorDateRow {
   PhotosListByUserCursorDateRow(
     public_id: String,
     asset_id: Uuid,
-    title: Option(String),
     description: Option(String),
     creator: Uuid,
     privacy: PhotoPrivacy,
@@ -523,6 +526,7 @@ pub type PhotosListByUserCursorDateRow {
     views: Int,
     downloads: Int,
     created_at: Timestamp,
+    file_size: Int,
   )
 }
 
@@ -541,21 +545,20 @@ pub fn photos_list_by_user_cursor_date(
   let decoder = {
     use public_id <- decode.field(0, decode.string)
     use asset_id <- decode.field(1, uuid_decoder())
-    use title <- decode.field(2, decode.optional(decode.string))
-    use description <- decode.field(3, decode.optional(decode.string))
-    use creator <- decode.field(4, uuid_decoder())
-    use privacy <- decode.field(5, photo_privacy_decoder())
-    use show_on_profile <- decode.field(6, decode.bool)
-    use location <- decode.field(7, decode.optional(decode.string))
-    use camera <- decode.field(8, decode.optional(decode.string))
-    use likes_count <- decode.field(9, decode.int)
-    use views <- decode.field(10, decode.int)
-    use downloads <- decode.field(11, decode.int)
-    use created_at <- decode.field(12, pog.timestamp_decoder())
+    use description <- decode.field(2, decode.optional(decode.string))
+    use creator <- decode.field(3, uuid_decoder())
+    use privacy <- decode.field(4, photo_privacy_decoder())
+    use show_on_profile <- decode.field(5, decode.bool)
+    use location <- decode.field(6, decode.optional(decode.string))
+    use camera <- decode.field(7, decode.optional(decode.string))
+    use likes_count <- decode.field(8, decode.int)
+    use views <- decode.field(9, decode.int)
+    use downloads <- decode.field(10, decode.int)
+    use created_at <- decode.field(11, pog.timestamp_decoder())
+    use file_size <- decode.field(12, decode.int)
     decode.success(PhotosListByUserCursorDateRow(
       public_id:,
       asset_id:,
-      title:,
       description:,
       creator:,
       privacy:,
@@ -566,13 +569,13 @@ pub fn photos_list_by_user_cursor_date(
       views:,
       downloads:,
       created_at:,
+      file_size:,
     ))
   }
 
   "SELECT 
     public_id,
     asset_id,
-    title,
     description,
     creator,
     privacy,
@@ -582,7 +585,8 @@ pub fn photos_list_by_user_cursor_date(
     likes_count,
     views,
     downloads,
-    created_at
+    created_at,
+    file_size
 FROM photos
 WHERE creator = $1 
   AND show_on_profile = $2
@@ -703,6 +707,8 @@ pub type UserFindByIdRow {
     password: String,
     created_at: Timestamp,
     updated_at: Timestamp,
+    storage_quota: Int,
+    storage_quota_used: Int,
   )
 }
 
@@ -727,6 +733,8 @@ pub fn user_find_by_id(
     use password <- decode.field(7, decode.string)
     use created_at <- decode.field(8, pog.timestamp_decoder())
     use updated_at <- decode.field(9, pog.timestamp_decoder())
+    use storage_quota <- decode.field(10, decode.int)
+    use storage_quota_used <- decode.field(11, decode.int)
     decode.success(UserFindByIdRow(
       id:,
       username:,
@@ -738,6 +746,8 @@ pub fn user_find_by_id(
       password:,
       created_at:,
       updated_at:,
+      storage_quota:,
+      storage_quota_used:,
     ))
   }
 
@@ -770,6 +780,8 @@ pub type UserFindByNameRow {
     password: String,
     created_at: Timestamp,
     updated_at: Timestamp,
+    storage_quota: Int,
+    storage_quota_used: Int,
   )
 }
 
@@ -794,6 +806,8 @@ pub fn user_find_by_name(
     use password <- decode.field(7, decode.string)
     use created_at <- decode.field(8, pog.timestamp_decoder())
     use updated_at <- decode.field(9, pog.timestamp_decoder())
+    use storage_quota <- decode.field(10, decode.int)
+    use storage_quota_used <- decode.field(11, decode.int)
     decode.success(UserFindByNameRow(
       id:,
       username:,
@@ -805,6 +819,8 @@ pub fn user_find_by_name(
       password:,
       created_at:,
       updated_at:,
+      storage_quota:,
+      storage_quota_used:,
     ))
   }
 

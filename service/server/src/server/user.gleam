@@ -7,6 +7,12 @@ import shared/shared_thumbnail
 import shared/shared_user
 import youid/uuid
 
+pub type Error {
+  Invalid
+  NotFound
+  QueryError(pog.QueryError)
+}
+
 pub type User =
   sql.UserFindByIdRow
 
@@ -22,6 +28,8 @@ pub fn from_user_find_by_name_row(user u: sql.UserFindByNameRow) -> User {
     password: u.password,
     created_at: u.created_at,
     updated_at: u.updated_at,
+    storage_quota: u.storage_quota,
+    storage_quota_used: u.storage_quota_used,
   )
 }
 
@@ -41,15 +49,12 @@ pub fn to_shared(
   )
 }
 
-pub fn get_by_id(db: pog.Connection, id: String) -> Option(User) {
-  let user = {
-    use id <- result.try(id |> uuid.from_string)
-    sql.user_find_by_id(db, id)
-    |> result.map(fn(res) { list.first(res.rows) })
-    |> result.unwrap(Error(Nil))
-    |> result.replace_error(Nil)
-  }
-  user |> option.from_result
+pub fn get_by_id(db: pog.Connection, id: uuid.Uuid) -> Result(User, Error) {
+  use res <- result.try(case sql.user_find_by_id(db, id) {
+    Ok(user) -> Ok(user)
+    Error(e) -> Error(QueryError(e))
+  })
+  list.first(res.rows) |> result.replace_error(NotFound)
 }
 
 pub fn get_by_name(db: pog.Connection, name: String) -> Option(User) {
