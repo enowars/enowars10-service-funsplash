@@ -2,7 +2,6 @@ services:
   funsplash:
     build:
       dockerfile: Dockerfile
-      target: dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -12,10 +11,9 @@ services:
       - .env
     networks:
       - funsplash
-    # restart: unless-stopped
+    restart: unless-stopped
     mem_limit: 1g
     cpus: 1
-    command: ["sh", "-c", "cd /app/server && gleam run"]
 
   postgres:
     image: postgres:18-alpine
