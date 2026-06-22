@@ -12,12 +12,9 @@ services:
       - .env
     networks:
       - funsplash
-    restart: unless-stopped
-    volumes:
-      # Mount the source code so changes are reflected immediately
-      - "./shared:/app/shared:Z"
-      - "./client:/app/client:Z"
-      - "./server:/app/server:Z"
+    # restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1
     command: ["sh", "-c", "cd /app/server && gleam run"]
 
   postgres:
