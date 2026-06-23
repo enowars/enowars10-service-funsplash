@@ -1,7 +1,7 @@
 info:
   name: upload png qr premium
   type: http
-  seq: 13
+  seq: 12
 
 http:
   method: POST

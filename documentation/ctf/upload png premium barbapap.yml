@@ -1,7 +1,7 @@
 info:
   name: upload png premium barbapap
   type: http
-  seq: 14
+  seq: 13
 
 http:
   method: POST

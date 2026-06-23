@@ -12,13 +12,13 @@ http:
       - name: photo
         type: file
         value:
-          - /home/felix/Pictures/react/iguane-pose-photo-grossesse-2270525782.jpg
+          - /home/felix/Pictures/iguane-pose-photo-grossesse-2270525782.jpg
       - name: description
         type: text
         value: new iguana
-      - name: show_on_profile
+      - name: privacy
         type: text
-        value: "true"
+        value: public
       - name: tags
         type: text
         value: asdf,test
