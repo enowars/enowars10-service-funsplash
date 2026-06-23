@@ -34,7 +34,6 @@ def cookie_to_header(cookies: dict[str, str]) -> str:
 
 async def upload_examples(conn: Connection, cookies):
     for f in os.scandir("./photos"):
-        print(f.path)
         if f.is_file() is not True:
             continue
         with open(f.path, "rb") as file:
@@ -58,7 +57,7 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
     )
 
     async def exceed_quota(mask):
-        for i in range(10):
+        for i in range(30):
             msg = await photo.censor(conn, p.public_id, [mask])
             if ":" in msg[0]:
                 break
