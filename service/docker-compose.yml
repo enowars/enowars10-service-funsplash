@@ -12,6 +12,8 @@ services:
     networks:
       - funsplash
     restart: unless-stopped
+    mem_limit: 16m
+    cpus: 0.05
 
   funsplash:
     build:
@@ -26,8 +28,8 @@ services:
     networks:
       - funsplash
     restart: unless-stopped
-    mem_limit: 1g
-    cpus: 1
+    mem_limit: 1348m
+    cpus: 1.45
 
   postgres:
     image: postgres:18-alpine
@@ -36,6 +38,8 @@ services:
       - .env
     networks:
       - funsplash
+    mem_limit: 512m
+    cpus: 0.5
     volumes:
       - postgres_data:/var/lib/postgresql:z
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
