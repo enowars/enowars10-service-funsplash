@@ -138,19 +138,16 @@ fn photo_view(
         },
       ]),
       div([class("flex items-center gap-2")], [
-        case is_owner {
-          True ->
-            a(
-              [
-                route.href(route.Censor(photo.thumbnail.public_id)),
-                class(
-                  "flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100",
-                ),
-              ],
-              [text("Censor Image")],
-            )
-          False -> element.none()
-        },
+        a(
+          [
+            route.href(route.Censor(photo.thumbnail.public_id)),
+            class(
+              "flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100",
+            ),
+          ],
+          [text("Censor Image")],
+        ),
+
         case auth.is_logged_in(auth) {
           True ->
             button(
