@@ -18,6 +18,8 @@ storage_quota_used BIGINT NOT NULL DEFAULT 0,
 CONSTRAINT storage_quota_not_exceeded CHECK (storage_quota_used <= storage_quota)
 );
 
+CREATE INDEX users_created_at_idx ON users (created_at);
+
 CREATE TYPE photo_privacy AS ENUM ('private', 'premium', 'public');
 
 CREATE TABLE photos (
@@ -40,6 +42,8 @@ views BIGINT NOT NULL DEFAULT 0,
 downloads BIGINT NOT NULL DEFAULT 0,
 created_at TIMESTAMP NOT NULL DEFAULT now()
 );
+
+CREATE INDEX photos_created_at_idx ON photos (created_at);
 
 
 CREATE TABLE tags (
