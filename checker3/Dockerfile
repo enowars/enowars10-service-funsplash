@@ -17,6 +17,7 @@ RUN uv sync --frozen --no-cache --no-dev --no-install-project
 
 # Copy source
 COPY ./src .
+COPY ./photos ./photos
 
 # Ensure checker user owns the directory
 RUN chown -R checker: /checker
