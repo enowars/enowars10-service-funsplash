@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:1337/join
+  url: http://127.0.0.1:1337/napi/join
   body:
     type: multipart-form
     data:
