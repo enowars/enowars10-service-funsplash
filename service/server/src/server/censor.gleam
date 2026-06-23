@@ -94,13 +94,13 @@ fn close_socket(state: State) -> Nil {
     use data <- option.map(state.out_photo)
     shared_upload.Upload(
       creator: p.creator,
-      description: p.description,
+      description: Some(option.unwrap(p.description, "") <> " censored"),
       privacy: p.privacy,
       location: p.location,
       camera: p.camera,
       show_on_profile: p.show_on_profile,
       data: data |> png.pack,
-      tags: [],
+      tags: ["censored"],
     )
     |> photo.upload(state.db)
   }
@@ -118,13 +118,14 @@ fn handler(
     mist.Binary(mask) -> {
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
-          let state = State(..state, out_photo: Some(censored_png))
           let new_quota = state.user.storage_quota_used + png.size(censored_png)
-          let response = case new_quota < state.user.storage_quota {
-            True -> "ok;"
-            False ->
+          let #(response, state) = case new_quota < state.user.storage_quota {
+            True -> #("ok;", State(..state, out_photo: Some(censored_png)))
+            False -> #(
               "quota_exceeded_by:"
-              <> int.to_string(new_quota - state.user.storage_quota)
+                <> int.to_string(new_quota - state.user.storage_quota),
+              state,
+            )
           }
           let _ = mist.send_text_frame(connection, response)
           mist.continue(state)
