@@ -1,5 +1,9 @@
 import random
+from connection import Connection
+import os
 import string
+from photo import Privacy, Photo, Coordinate
+import photo
 
 # Common charsets for random string generation
 CHARSET_ALPHANUMERIC = string.ascii_lowercase + string.digits
@@ -26,3 +30,39 @@ def placeholder_png() -> bytes:
 
 def cookie_to_header(cookies: dict[str, str]) -> str:
     return "; ".join(f"{name}={value}" for name, value in cookies.items())
+
+
+async def upload_examples(conn: Connection, cookies):
+    for f in os.scandir("./photos"):
+        print(f.path)
+        if f.is_file() is not True:
+            continue
+        with open(f.path, "rb") as file:
+            p: Photo = Photo(
+                description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
+                privacy=Privacy.Public,
+                camera="idk",
+                tags=["idk", "flag"],
+                data=file.read(),
+            )
+            await photo.upload(conn, cookies, p)
+
+
+async def fill_user(conn: Connection, p: Photo, dim: int = 33):
+    black = photo.gen_mask([], Coordinate(dim, dim))
+    half = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim // 2), Coordinate(dim, dim)
+    )
+    full = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim), Coordinate(dim, dim)
+    )
+
+    async def exceed_quota(mask):
+        for i in range(10):
+            msg = await photo.censor(conn, p.public_id, [mask])
+            if ":" in msg[0]:
+                break
+
+    await exceed_quota(full)
+    await exceed_quota(half)
+    await exceed_quota(black)

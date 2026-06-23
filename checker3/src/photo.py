@@ -104,14 +104,17 @@ async def get(
         raise MumbleException("couldnt parse photo metadata")
 
 
-def get_by_description_contains(profile_json, description: str) -> Photo:
-    desc = description.lower()
+def get_by_description_contains(
+    profile_json, contain: str, not_contain: Optional(str) = None
+) -> Photo:
+    contain = contain.lower()
     for p in profile_json.get("photos", []):
-        if desc in (p.get("description") or "").lower():
+        description = (p.get("description") or "").lower()
+        if contain in description and (
+            not_contain is None or not_contain not in description
+        ):
             return Photo.from_dict(p)
-    raise MumbleException(
-        f"asset_id not found for description containing: {description}"
-    )
+    raise MumbleException(f"asset_id not found for description containing: {contain}")
 
 
 async def upload(conn: Connection, cookies, photo: Photo):
@@ -139,9 +142,8 @@ async def upload(conn: Connection, cookies, photo: Photo):
     assert_equals(r.status_code, 303)
 
 
-async def censor(
-    addr: connection.Address, public_id: str, masks: list[bytearray]
-) -> list[str]:
+async def censor(conn: Connection, public_id: str, masks: list[bytearray]) -> list[str]:
+    addr = await conn.get_addr()
     responses: list[str] = []
     uri = f"ws://{addr.ip}:{addr.port}/napi/censor/{public_id}"
 

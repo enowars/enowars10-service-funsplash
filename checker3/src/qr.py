@@ -121,23 +121,25 @@ def get_static_pixel(x: int, y: int, size: int) -> int:
     return 255
 
 
-def reconstruct_qr(results: list[str], size: int = 33):
-    pixels = [255] * (size * size)
+def reconstruct_qr(results: list[str], base_size: int, dim: int = 33):
+    pixels = [255] * (dim * dim)
     res_idx = 0
-    for y in range(size):
-        for x in range(size):
-            if is_static(x, y, size):
-                pixels[y * size + x] = get_static_pixel(x, y, size)
+    for y in range(dim):
+        for x in range(dim):
+            if is_static(x, y, dim):
+                pixels[y * dim + x] = get_static_pixel(x, y, dim)
             else:
                 if res_idx < len(results):
                     # Oracle: "ok.size:69" means black (0), otherwise white (255)
-                    pixels[y * size + x] = (
-                        0 if results[res_idx] == "ok.size:69" else 255
+                    pixels[y * dim + x] = (
+                        0
+                        if results[res_idx] == f"quota_exceeded_by:{base_size}"
+                        else 255
                     )
                     res_idx += 1
 
     # Create the image
-    img = Image.new("L", (size, size))
+    img = Image.new("L", (dim, dim))
     img.putdata(pixels)
 
     # Convert to bytes

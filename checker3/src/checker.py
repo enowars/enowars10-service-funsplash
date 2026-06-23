@@ -94,6 +94,10 @@ async def putflag0(
     flag_got = qr.decode(data)
     assert_equals(flag_got, task.flag)
 
+    await utils.upload_examples(conn, cookies)
+    await utils.upload_examples(conn, cookies)
+    await utils.upload_examples(conn, cookies)
+
     await db.set("user", asdict(u))
     await db.set("photo", asdict(p))
     return u.name
@@ -206,6 +210,12 @@ async def censor_put(
     profile = await user.get_profile(conn, u.name)
     p: Photo = photo.get_by_description_contains(profile, p.description)
 
+    await utils.upload_examples(conn, cookies)
+    await utils.upload_examples(conn, cookies)
+    await utils.upload_examples(conn, cookies)
+
+    await utils.fill_user(conn, p)
+
     await db.set("fake_flag", fake_flag)
     await db.set("user", asdict(u))
     await db.set("photo", asdict(p))
@@ -234,11 +244,7 @@ async def censor_get(
         Coordinate(0, 0), Coordinate(dim, dim), Coordinate(dim, dim)
     )
 
-    addr = await conn.get_addr()
-    msgs = await photo.censor(addr, p.public_id, [black, half, full])
-
-    def get_size(msg):
-        return int(msg.split(":")[1])
+    msgs = await photo.censor(conn, p.public_id, [black, half, full])
 
     is_sorted = all(
         get_size(msgs[i]) < get_size(msgs[i + 1]) for i in range(len(msgs) - 1)
@@ -273,6 +279,10 @@ async def get_non_existant_photo(
     await photo.get_data(conn, uuid.uuid7(), expected_code=404)
 
 
+def get_size(msg):
+    return int(msg.split(":")[1])
+
+
 @checker.exploit(0)
 async def exploit_censor(
     task: ExploitCheckerTaskMessage,
@@ -281,21 +291,23 @@ async def exploit_censor(
     logger: LoggerAdapter,
 ) -> str:
     assert task.attack_info is not None
-
-    # u: user = user.random_user()
-    # await user.register(conn, u)
-    # cookie_header = await user.login(conn, u)
+    dim = 33
 
     username = task.attack_info
     profile = await user.get_profile(conn, username)
     p: Photo = photo.get_by_description_contains(
-        profile, "a flag but its premium and you are poor"
+        profile, "a flag but its premium and you are poor", "censored"
     )
 
-    addr = await conn.get_addr()
-    masks = photo.exploit_masks(33)
-    res = await photo.censor(addr, p.public_id, masks)
-    img = qr.reconstruct_qr(res, 33)
+    await utils.fill_user(conn, p)
+
+    black = photo.gen_mask([], Coordinate(dim, dim))
+    msg = await photo.censor(conn, p.public_id, [black])
+    base_size = get_size(msg[0])
+
+    masks = photo.exploit_masks(dim)
+    res = await photo.censor(conn, p.public_id, masks)
+    img = qr.reconstruct_qr(res, base_size, 33)
     return qr.decode(img)
 
 
