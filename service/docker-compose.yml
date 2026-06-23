@@ -1,4 +1,18 @@
 services:
+  cleanup:
+    image: postgres:18-alpine
+    entrypoint: [ "sh", "/cleanup.sh" ]
+    volumes:
+      - ./cleanup.sh:/cleanup.sh:ro,z
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - funsplash
+    restart: unless-stopped
+
   funsplash:
     build:
       dockerfile: Dockerfile
@@ -26,7 +40,7 @@ services:
       - postgres_data:/var/lib/postgresql:z
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${PGUSER} -d $${PGDATABASE}"]
+      test: [ "CMD-SHELL", "pg_isready -U $${PGUSER} -d $${PGDATABASE}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,6 +48,6 @@ services:
 networks:
   funsplash:
     driver: bridge
-      
+
 volumes:
   postgres_data:
