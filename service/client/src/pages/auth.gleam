@@ -6,7 +6,8 @@ import lustre/attribute.{class, name, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{button, div, h1, input, label, p, small}
-import shared/shared_user
+import shared/shared_login
+import shared/shared_signup
 
 // MODEL -----------------------------------------------------------------------
 
@@ -62,7 +63,7 @@ pub fn view(model: Model) -> Element(Message) {
 }
 
 fn login_view(model: Model) -> Element(Message) {
-  let form = shared_user.login_form()
+  let form = shared_login.form()
   div([], [
     h1([class("text-2xl font-bold text-center mb-1")], [text("Login")]),
     p([class("text-sm text-gray-500 text-center mb-6")], [
@@ -100,7 +101,7 @@ fn login_view(model: Model) -> Element(Message) {
 }
 
 fn signup_view(model: Model) -> Element(Message) {
-  let form = shared_user.signup_form()
+  let form = shared_signup.form()
   div([], [
     h1([class("text-2xl font-bold text-center mb-1")], [text("Join funsplash")]),
     p([class("text-sm text-gray-500 text-center mb-6")], [

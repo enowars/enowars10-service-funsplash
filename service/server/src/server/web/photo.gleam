@@ -4,7 +4,6 @@ import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
-import gleam/uri
 import server/photo
 import server/premium
 import server/sql
@@ -154,8 +153,7 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   case upload_result {
     Ok(_) -> wisp.redirect("/?upload_successful")
     Error(err) -> {
-      let err_str = shared_upload.upload_error_to_string(err)
-      wisp.redirect("/upload?error=" <> uri.percent_encode(err_str))
+      wisp.redirect("/?error=" <> shared_upload.error_to_uri(err))
     }
   }
 }

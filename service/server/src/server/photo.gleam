@@ -172,20 +172,26 @@ pub fn user_liked(
   }
 }
 
+pub const max_allowed_size = 1_024_000
+
 pub fn upload(
   photo p: shared_upload.Upload,
   db_connection db: pog.Connection,
 ) -> Result(Nil, shared_upload.Error) {
   let size = bit_array.byte_size(p.data)
-  use <- bool.guard(size > 2048, Error(shared_upload.ImageTooLarge))
+  use <- bool.guard(
+    size > max_allowed_size,
+    Error(shared_upload.ImageTooLarge(max_allowed_size)),
+  )
 
   use user <- result.try(
     user.get_by_id(db, p.creator)
     |> result.replace_error(shared_upload.AuthorizationError),
   )
+
   use <- bool.guard(
     user.storage_quota_used + size > user.storage_quota,
-    Error(shared_upload.QuotaExceeded),
+    Error(shared_upload.QuotaExceeded(user.storage_quota_used)),
   )
 
   use res <- result.try(

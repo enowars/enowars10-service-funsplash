@@ -11,6 +11,8 @@ import pog
 import server/sql
 import server/user
 import server/web
+import shared/shared_login
+import shared/shared_signup
 import shared/shared_user
 import wisp
 import youid/uuid
@@ -29,7 +31,7 @@ pub fn require_login(
       wisp.redirect(
         "/upload?error="
         <> shared_user.Unauthorized
-        |> shared_user.auth_error_to_string
+        |> shared_user.error_to_string
         |> uri.percent_encode(),
       )
   }
@@ -52,7 +54,6 @@ pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
 }
 
 pub fn logout(request) -> wisp.Response {
-  //wisp.redirect("/?" <> wisp.escape_html("logged out"))
   wisp.ok()
   |> wisp.set_cookie(request, uid_cookie, "", wisp.PlainText, 0)
 }
@@ -62,19 +63,21 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
 
   let login_result = {
     use validated_form <- result.try(
-      shared_user.login_form()
+      shared_login.form()
       |> form.add_values(form_data.values)
       |> form.run
-      |> result.replace_error(Nil),
+      |> result.replace_error(shared_login.InvalidData),
     )
     use res <- result.try(
       sql.user_find_by_name(context.db, validated_form.username)
-      |> result.replace_error(Nil),
+      |> result.replace_error(shared_login.InvalidData),
     )
-    use user <- result.try(list.first(res.rows))
+    use user <- result.try(
+      list.first(res.rows) |> result.replace_error(shared_login.UserNotFound),
+    )
     use <- bool.guard(
       when: argus.verify(user.password, validated_form.password) != Ok(True),
-      return: Error(Nil),
+      return: Error(shared_login.InvalidCredentials),
     )
     Ok(user)
   }
@@ -97,7 +100,7 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
         60 * 60,
       )
     }
-    Error(_) -> wisp.redirect("/login?error=invalid_credentials")
+    Error(e) -> wisp.redirect("/login?error=" <> shared_login.error_to_uri(e))
   }
 }
 
@@ -105,16 +108,16 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
   use form_data <- wisp.require_form(request)
   let res = {
     use validated_form <- result.try(
-      shared_user.signup_form()
+      shared_signup.form()
       |> form.add_values(form_data.values)
       |> form.run
-      |> result.replace_error(Nil),
+      |> result.replace_error(shared_signup.InvalidData),
     )
 
     use pass_hash <- result.try(
       argus.hasher()
       |> argus.hash(validated_form.password, argus.gen_salt())
-      |> result.replace_error(Nil),
+      |> result.replace_error(shared_signup.InternalError),
     )
 
     sql.user_create(
@@ -126,12 +129,12 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
       validated_form.bio |> option.unwrap(""),
       validated_form.available_for_hire,
     )
-    |> result.replace_error(Nil)
+    |> result.replace_error(shared_signup.UserExists)
   }
   // TODO: give better error messages
   case res {
     Ok(_) -> wisp.redirect("/login?registered=true")
-    Error(_) -> wisp.redirect("/join?error=invalid_data")
+    Error(e) -> wisp.redirect("/join?error=" <> shared_signup.error_to_uri(e))
   }
 }
 

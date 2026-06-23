@@ -1,5 +1,7 @@
 import formal/form.{type Form}
+import gleam/int
 import gleam/option.{type Option}
+import gleam/uri
 import shared/shared_privacy.{type Privacy}
 import youid/uuid.{type Uuid}
 
@@ -21,20 +23,28 @@ pub type Error {
   FileReadError
   DatabaseError
   InvalidForm
-  QuotaExceeded
-  ImageTooLarge
+  QuotaExceeded(quota_remaining: Int)
+  ImageTooLarge(allowed_size: Int)
   AuthorizationError
 }
 
-pub fn upload_error_to_string(err: Error) -> String {
+pub fn error_to_uri(err: Error) -> String {
+  err |> error_to_string |> uri.percent_encode
+}
+
+pub fn error_to_string(err: Error) -> String {
   case err {
     FileMissing -> "No photo file was selected."
     FileReadError -> "An error occurred while reading the uploaded file."
     DatabaseError -> "An internal database error occurred while saving."
     InvalidForm -> "The form data provided was invalid."
-    QuotaExceeded ->
-      "Storage quota exceeded. Please delete some photos to upload more."
-    ImageTooLarge -> "Image is too large"
+    QuotaExceeded(remaining) ->
+      "Storage quota exceeded. You have: "
+      <> int.to_string(remaining)
+      <> " remaining. Please delete some photos to upload more."
+    ImageTooLarge(allowed) ->
+      "Image is too large. The maximum allowed size is: "
+      <> int.to_string(allowed)
     AuthorizationError -> "Something wrong with your user account"
   }
 }

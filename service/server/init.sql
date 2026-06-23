@@ -13,7 +13,7 @@ premium BOOLEAN NOT NULL DEFAULT false,
 password TEXT NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT now(),
 updated_at TIMESTAMP NOT NULL DEFAULT now(),
-storage_quota BIGINT NOT NULL DEFAULT 5120, --5MB
+storage_quota BIGINT NOT NULL DEFAULT 2048000, --2MB
 storage_quota_used BIGINT NOT NULL DEFAULT 0,
 CONSTRAINT storage_quota_not_exceeded CHECK (storage_quota_used <= storage_quota)
 );
@@ -30,7 +30,7 @@ creator UUID NOT NULL,
 	FOREIGN KEY (creator) REFERENCES users(id) ON DELETE CASCADE,
 data BYTEA NOT NULL,	--TODO: move out and into seperate table or fs
 file_size INT NOT NULL,
-CONSTRAINT max_file_size CHECK (file_size < 2048), --2MB
+CONSTRAINT max_file_size CHECK (file_size < 1024000), --1MB
 privacy photo_privacy NOT NULL DEFAULT 'public',
 show_on_profile BOOLEAN NOT NULL DEFAULT true,
 location TEXT,
