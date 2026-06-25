@@ -39,8 +39,8 @@ async def upload_examples(conn: Connection, cookies):
         with open(f.path, "rb") as file:
             p: Photo = Photo(
                 description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
-                privacy=Privacy.Public,
-                camera="idk",
+                privacy=random.choice([Privacy.Private, Privacy.Public]),
+                camera="go pro",
                 tags=["idk", "flag"],
                 data=file.read(),
             )

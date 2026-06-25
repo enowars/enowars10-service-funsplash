@@ -2,10 +2,10 @@ from enochecker3 import MumbleException
 from dataclasses import dataclass
 from connection import Connection
 from enochecker3.utils import assert_equals
-import connection
 import websockets
 import asyncio
 import qr
+import httpx
 from typing import NamedTuple, Optional
 from enum import StrEnum
 
@@ -136,7 +136,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         data=payload,
         files=files,
         cookies=cookies,
-        # timeout=httpx.Timeout(30.0, read=None),
+        timeout=httpx.Timeout(15.0, read=None),
     )
 
     assert_equals(r.status_code, 303)
