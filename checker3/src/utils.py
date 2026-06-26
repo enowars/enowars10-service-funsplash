@@ -41,7 +41,7 @@ async def upload_examples(conn: Connection, cookies):
                 description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
                 privacy=random.choice([Privacy.Private, Privacy.Public]),
                 camera="go pro",
-                tags=["idk", "flag"],
+                tags=[],
                 data=file.read(),
             )
             await photo.upload(conn, cookies, p)
@@ -57,11 +57,14 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
     )
 
     async def exceed_quota(mask):
-        for i in range(30):
+        index = 0
+        for i in range(40):
+            index += 1
             msg = await photo.censor(conn, p.public_id, [mask])
             if ":" in msg[0]:
                 break
+        return index
 
-    await exceed_quota(full)
-    await exceed_quota(half)
-    await exceed_quota(black)
+    index1 = await exceed_quota(full)
+    index2 = await exceed_quota(black)
+    print(f"fill index: {index1}, {index2}")

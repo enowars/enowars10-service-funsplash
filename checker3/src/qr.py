@@ -210,22 +210,3 @@ def create_mask(mode: str) -> bytearray:
         pass
 
     return mask
-
-
-def simulate_and_save(base_img, pixel_data, test_name, output_filename) -> Image:
-    # 1. Calculate the raw zlib oracle size (What the attacker sees)
-    raw_bytes = bytes(pixel_data)
-    compressed_data = zlib.compress(raw_bytes, level=1)
-    _ = len(compressed_data)
-
-    # 2. Save the visual image to disk (What you see to verify your code)
-    # Create a new blank 1-bit image with the same dimensions
-    out_img = Image.new("1", base_img.size)
-    # Put our modified pixels into the image
-    out_img.putdata(pixel_data)
-
-    return out_img
-
-    # print(f"[{test_name}]")
-    # print(f"  -> Oracle Size: {oracle_size} bytes")
-    # print(f"  -> Saved Image: {output_filename}\n")

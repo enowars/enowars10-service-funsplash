@@ -100,7 +100,7 @@ fn close_socket(state: State) -> Nil {
       camera: p.camera,
       show_on_profile: p.show_on_profile,
       data: data |> png.pack,
-      tags: ["censored"],
+      tags: [],
     )
     |> photo.upload(state.db)
   }
