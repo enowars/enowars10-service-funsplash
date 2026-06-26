@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/bytes_tree.{type BytesTree}
+import gleam/erlang/atom
 import gleam/erlang/process
 import gleam/http/request
 import gleam/http/response
@@ -20,6 +21,15 @@ import utils
 
 const ressource_limit = 900
 
+@external(erlang, "erlang", "process_flag")
+fn process_flag(flag: atom.Atom, level: atom.Atom) -> atom.Atom
+
+@external(erlang, "erlang", "term_to_binary")
+fn term_to_binary(term: a) -> BitArray
+
+@external(erlang, "erlang", "binary_to_term")
+fn binary_to_term(bin: BitArray) -> png.Photo(BitArray, Uncompressed)
+
 pub type State {
   State(
     photo: photo.Photo,
@@ -29,6 +39,7 @@ pub type State {
     z_stream: png.ZStream,
     user: user.User,
     db: pog.Connection,
+    bg_db: pog.Connection,
   )
 }
 
@@ -37,6 +48,7 @@ pub fn upgrade(
   request: request.Request(mist.Connection),
   public_id: String,
   db: pog.Connection,
+  bg_db: pog.Connection,
 ) -> response.Response(mist.ResponseData) {
   // mist doesnt have built in signed cookie checks so we just dont them here
   // let assert Ok(auth_cookie) =
@@ -59,7 +71,8 @@ pub fn upgrade(
     State,
     Option(process.Selector(b)),
   ) {
-    let data = png.parse_photo(photo_row.data)
+    let assert Ok(data) = photo.get_data(photo.privacy, photo.asset_id)
+    let data = data |> png.parse
     let z_stream = png.init_compressor()
     #(
       State(
@@ -70,6 +83,7 @@ pub fn upgrade(
         z_stream:,
         user:,
         db:,
+        bg_db:,
       ),
       None,
     )
@@ -92,17 +106,19 @@ fn close_socket(state: State) -> Nil {
   // TODO: check if editing allowed
   {
     use data <- option.map(state.out_photo)
-    shared_upload.Upload(
-      creator: p.creator,
-      description: Some(option.unwrap(p.description, "") <> " censored"),
-      privacy: p.privacy,
-      location: p.location,
-      camera: p.camera,
-      show_on_profile: p.show_on_profile,
-      data: data |> png.pack,
-      tags: [],
-    )
-    |> photo.upload(state.db)
+    process.spawn_unlinked(fn() {
+      shared_upload.Upload(
+        creator: p.creator,
+        description: Some(option.unwrap(p.description, "") <> " (censored)"),
+        privacy: p.privacy,
+        location: p.location,
+        camera: p.camera,
+        show_on_profile: p.show_on_profile,
+        data: data |> png.pack,
+        tags: [],
+      )
+      |> photo.upload(state.bg_db)
+    })
   }
   Nil
 }

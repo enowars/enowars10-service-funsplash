@@ -42,7 +42,7 @@ INSERT INTO photos_tags (tag, photo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotoCreateRow {
-  PhotoCreateRow(id: Uuid)
+  PhotoCreateRow(id: Uuid, asset_id: Uuid)
 }
 
 /// Runs the `photo_create` query
@@ -55,43 +55,123 @@ pub fn photo_create(
   db: pog.Connection,
   arg_1: String,
   id: Uuid,
-  arg_3: BitArray,
-  arg_4: PhotoPrivacy,
+  arg_3: PhotoPrivacy,
+  arg_4: String,
   arg_5: String,
-  arg_6: String,
-  arg_7: Bool,
-  arg_8: Int,
+  arg_6: Bool,
+  arg_7: Int,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    decode.success(PhotoCreateRow(id:))
+    use asset_id <- decode.field(1, uuid_decoder())
+    decode.success(PhotoCreateRow(id:, asset_id:))
   }
 
   "WITH updated_user AS (
      UPDATE users
-     SET storage_quota_used = storage_quota_used + $8
+     SET storage_quota_used = storage_quota_used + $7
      WHERE id = $2
 )
-INSERT INTO photos (description, creator, data, privacy, location, camera, show_on_profile, file_size)
+INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size)
 VALUES (nullif($1,''),
 	$2,
 	$3,
-	$4,
+	nullif($4,''),
 	nullif($5,''),
-	nullif($6,''),
-	$7,
-	$8)
-RETURNING id;
+	$6,
+	$7)
+RETURNING id, asset_id;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
   |> pog.parameter(pog.text(uuid.to_string(id)))
-  |> pog.parameter(pog.bytea(arg_3))
-  |> pog.parameter(photo_privacy_encoder(arg_4))
+  |> pog.parameter(photo_privacy_encoder(arg_3))
+  |> pog.parameter(pog.text(arg_4))
   |> pog.parameter(pog.text(arg_5))
-  |> pog.parameter(pog.text(arg_6))
-  |> pog.parameter(pog.bool(arg_7))
-  |> pog.parameter(pog.int(arg_8))
+  |> pog.parameter(pog.bool(arg_6))
+  |> pog.parameter(pog.int(arg_7))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_find_by_asset_id` query
+/// defined in `./src/server/sql/photo_find_by_asset_id.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoFindByAssetIdRow {
+  PhotoFindByAssetIdRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    creator: Uuid,
+    file_size: Int,
+    privacy: PhotoPrivacy,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photo_find_by_asset_id` query
+/// defined in `./src/server/sql/photo_find_by_asset_id.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_find_by_asset_id(
+  db: pog.Connection,
+  asset_id: Uuid,
+  privacy: PhotoPrivacy,
+) -> Result(pog.Returned(PhotoFindByAssetIdRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
+    decode.success(PhotoFindByAssetIdRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      creator:,
+      file_size:,
+      privacy:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT *
+FROM photos
+WHERE asset_id = $1
+AND privacy = $2
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(asset_id)))
+  |> pog.parameter(photo_privacy_encoder(privacy))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -109,7 +189,6 @@ pub type PhotoFindByPublicIdRow {
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
-    data: BitArray,
     file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
@@ -138,23 +217,21 @@ pub fn photo_find_by_public_id(
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
-    use data <- decode.field(5, decode.bit_array)
-    use file_size <- decode.field(6, decode.int)
-    use privacy <- decode.field(7, photo_privacy_decoder())
-    use show_on_profile <- decode.field(8, decode.bool)
-    use location <- decode.field(9, decode.optional(decode.string))
-    use camera <- decode.field(10, decode.optional(decode.string))
-    use likes_count <- decode.field(11, decode.int)
-    use views <- decode.field(12, decode.int)
-    use downloads <- decode.field(13, decode.int)
-    use created_at <- decode.field(14, pog.timestamp_decoder())
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
     decode.success(PhotoFindByPublicIdRow(
       id:,
       public_id:,
       asset_id:,
       description:,
       creator:,
-      data:,
       file_size:,
       privacy:,
       show_on_profile:,
@@ -168,180 +245,6 @@ pub fn photo_find_by_public_id(
   }
 
   "SELECT *
-FROM photos
-WHERE public_id = $1
-LIMIT 1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(public_id))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `photo_find_data_by_asset_id` query
-/// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type PhotoFindDataByAssetIdRow {
-  PhotoFindDataByAssetIdRow(
-    id: Uuid,
-    public_id: String,
-    asset_id: Uuid,
-    description: Option(String),
-    creator: Uuid,
-    data: BitArray,
-    file_size: Int,
-    privacy: PhotoPrivacy,
-    show_on_profile: Bool,
-    location: Option(String),
-    camera: Option(String),
-    likes_count: Int,
-    views: Int,
-    downloads: Int,
-    created_at: Timestamp,
-  )
-}
-
-/// Runs the `photo_find_data_by_asset_id` query
-/// defined in `./src/server/sql/photo_find_data_by_asset_id.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.7.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn photo_find_data_by_asset_id(
-  db: pog.Connection,
-  asset_id: Uuid,
-  privacy: PhotoPrivacy,
-) -> Result(pog.Returned(PhotoFindDataByAssetIdRow), pog.QueryError) {
-  let decoder = {
-    use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
-    use asset_id <- decode.field(2, uuid_decoder())
-    use description <- decode.field(3, decode.optional(decode.string))
-    use creator <- decode.field(4, uuid_decoder())
-    use data <- decode.field(5, decode.bit_array)
-    use file_size <- decode.field(6, decode.int)
-    use privacy <- decode.field(7, photo_privacy_decoder())
-    use show_on_profile <- decode.field(8, decode.bool)
-    use location <- decode.field(9, decode.optional(decode.string))
-    use camera <- decode.field(10, decode.optional(decode.string))
-    use likes_count <- decode.field(11, decode.int)
-    use views <- decode.field(12, decode.int)
-    use downloads <- decode.field(13, decode.int)
-    use created_at <- decode.field(14, pog.timestamp_decoder())
-    decode.success(PhotoFindDataByAssetIdRow(
-      id:,
-      public_id:,
-      asset_id:,
-      description:,
-      creator:,
-      data:,
-      file_size:,
-      privacy:,
-      show_on_profile:,
-      location:,
-      camera:,
-      likes_count:,
-      views:,
-      downloads:,
-      created_at:,
-    ))
-  }
-
-  "SELECT *
-FROM photos
-WHERE asset_id = $1
-AND privacy = $2
-LIMIT 1;
-"
-  |> pog.query
-  |> pog.parameter(pog.text(uuid.to_string(asset_id)))
-  |> pog.parameter(photo_privacy_encoder(privacy))
-  |> pog.returning(decoder)
-  |> pog.execute(db)
-}
-
-/// A row you get from running the `photo_find_meta_by_public_id` query
-/// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
-///
-/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
-/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub type PhotoFindMetaByPublicIdRow {
-  PhotoFindMetaByPublicIdRow(
-    id: Uuid,
-    public_id: String,
-    asset_id: Uuid,
-    description: Option(String),
-    creator: Uuid,
-    privacy: PhotoPrivacy,
-    show_on_profile: Bool,
-    location: Option(String),
-    camera: Option(String),
-    likes_count: Int,
-    views: Int,
-    downloads: Int,
-    created_at: Timestamp,
-  )
-}
-
-/// Runs the `photo_find_meta_by_public_id` query
-/// defined in `./src/server/sql/photo_find_meta_by_public_id.sql`.
-///
-/// > 🐿️ This function was generated automatically using v4.7.0 of
-/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
-///
-pub fn photo_find_meta_by_public_id(
-  db: pog.Connection,
-  public_id: String,
-) -> Result(pog.Returned(PhotoFindMetaByPublicIdRow), pog.QueryError) {
-  let decoder = {
-    use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
-    use asset_id <- decode.field(2, uuid_decoder())
-    use description <- decode.field(3, decode.optional(decode.string))
-    use creator <- decode.field(4, uuid_decoder())
-    use privacy <- decode.field(5, photo_privacy_decoder())
-    use show_on_profile <- decode.field(6, decode.bool)
-    use location <- decode.field(7, decode.optional(decode.string))
-    use camera <- decode.field(8, decode.optional(decode.string))
-    use likes_count <- decode.field(9, decode.int)
-    use views <- decode.field(10, decode.int)
-    use downloads <- decode.field(11, decode.int)
-    use created_at <- decode.field(12, pog.timestamp_decoder())
-    decode.success(PhotoFindMetaByPublicIdRow(
-      id:,
-      public_id:,
-      asset_id:,
-      description:,
-      creator:,
-      privacy:,
-      show_on_profile:,
-      location:,
-      camera:,
-      likes_count:,
-      views:,
-      downloads:,
-      created_at:,
-    ))
-  }
-
-  "SELECT
-    id,
-    public_id,
-    asset_id,
-    description,
-    creator,
-    privacy,
-    show_on_profile,
-    location,
-    camera,
-    likes_count,
-    views,
-    downloads,
-    created_at
 FROM photos
 WHERE public_id = $1
 LIMIT 1;
@@ -930,6 +833,28 @@ AND EXISTS (SELECT 1 FROM deleted_like);
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(user_id)))
   |> pog.parameter(pog.text(uuid.to_string(photo_id)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `user_update_quota` query
+/// defined in `./src/server/sql/user_update_quota.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_update_quota(
+  db: pog.Connection,
+  arg_1: Uuid,
+  arg_2: Int,
+) -> Result(pog.Returned(Nil), pog.QueryError) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "UPDATE users SET storage_quota_used = storage_quota_used + $2 WHERE id = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.int(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

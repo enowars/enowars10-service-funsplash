@@ -8,6 +8,8 @@ while true; do
         DELETE FROM tags WHERE tag NOT IN (SELECT tag FROM photos_tags);
     "
 
+    find /app/data/photos -type f -mmin +11 -delete
+
     echo "[$(date -Iseconds)] Cleanup done. Sleeping for 120 seconds."
     sleep 120
 done

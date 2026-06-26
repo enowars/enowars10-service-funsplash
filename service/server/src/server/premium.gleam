@@ -55,7 +55,7 @@ fn build_pixels(
 }
 
 pub fn censor(photo: BitArray) -> BitArray {
-  let photo = png.parse_photo(photo)
+  let photo = png.parse(photo)
   let mask = censor_mask(photo.meta.width, photo.meta.height)
 
   png.Photo(

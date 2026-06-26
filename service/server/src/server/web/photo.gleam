@@ -1,9 +1,11 @@
 import formal/form
+import gleam/bool
 import gleam/bytes_tree
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
+import pog
 import server/photo
 import server/premium
 import server/sql
@@ -13,7 +15,22 @@ import shared/shared_photo
 import shared/shared_privacy.{Premium, Private, Public}
 import shared/shared_upload
 import simplifile
+import utils
 import wisp
+import youid/uuid
+
+fn get_meta(
+  db: pog.Connection,
+  asset_id: String,
+  privacy: shared_privacy.Privacy,
+) -> Result(sql.PhotoFindByAssetIdRow, Nil) {
+  use asset_id <- result.try(uuid.from_string(asset_id))
+  use res <- result.try(
+    sql.photo_find_by_asset_id(db, asset_id, privacy |> photo.privacy_to_sql)
+    |> result.replace_error(Nil),
+  )
+  res.rows |> list.first
+}
 
 pub fn get_data_private(
   _request: wisp.Request,
@@ -22,20 +39,21 @@ pub fn get_data_private(
 ) -> wisp.Response {
   use user <- auth.require_login(context)
 
-  case photo.get_data(asset_id, context.db, Private) {
-    Ok(photo) -> {
-      let body = case user.id {
-        id if id == photo.creator ->
-          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
-        _ ->
-          wisp.Bytes(photo.data |> premium.censor |> bytes_tree.from_bit_array)
-      }
-      wisp.ok()
-      |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(body)
-    }
-    Error(_) -> wisp.not_found()
-  }
+  use photo <- utils.result_guard(
+    get_meta(context.db, asset_id, Private),
+    wisp.not_found(),
+  )
+
+  use <- bool.guard(photo.creator != user.id, wisp.response(403))
+
+  use data <- utils.result_guard(
+    photo.get_data(Private, photo.asset_id),
+    wisp.response(500),
+  )
+
+  wisp.ok()
+  |> wisp.set_header("content-type", "image/png")
+  |> wisp.set_body(data |> bytes_tree.from_bit_array |> wisp.Bytes)
 }
 
 pub fn get_data_premium(
@@ -43,34 +61,41 @@ pub fn get_data_premium(
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  case photo.get_data(asset_id, context.db, Premium) {
-    Ok(photo) -> {
-      let body = case context.user {
-        Some(user) if user.premium == True ->
-          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
-        Some(user) if user.id == photo.creator ->
-          wisp.Bytes(photo.data |> bytes_tree.from_bit_array)
-        _ ->
-          wisp.Bytes(photo.data |> premium.censor |> bytes_tree.from_bit_array)
-      }
-      wisp.ok()
-      |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(body)
-    }
-    Error(_) -> wisp.not_found()
+  use photo <- utils.result_guard(
+    get_meta(context.db, asset_id, Premium),
+    wisp.not_found(),
+  )
+
+  use data <- utils.result_guard(
+    photo.get_data(Premium, photo.asset_id),
+    wisp.response(500),
+  )
+
+  let data = case context.user {
+    Some(user) if user.id == photo.creator || user.premium == True -> data
+    _ -> data |> premium.censor
   }
+
+  wisp.ok()
+  |> wisp.set_header("content-type", "image/png")
+  |> wisp.set_body(data |> bytes_tree.from_bit_array |> wisp.Bytes)
 }
 
 pub fn get_data_public(
   _request: wisp.Request,
-  context: web.Context,
+  _context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  case photo.get_data(asset_id, context.db, Public) {
-    Ok(photo) -> {
+  use asset_id <- utils.result_guard(
+    asset_id |> uuid.from_string,
+    wisp.not_found(),
+  )
+
+  case photo.get_data(Public, asset_id) {
+    Ok(data) -> {
       wisp.ok()
       |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(wisp.Bytes(photo.data |> bytes_tree.from_bit_array))
+      |> wisp.set_body(wisp.Bytes(data |> bytes_tree.from_bit_array))
     }
     Error(_) -> wisp.not_found()
   }

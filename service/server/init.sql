@@ -17,8 +17,8 @@ storage_quota BIGINT NOT NULL DEFAULT 2048000, --2MB
 storage_quota_used BIGINT NOT NULL DEFAULT 0,
 CONSTRAINT storage_quota_not_exceeded CHECK (storage_quota_used <= storage_quota)
 );
-
 CREATE INDEX users_created_at_idx ON users (created_at);
+
 
 CREATE TYPE photo_privacy AS ENUM ('private', 'premium', 'public');
 
@@ -30,7 +30,6 @@ asset_id UUID NOT NULL UNIQUE DEFAULT uuidv7(),
 description TEXT,
 creator UUID NOT NULL,
 	FOREIGN KEY (creator) REFERENCES users(id) ON DELETE CASCADE,
-data BYTEA NOT NULL,	--TODO: move out and into seperate table or fs
 file_size INT NOT NULL,
 CONSTRAINT max_file_size CHECK (file_size < 1024000), --1MB
 privacy photo_privacy NOT NULL DEFAULT 'public',
@@ -42,7 +41,6 @@ views BIGINT NOT NULL DEFAULT 0,
 downloads BIGINT NOT NULL DEFAULT 0,
 created_at TIMESTAMP NOT NULL DEFAULT now()
 );
-
 CREATE INDEX photos_created_at_idx ON photos (created_at);
 
 

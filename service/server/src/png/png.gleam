@@ -39,7 +39,7 @@ fn calculate_bpp(color_type: Int, bit_depth: Int) -> Int {
   int.max(1, { channels * bit_depth } / 8)
 }
 
-pub fn parse_photo(photo: BitArray) -> Photo(BitArray, Uncompressed) {
+pub fn parse(photo: BitArray) -> Photo(BitArray, Uncompressed) {
   let #(
     #(width, height, bit_depth, color_type),
     header_envelope,

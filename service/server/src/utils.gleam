@@ -18,3 +18,14 @@ pub fn db_limit(
     Error(e) -> Error(e)
   }
 }
+
+pub fn result_guard(
+  when requirement: Result(a, b),
+  return consequence: c,
+  otherwise alternative: fn(a) -> c,
+) -> c {
+  case requirement {
+    Error(_) -> consequence
+    Ok(ok) -> alternative(ok)
+  }
+}

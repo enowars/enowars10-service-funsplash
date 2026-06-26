@@ -12,10 +12,11 @@ import shared/shared_privacy.{type Privacy, Premium, Private, Public}
 import shared/shared_stats
 import shared/shared_thumbnail
 import shared/shared_upload
+import simplifile
 import utils
 import youid/uuid.{type Uuid}
 
-fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
+pub fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
   case priv {
     Public -> sql.Public
     Premium -> sql.Premium
@@ -132,17 +133,14 @@ pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
 }
 
 pub fn get_data(
-  asset_id: String,
-  db: pog.Connection,
-  privacy: Privacy,
-) -> Result(sql.PhotoFindDataByAssetIdRow, Nil) {
-  use id <- result.try(uuid.from_string(asset_id))
-  use res <- result.try(
-    sql.photo_find_data_by_asset_id(db, id, privacy |> privacy_to_sql)
-    |> result.replace_error(Nil),
-  )
-  use photo <- result.try(res.rows |> list.first)
-  Ok(photo)
+  _privacy: Privacy,
+  asset_id: uuid.Uuid,
+) -> Result(BitArray, Nil) {
+  let fs_path = "/app/data/photos/" <> uuid.to_string(asset_id)
+  case simplifile.read_bits(fs_path) {
+    Ok(data) -> Ok(data)
+    Error(_) -> Error(Nil)
+  }
 }
 
 pub fn get_tags(db: pog.Connection, photo_id: Uuid) -> List(String) {
@@ -199,7 +197,6 @@ pub fn upload(
       db,
       p.description |> option.unwrap(""),
       p.creator,
-      p.data,
       p.privacy |> privacy_to_sql,
       p.location |> option.unwrap(""),
       p.camera |> option.unwrap(""),
@@ -210,6 +207,9 @@ pub fn upload(
   )
 
   use new_photo <- utils.db_limit(res, shared_upload.DatabaseError)
+
+  let fs_path = "/app/data/photos/" <> uuid.to_string(new_photo.asset_id)
+  let _ = simplifile.write_bits(fs_path, p.data)
 
   list.try_each(p.tags, fn(tag) {
     sql.photo_add_tag(db, tag, new_photo.id)

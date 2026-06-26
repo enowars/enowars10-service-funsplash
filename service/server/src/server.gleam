@@ -10,8 +10,10 @@ import server/web
 import server/web/auth
 import wisp
 import wisp/wisp_mist
+import simplifile
 
-fn server(db: pog.Connection, config: Config) -> Nil {
+fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
+  let _ = simplifile.create_directory_all("/app/data/photos")
   wisp.configure_logger()
 
   let assert Ok(priv_directory) = wisp.priv_directory("server")
@@ -27,7 +29,8 @@ fn server(db: pog.Connection, config: Config) -> Nil {
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
     case request.path_segments(request) {
-      ["napi", "censor", photo_id] -> censor.upgrade(request, photo_id, db)
+      ["napi", "censor", photo_id] ->
+        censor.upgrade(request, photo_id, db, bg_db)
       _ -> wisp_app(request)
     }
   }
@@ -53,7 +56,24 @@ fn db(config: Config) {
     |> pog.host(config.db_host)
     |> pog.port(config.db_port)
     |> pog.database(config.db_database)
-    |> pog.pool_size(config.db_pool_size)
+    |> pog.pool_size(100)
+    |> pog.start
+
+  pog.named_connection(db_proc)
+}
+
+fn bg_db(config: Config) {
+  let db_proc = process.new_name("db_bg")
+
+  let assert Ok(_) =
+    db_proc
+    |> pog.default_config()
+    |> pog.user(config.db_user)
+    |> pog.password(option.Some(config.db_password))
+    |> pog.host(config.db_host)
+    |> pog.port(config.db_port)
+    |> pog.database(config.db_database)
+    |> pog.pool_size(80)
     |> pog.start
 
   pog.named_connection(db_proc)
@@ -62,5 +82,6 @@ fn db(config: Config) {
 pub fn main() -> Nil {
   let config = config.config()
   let db_proc = db(config)
-  server(db_proc, config)
+  let bg_db_proc = bg_db(config)
+  server(db_proc, bg_db_proc, config)
 }
