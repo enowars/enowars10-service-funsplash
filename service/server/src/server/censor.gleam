@@ -38,7 +38,7 @@ pub type State {
     req_counter: Int,
     z_stream: png.ZStream,
     user: user.User,
-    db: pog.Connection,
+    context: web.Context,
     bg_db: pog.Connection,
   )
 }
@@ -47,7 +47,7 @@ pub type State {
 pub fn upgrade(
   request: request.Request(mist.Connection),
   public_id: String,
-  db: pog.Connection,
+  context: web.Context,
   bg_db: pog.Connection,
 ) -> response.Response(mist.ResponseData) {
   // mist doesnt have built in signed cookie checks so we just dont them here
@@ -56,11 +56,11 @@ pub fn upgrade(
   // let assert Ok(uid) = auth_cookie |> uuid.from_string
 
   io.println("Connected")
-  let assert Ok(res) = sql.photo_find_by_public_id(db, public_id)
+  let assert Ok(res) = sql.photo_find_by_public_id(context.db, public_id)
   let assert Ok(photo_row) = list.first(res.rows)
   let photo = photo_row |> photo.from_photo_find_by_public_id_row
 
-  let assert Ok(user) = user.get_by_id(db, photo.creator)
+  let assert Ok(user) = user.get_by_id(context.db, photo.creator)
 
   use <- bool.guard(
     photo.privacy == Private,
@@ -82,7 +82,7 @@ pub fn upgrade(
         req_counter: 0,
         z_stream:,
         user:,
-        db:,
+        context:,
         bg_db:,
       ),
       None,
@@ -117,7 +117,7 @@ fn close_socket(state: State) -> Nil {
         data: data |> png.pack,
         tags: [],
       )
-      |> photo.upload(state.bg_db)
+      |> photo.upload(state.bg_db, state.context.user_cache)
     })
   }
   Nil

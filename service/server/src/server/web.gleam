@@ -1,10 +1,17 @@
+import bravo/uset
 import gleam/option.{type Option}
 import pog
 import server/user.{type User}
 import wisp
+import youid/uuid
 
 pub type Context {
-  Context(db: pog.Connection, static_dir: String, user: Option(User))
+  Context(
+    db: pog.Connection,
+    static_dir: String,
+    user: Option(User),
+    user_cache: uset.USet(uuid.Uuid, User),
+  )
 }
 
 pub fn middleware(

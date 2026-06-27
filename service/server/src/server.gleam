@@ -1,3 +1,5 @@
+import bravo
+import bravo/uset
 import gleam/erlang/process
 import gleam/http/request
 import gleam/option
@@ -8,29 +10,33 @@ import server/config.{type Config}
 import server/router
 import server/web
 import server/web/auth
+import simplifile
 import wisp
 import wisp/wisp_mist
-import simplifile
 
 fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
   let _ = simplifile.create_directory_all("/app/data/photos")
+
+  let assert Ok(user_cache) = uset.new("user_cache", bravo.Public)
+
   wisp.configure_logger()
 
   let assert Ok(priv_directory) = wisp.priv_directory("server")
   let static_directory = priv_directory <> "/static"
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
-    use user <- auth.get_user_from_session(request, db)
-    let context = web.Context(db, static_directory, user)
+    use user <- auth.get_user_from_session(request, db, user_cache)
+    let context = web.Context(db, static_directory, user, user_cache)
     router.handle_request(request, context)
   }
 
   let wisp_app = wisp_mist.handler(handle_request, config.server_secret)
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
+    let context = web.Context(db, static_directory, None, user_cache)
     case request.path_segments(request) {
       ["napi", "censor", photo_id] ->
-        censor.upgrade(request, photo_id, db, bg_db)
+        censor.upgrade(request, photo_id, context, bg_db)
       _ -> wisp_app(request)
     }
   }

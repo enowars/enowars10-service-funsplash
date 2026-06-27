@@ -9,6 +9,17 @@ pub fn defer(defer: fn() -> a, first: fn() -> b) -> b {
 }
 
 pub fn db_limit(
+  res: Result(pog.Returned(a), pe),
+  err: e,
+  next: fn(a) -> Result(b, e),
+) -> Result(b, e) {
+  case res {
+    Ok(ok) -> db_limit_(ok, err, next)
+    Error(_) -> Error(err)
+  }
+}
+
+fn db_limit_(
   res: pog.Returned(a),
   err: e,
   next: fn(a) -> Result(b, e),

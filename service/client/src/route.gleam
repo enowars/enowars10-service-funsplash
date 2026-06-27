@@ -1,6 +1,6 @@
 import gleam/int
-import gleam/uri
 import gleam/option
+import gleam/uri
 import lustre/attribute
 
 pub type Route {

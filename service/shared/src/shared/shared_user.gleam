@@ -1,6 +1,7 @@
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
+import gleam/uri
 import shared/shared_thumbnail
 
 pub type User {
@@ -17,12 +18,18 @@ pub type User {
 
 pub type Error {
   Unauthorized
+  RequireLogin
 }
 
 pub fn error_to_string(err: Error) -> String {
   case err {
     Unauthorized -> "Unauthorized"
+    RequireLogin -> "You need to be logged in"
   }
+}
+
+pub fn error_to_uri(err: Error) -> String {
+  err |> error_to_string |> uri.percent_encode
 }
 
 pub fn user_to_json(user: User) -> json.Json {

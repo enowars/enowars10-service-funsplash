@@ -547,7 +547,20 @@ WHERE photo_id = $1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type UserCreateRow {
-  UserCreateRow(id: Uuid, username: String)
+  UserCreateRow(
+    id: Uuid,
+    username: String,
+    first_name: String,
+    last_name: Option(String),
+    bio: Option(String),
+    available_for_hire: Bool,
+    premium: Bool,
+    password: String,
+    created_at: Timestamp,
+    updated_at: Timestamp,
+    storage_quota: Int,
+    storage_quota_used: Int,
+  )
 }
 
 /// Runs the `user_create` query
@@ -568,7 +581,30 @@ pub fn user_create(
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use username <- decode.field(1, decode.string)
-    decode.success(UserCreateRow(id:, username:))
+    use first_name <- decode.field(2, decode.string)
+    use last_name <- decode.field(3, decode.optional(decode.string))
+    use bio <- decode.field(4, decode.optional(decode.string))
+    use available_for_hire <- decode.field(5, decode.bool)
+    use premium <- decode.field(6, decode.bool)
+    use password <- decode.field(7, decode.string)
+    use created_at <- decode.field(8, pog.timestamp_decoder())
+    use updated_at <- decode.field(9, pog.timestamp_decoder())
+    use storage_quota <- decode.field(10, decode.int)
+    use storage_quota_used <- decode.field(11, decode.int)
+    decode.success(UserCreateRow(
+      id:,
+      username:,
+      first_name:,
+      last_name:,
+      bio:,
+      available_for_hire:,
+      premium:,
+      password:,
+      created_at:,
+      updated_at:,
+      storage_quota:,
+      storage_quota_used:,
+    ))
   }
 
   "INSERT INTO users (username, first_name, last_name, password, bio, available_for_hire)
@@ -579,7 +615,7 @@ VALUES ($1,
 	nullif($5,''),
 	$6
 )
-RETURNING id, username;
+RETURNING *;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))

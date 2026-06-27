@@ -6,4 +6,4 @@ VALUES ($1,
 	nullif($5,''),
 	$6
 )
-RETURNING id, username;
+RETURNING *;
