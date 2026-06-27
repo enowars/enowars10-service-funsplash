@@ -15,6 +15,7 @@ import pog
 import server/photo
 import server/sql
 import server/user
+import server/web
 import shared/shared_privacy.{Private}
 import shared/shared_upload
 import utils
@@ -114,7 +115,7 @@ fn close_socket(state: State) -> Nil {
         location: p.location,
         camera: p.camera,
         show_on_profile: p.show_on_profile,
-        data: data |> png.pack,
+        data: shared_upload.InMemory(data |> png.pack),
         tags: [],
       )
       |> photo.upload(state.bg_db, state.context.user_cache)

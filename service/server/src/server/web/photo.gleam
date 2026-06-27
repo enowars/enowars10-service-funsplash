@@ -86,6 +86,7 @@ pub fn get_data_public(
   _context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
+  // TODO: move photo files into privacy dirs /public /private etc. so we dont have to call db here
   use asset_id <- utils.result_guard(
     asset_id |> uuid.from_string,
     wisp.not_found(),
@@ -155,14 +156,16 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   use multipart <- wisp.require_form(request)
 
   let upload_result = {
-    use photo_file <- result.try(
+    use file <- result.try(
       list.key_find(multipart.files, "photo")
       |> result.replace_error(shared_upload.FileMissing),
     )
-    use data <- result.try(
-      simplifile.read_bits(photo_file.path)
+    use info <- result.try(
+      simplifile.file_info(file.path)
       |> result.replace_error(shared_upload.FileReadError),
     )
+
+    let data = shared_upload.File(file.path, info.size)
 
     use form <- result.try(
       shared_upload.upload_form(user.id, data)
@@ -172,7 +175,7 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
 
     form
-    |> photo.upload(context.db)
+    |> photo.upload(context.db, context.user_cache)
   }
 
   case upload_result {

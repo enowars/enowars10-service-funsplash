@@ -3,7 +3,7 @@ ARG GLEAM_VERSION=v1.17.0
 # Build stage - compile the application
 FROM ghcr.io/gleam-lang/gleam:${GLEAM_VERSION}-erlang-alpine AS builder
 
-RUN apk add --no-cache make gcc musl-dev
+RUN apk add --no-cache make gcc musl-dev git
 
 # prerun
 COPY ./shared/manifest.toml /build/shared/

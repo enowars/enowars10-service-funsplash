@@ -1,13 +1,13 @@
 import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/uri
 import lustre/attribute.{class, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  button, div, h1, input, label, option, select, textarea, p, small,
+  button, div, h1, input, label, option, p, select, small, textarea,
 }
 import shared/shared_privacy
-import gleam/option.{type Option, None, Some}
-import gleam/uri
 
 // MODEL -----------------------------------------------------------------------
 

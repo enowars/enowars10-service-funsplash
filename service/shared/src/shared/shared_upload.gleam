@@ -5,10 +5,17 @@ import gleam/uri
 import shared/shared_privacy.{type Privacy}
 import youid/uuid.{type Uuid}
 
+pub const max_allowed_size = 1_024_000
+
+pub type Data {
+  InMemory(data: BitArray)
+  File(path: String, size: Int)
+}
+
 pub type Upload {
   Upload(
     creator: Uuid,
-    data: BitArray,
+    data: Data,
     description: Option(String),
     privacy: Privacy,
     location: Option(String),
@@ -21,7 +28,7 @@ pub type Upload {
 pub type Error {
   FileMissing
   FileReadError
-  DatabaseError
+  InternalError
   InvalidForm
   QuotaExceeded(quota_remaining: Int)
   ImageTooLarge(allowed_size: Int)
@@ -36,7 +43,7 @@ pub fn error_to_string(err: Error) -> String {
   case err {
     FileMissing -> "No photo file was selected."
     FileReadError -> "An error occurred while reading the uploaded file."
-    DatabaseError -> "An internal database error occurred while saving."
+    InternalError -> "An internal error occurred while saving."
     InvalidForm -> "The form data provided was invalid."
     QuotaExceeded(remaining) ->
       "Storage quota exceeded. You have: "
@@ -49,7 +56,7 @@ pub fn error_to_string(err: Error) -> String {
   }
 }
 
-pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
+pub fn upload_form(creator: Uuid, data: Data) -> Form(Upload) {
   form.new({
     use description <- form.field(
       "description",
@@ -65,6 +72,13 @@ pub fn upload_form(creator: Uuid, data: BitArray) -> Form(Upload) {
     use show_on_profile <- form.field("show_on_profile", form.parse_checkbox)
 
     use tags <- form.field("tags", form.parse_list(form.parse_string))
+
+    // let _ = case data {
+    //   InMemory(_) -> todo
+    //   File(path: _, size:) if size > max_allowed_size ->
+    //     form.CustomError("File too large")
+    //   _ -> Nil
+    // }
 
     form.success(Upload(
       creator:,

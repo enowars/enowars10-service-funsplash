@@ -23,12 +23,7 @@ pub fn draw_and_send_censor_mask(x: Int, y: Int, radius: Int) -> Nil
 
 pub type Model {
   Loading(id: String)
-  Loaded(
-    photo: Photo,
-    img_w: Int,
-    img_h: Int,
-    mouse_down: Bool,
-  )
+  Loaded(photo: Photo, img_w: Int, img_h: Int, mouse_down: Bool)
   Failed
 }
 
@@ -147,7 +142,10 @@ pub fn view(model: Model) -> Element(Message) {
           })
 
         let on_mousedown =
-          event.prevent_default(event.on("mousedown", decode.success(UserPressedMouse(True))))
+          event.prevent_default(event.on(
+            "mousedown",
+            decode.success(UserPressedMouse(True)),
+          ))
         let on_mouseup =
           event.on("mouseup", decode.success(UserPressedMouse(False)))
         let on_mouseleave =

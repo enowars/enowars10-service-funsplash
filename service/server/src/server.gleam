@@ -2,7 +2,7 @@ import bravo
 import bravo/uset
 import gleam/erlang/process
 import gleam/http/request
-import gleam/option
+import gleam/option.{None}
 import mist
 import pog
 import server/censor
@@ -25,6 +25,7 @@ fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
   let static_directory = priv_directory <> "/static"
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
+    let request = request |> wisp.set_max_body_size(1000)
     use user <- auth.get_user_from_session(request, db, user_cache)
     let context = web.Context(db, static_directory, user, user_cache)
     router.handle_request(request, context)

@@ -1,3 +1,4 @@
+import bravo/uset
 import gleam/bit_array
 import gleam/bool
 import gleam/list
@@ -6,7 +7,7 @@ import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
-import server/user
+import server/user.{type User}
 import shared/shared_photo
 import shared/shared_privacy.{type Privacy, Premium, Private, Public}
 import shared/shared_stats
@@ -151,11 +152,11 @@ pub fn get_tags(db: pog.Connection, photo_id: Uuid) -> List(String) {
 }
 
 pub fn get(db, public_id) -> Result(Photo, Nil) {
-  use res <- result.try(
+  use photo <- utils.db_limit(
     sql.photo_find_by_public_id(db, public_id)
-    |> result.replace_error(Nil),
+      |> result.replace_error(Nil),
+    Nil,
   )
-  use photo <- utils.db_limit(res, Nil)
   Ok(photo |> from_photo_find_by_public_id_row)
 }
 
@@ -170,29 +171,33 @@ pub fn user_liked(
   }
 }
 
-pub const max_allowed_size = 1_024_000
-
 pub fn upload(
   photo p: shared_upload.Upload,
   db_connection db: pog.Connection,
+  user_cache uc: uset.USet(uuid.Uuid, User),
 ) -> Result(Nil, shared_upload.Error) {
-  let size = bit_array.byte_size(p.data)
+  let size = case p.data {
+    shared_upload.InMemory(data:) -> bit_array.byte_size(data)
+    shared_upload.File(path: _, size:) -> size
+  }
+
   use <- bool.guard(
-    size > max_allowed_size,
-    Error(shared_upload.ImageTooLarge(max_allowed_size)),
+    size > shared_upload.max_allowed_size,
+    Error(shared_upload.ImageTooLarge(shared_upload.max_allowed_size)),
   )
 
   use user <- result.try(
-    user.get_by_id(db, p.creator)
-    |> result.replace_error(shared_upload.AuthorizationError),
+    uset.lookup(uc, p.creator)
+    |> result.replace_error(shared_upload.InternalError),
   )
 
+  let new_used_quota = user.storage_quota_used + size
   use <- bool.guard(
-    user.storage_quota_used + size > user.storage_quota,
+    new_used_quota > user.storage_quota,
     Error(shared_upload.QuotaExceeded(user.storage_quota_used)),
   )
 
-  use res <- result.try(
+  use new_photo <- utils.db_limit(
     sql.photo_create(
       db,
       p.description |> option.unwrap(""),
@@ -202,17 +207,28 @@ pub fn upload(
       p.camera |> option.unwrap(""),
       p.show_on_profile,
       size,
-    )
-    |> result.replace_error(shared_upload.DatabaseError),
+    ),
+    shared_upload.InternalError,
   )
 
-  use new_photo <- utils.db_limit(res, shared_upload.DatabaseError)
+  let _ =
+    uset.insert(
+      uc,
+      user.id,
+      sql.UserFindByNameRow(..user, storage_quota_used: new_used_quota),
+    )
 
   let fs_path = "/app/data/photos/" <> uuid.to_string(new_photo.asset_id)
-  let _ = simplifile.write_bits(fs_path, p.data)
+  use _ <- result.try(
+    case p.data {
+      shared_upload.InMemory(data:) -> simplifile.write_bits(fs_path, data)
+      shared_upload.File(path:, size: _) -> simplifile.rename(path, fs_path)
+    }
+    |> result.replace_error(shared_upload.InternalError),
+  )
 
   list.try_each(p.tags, fn(tag) {
     sql.photo_add_tag(db, tag, new_photo.id)
-    |> result.replace_error(shared_upload.DatabaseError)
+    |> result.replace_error(shared_upload.InternalError)
   })
 }

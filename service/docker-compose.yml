@@ -4,6 +4,7 @@ services:
     entrypoint: [ "sh", "/cleanup.sh" ]
     volumes:
       - ./cleanup.sh:/cleanup.sh:ro,z
+      - photos_data:/app/data/photos:z
     depends_on:
       postgres:
         condition: service_healthy
@@ -21,28 +22,37 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - photos_data:/app/data/photos:z
     ports:
       - "1337:1337"
     env_file:
       - .env
+    environment:
+      - TMPDIR=/app/data/photos/tmp
     networks:
       - funsplash
     restart: unless-stopped
     mem_limit: 1348m
-    cpus: 1.45
+    # cpus: 1.45
+    cpus: 2
 
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
+    # ports:
+    #   - "5432:5432"
     env_file:
       - .env
     networks:
       - funsplash
-    mem_limit: 512m
-    cpus: 0.5
+    # mem_limit: 512m
+    # cpus: 0.5
     volumes:
       - postgres_data:/var/lib/postgresql:z
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:z
+    # command: ["postgres", "-c", "max_connections=200", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    command: [ "postgres", "-c", "max_connections=200" ]
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U $${PGUSER} -d $${PGDATABASE}" ]
       interval: 10s
@@ -55,3 +65,4 @@ networks:
 
 volumes:
   postgres_data:
+  photos_data:
