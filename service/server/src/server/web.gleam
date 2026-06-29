@@ -1,16 +1,18 @@
-import bravo/uset
+import bravo/oset
+import bravo/uset.{type USet}
 import gleam/option.{type Option}
 import pog
 import server/user.{type User}
 import wisp
-import youid/uuid
+import youid/uuid.{type Uuid}
 
 pub type Context {
   Context(
     db: pog.Connection,
     static_dir: String,
     user: Option(User),
-    user_cache: uset.USet(uuid.Uuid, User),
+    user_cache: USet(Uuid, User),
+    profile_cache: USet(String, Uuid),
   )
 }
 

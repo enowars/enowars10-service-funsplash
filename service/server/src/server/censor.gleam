@@ -1,6 +1,5 @@
 import gleam/bool
 import gleam/bytes_tree.{type BytesTree}
-import gleam/erlang/atom
 import gleam/erlang/process
 import gleam/http/request
 import gleam/http/response
@@ -22,15 +21,7 @@ import utils
 
 const ressource_limit = 900
 
-@external(erlang, "erlang", "process_flag")
-fn process_flag(flag: atom.Atom, level: atom.Atom) -> atom.Atom
-
-@external(erlang, "erlang", "term_to_binary")
-fn term_to_binary(term: a) -> BitArray
-
-@external(erlang, "erlang", "binary_to_term")
-fn binary_to_term(bin: BitArray) -> png.Photo(BitArray, Uncompressed)
-
+// TODO: ets cache parsed images
 pub type State {
   State(
     photo: photo.Photo,

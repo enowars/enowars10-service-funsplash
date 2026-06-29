@@ -17,6 +17,10 @@ pub type User {
 }
 
 pub type Error {
+  LoggedOut
+  Invalid
+  NotFound
+  PhotosNotFound
   Unauthorized
   RequireLogin
 }
@@ -25,6 +29,10 @@ pub fn error_to_string(err: Error) -> String {
   case err {
     Unauthorized -> "Unauthorized"
     RequireLogin -> "You need to be logged in"
+    Invalid -> "Invalid user data"
+    NotFound -> "User doesn't exist"
+    PhotosNotFound -> "Users photos weren't found"
+    LoggedOut -> "You are logged out"
   }
 }
 

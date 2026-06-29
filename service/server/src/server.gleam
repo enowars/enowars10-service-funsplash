@@ -1,5 +1,6 @@
 import bravo
 import bravo/uset
+import envoy
 import gleam/erlang/process
 import gleam/http/request
 import gleam/option.{None}
@@ -16,8 +17,10 @@ import wisp/wisp_mist
 
 fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
   let _ = simplifile.create_directory_all("/app/data/photos")
+  let _ = simplifile.create_directory_all("/app/data/tmp")
 
   let assert Ok(user_cache) = uset.new("user_cache", bravo.Public)
+  let assert Ok(profile_cache) = uset.new("profile_cache", bravo.Public)
 
   wisp.configure_logger()
 
@@ -27,14 +30,16 @@ fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
     let request = request |> wisp.set_max_body_size(1000)
     use user <- auth.get_user_from_session(request, db, user_cache)
-    let context = web.Context(db, static_directory, user, user_cache)
+    let context =
+      web.Context(db, static_directory, user, user_cache, profile_cache)
     router.handle_request(request, context)
   }
 
   let wisp_app = wisp_mist.handler(handle_request, config.server_secret)
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
-    let context = web.Context(db, static_directory, None, user_cache)
+    let context =
+      web.Context(db, static_directory, None, user_cache, profile_cache)
     case request.path_segments(request) {
       ["napi", "censor", photo_id] ->
         censor.upgrade(request, photo_id, context, bg_db)

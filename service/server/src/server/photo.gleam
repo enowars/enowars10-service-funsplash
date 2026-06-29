@@ -7,7 +7,7 @@ import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
-import server/user.{type User}
+import server/user.{type User, User}
 import shared/shared_photo
 import shared/shared_privacy.{type Privacy, Premium, Private, Public}
 import shared/shared_stats
@@ -16,22 +16,6 @@ import shared/shared_upload
 import simplifile
 import utils
 import youid/uuid.{type Uuid}
-
-pub fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
-  case priv {
-    Public -> sql.Public
-    Premium -> sql.Premium
-    Private -> sql.Private
-  }
-}
-
-fn sql_to_privacy(priv: sql.PhotoPrivacy) -> Privacy {
-  case priv {
-    sql.Public -> Public
-    sql.Premium -> Premium
-    sql.Private -> Private
-  }
-}
 
 pub type Photo {
   Photo(
@@ -49,87 +33,6 @@ pub type Photo {
     downloads: Int,
     file_size: Int,
     created_at: Timestamp,
-  )
-}
-
-pub fn to_shared(
-  photo: Photo,
-  creator: String,
-  tags: List(String),
-  user_liked: Bool,
-) -> shared_photo.Photo {
-  shared_photo.Photo(
-    thumbnail: to_shared_thumbnail(photo, creator, user_liked),
-    description: photo.description,
-    stats: to_shared_stats(photo),
-    location: photo.location,
-    camera: photo.camera,
-    created_at: photo.created_at |> timestamp.to_unix_seconds,
-    tags:,
-  )
-}
-
-pub fn to_shared_stats(p: Photo) -> shared_stats.Stats {
-  shared_stats.Stats(
-    views: p.views,
-    likes: p.likes_count,
-    downloads: p.downloads,
-  )
-}
-
-pub fn to_shared_thumbnail(
-  p: Photo,
-  creator: String,
-  user_liked: Bool,
-) -> shared_thumbnail.Thumbnail {
-  shared_thumbnail.Thumbnail(
-    public_id: p.public_id,
-    asset_id: p.asset_id |> uuid.to_string,
-    description: p.description,
-    creator: creator,
-    privacy: p.privacy,
-    user_liked:,
-    show_on_profile: p.show_on_profile,
-  )
-}
-
-pub fn from_photo_find_by_public_id_row(
-  p: sql.PhotoFindByPublicIdRow,
-) -> Photo {
-  Photo(
-    id: p.id,
-    public_id: p.public_id,
-    asset_id: p.asset_id,
-    description: p.description,
-    creator: p.creator,
-    privacy: p.privacy |> sql_to_privacy,
-    show_on_profile: p.show_on_profile,
-    location: p.location,
-    camera: p.camera,
-    likes_count: p.likes_count,
-    views: p.views,
-    downloads: p.downloads,
-    created_at: p.created_at,
-    file_size: p.file_size,
-  )
-}
-
-pub fn from_photos_list_by_user_row(p: sql.PhotosListByUserRow) -> Photo {
-  Photo(
-    id: p.id,
-    public_id: p.public_id,
-    asset_id: p.asset_id,
-    description: p.description,
-    creator: p.creator,
-    privacy: p.privacy |> sql_to_privacy,
-    show_on_profile: p.show_on_profile,
-    location: p.location,
-    camera: p.camera,
-    likes_count: p.likes_count,
-    views: p.views,
-    downloads: p.downloads,
-    created_at: p.created_at,
-    file_size: p.file_size,
   )
 }
 
@@ -212,11 +115,7 @@ pub fn upload(
   )
 
   let _ =
-    uset.insert(
-      uc,
-      user.id,
-      sql.UserFindByNameRow(..user, storage_quota_used: new_used_quota),
-    )
+    uset.insert(uc, user.id, User(..user, storage_quota_used: new_used_quota))
 
   let fs_path = "/app/data/photos/" <> uuid.to_string(new_photo.asset_id)
   use _ <- result.try(
@@ -231,4 +130,123 @@ pub fn upload(
     sql.photo_add_tag(db, tag, new_photo.id)
     |> result.replace_error(shared_upload.InternalError)
   })
+}
+
+// mappers
+pub fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
+  case priv {
+    Public -> sql.Public
+    Premium -> sql.Premium
+    Private -> sql.Private
+  }
+}
+
+fn sql_to_privacy(priv: sql.PhotoPrivacy) -> Privacy {
+  case priv {
+    sql.Public -> Public
+    sql.Premium -> Premium
+    sql.Private -> Private
+  }
+}
+
+pub fn to_shared(
+  photo: Photo,
+  creator: String,
+  tags: List(String),
+  user_liked: Bool,
+) -> shared_photo.Photo {
+  shared_photo.Photo(
+    thumbnail: to_shared_thumbnail(photo, creator, user_liked),
+    description: photo.description,
+    stats: to_shared_stats(photo),
+    location: photo.location,
+    camera: photo.camera,
+    created_at: photo.created_at |> timestamp.to_unix_seconds,
+    tags:,
+  )
+}
+
+pub fn to_shared_stats(p: Photo) -> shared_stats.Stats {
+  shared_stats.Stats(
+    views: p.views,
+    likes: p.likes_count,
+    downloads: p.downloads,
+  )
+}
+
+pub fn to_shared_thumbnail(
+  p: Photo,
+  creator: String,
+  user_liked: Bool,
+) -> shared_thumbnail.Thumbnail {
+  shared_thumbnail.Thumbnail(
+    public_id: p.public_id,
+    asset_id: p.asset_id |> uuid.to_string,
+    description: p.description,
+    creator: creator,
+    privacy: p.privacy,
+    user_liked:,
+    show_on_profile: p.show_on_profile,
+  )
+}
+
+pub fn from_photo_find_by_public_id_row(
+  p: sql.PhotoFindByPublicIdRow,
+) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    creator: p.creator,
+    privacy: p.privacy |> sql_to_privacy,
+    show_on_profile: p.show_on_profile,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    created_at: p.created_at,
+    file_size: p.file_size,
+  )
+}
+
+pub fn from_photos_list_by_user_row(photo p: sql.PhotosListByUserRow) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    creator: p.creator,
+    privacy: p.privacy |> sql_to_privacy,
+    show_on_profile: p.show_on_profile,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    created_at: p.created_at,
+    file_size: p.file_size,
+  )
+}
+
+pub fn from_photos_list_by_owner_row(
+  photo p: sql.PhotosListByOwnerRow,
+) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    creator: p.creator,
+    privacy: p.privacy |> sql_to_privacy,
+    show_on_profile: p.show_on_profile,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    file_size: p.file_size,
+    created_at: p.created_at,
+  )
 }

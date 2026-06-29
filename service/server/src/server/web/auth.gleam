@@ -4,10 +4,8 @@ import gleam/bool
 import gleam/http
 import gleam/http/request
 import gleam/json
-import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/uri
 import pog
 import server/sql
 import server/user.{type User}
@@ -38,13 +36,6 @@ pub fn require_login(
   }
 }
 
-pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
-  case request.method {
-    http.Post -> login_attempt(request, context)
-    _ -> wisp.method_not_allowed([http.Post])
-  }
-}
-
 pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
   use user <- require_login(context)
   user
@@ -60,7 +51,12 @@ pub fn logout(request, context: web.Context) -> wisp.Response {
   wisp.ok() |> unset_cookies(request)
 }
 
-fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
+pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
+  use <- bool.guard(
+    request.method != http.Post,
+    wisp.method_not_allowed([http.Post]),
+  )
+
   use form_data <- wisp.require_form(request)
 
   let login_result = {
@@ -80,14 +76,16 @@ fn login_attempt(request: wisp.Request, context: web.Context) -> wisp.Response {
       user.password != validated_form.password,
       return: Error(shared_login.InvalidCredentials),
     )
-
-    let _ = uset.insert(context.user_cache, user.id, user)
-
     Ok(user)
   }
 
   case login_result {
-    Ok(user) -> wisp.redirect("/") |> set_cookies(request, user)
+    Ok(user) -> {
+      let user = user |> user.from_user_find_by_name
+      let _ = uset.insert(context.user_cache, user.id, user)
+      wisp.redirect("/") |> set_cookies(request, user)
+    }
+
     Error(e) -> wisp.redirect("/login?error=" <> shared_login.error_to_uri(e))
   }
 }
@@ -120,6 +118,8 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
     //   |> result.replace_error(shared_signup.InternalError),
     // )
 
+    // TODO: clean user_cache so we can query it if user exists before hitting db
+
     use user <- utils.db_limit(
       sql.user_create(
         context.db,
@@ -134,9 +134,12 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
     Ok(user)
   }
+  // or just insert
+  // let _ = uset.insert_new(context.user_cache, user.id, user)
+
   case user {
     Ok(user) -> {
-      let user = user |> user.from_user_create_row
+      let user = user |> user.from_user_create
       let _ = uset.insert_new(context.user_cache, user.id, user)
       set_cookies(wisp.redirect("/?registered=true"), request, user)
     }
@@ -156,26 +159,25 @@ pub fn get_user_from_session(
   user_cache cache: USet(uuid.Uuid, User),
   next next: fn(Option(User)) -> wisp.Response,
 ) -> wisp.Response {
-  // TODO: use ets instead of hitting db everytime
-
   let user = {
     use uid <- result.try(
       wisp.get_cookie(req, uid_cookie, wisp.Signed)
-      |> result.replace_error(user.LoggedOut),
+      |> result.replace_error(shared_user.LoggedOut),
     )
     use uid <- result.try(
-      uid |> uuid.from_string |> result.replace_error(user.Invalid),
+      uid |> uuid.from_string |> result.replace_error(shared_user.Invalid),
     )
 
     case uset.lookup(cache, uid) {
       Ok(user) -> Ok(user)
-      Error(_) -> user.get_by_id(db, uid) |> result.replace_error(user.NotFound)
+      Error(_) ->
+        user.get_by_id(db, uid) |> result.replace_error(shared_user.NotFound)
     }
   }
 
   case user {
     Ok(user) -> next(Some(user))
-    Error(user.LoggedOut) -> next(None)
+    Error(shared_user.LoggedOut) -> next(None)
     Error(_) -> next(None) |> unset_cookies(req)
   }
 }

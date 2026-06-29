@@ -24,7 +24,7 @@ fn db_limit_(
   err: e,
   next: fn(a) -> Result(b, e),
 ) -> Result(b, e) {
-  case list.first(res.rows) |> result.replace_error(err) {
+  case res.rows |> list.first |> result.replace_error(err) {
     Ok(ok) -> next(ok)
     Error(e) -> Error(e)
   }

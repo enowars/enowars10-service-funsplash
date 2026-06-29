@@ -278,6 +278,84 @@ WHERE tag = $1 AND photo_id = $2;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `photos_list_by_owner` query
+/// defined in `./src/server/sql/photos_list_by_owner.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotosListByOwnerRow {
+  PhotosListByOwnerRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    creator: Uuid,
+    file_size: Int,
+    privacy: PhotoPrivacy,
+    show_on_profile: Bool,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photos_list_by_owner` query
+/// defined in `./src/server/sql/photos_list_by_owner.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photos_list_by_owner(
+  db: pog.Connection,
+  arg_1: Uuid,
+) -> Result(pog.Returned(PhotosListByOwnerRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
+    decode.success(PhotosListByOwnerRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      creator:,
+      file_size:,
+      privacy:,
+      show_on_profile:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "SELECT *
+FROM photos
+WHERE creator = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `photos_list_by_tag` query
 /// defined in `./src/server/sql/photos_list_by_tag.sql`.
 ///
@@ -327,6 +405,7 @@ pub type PhotosListByUserRow {
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
+    file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
     location: Option(String),
@@ -335,7 +414,6 @@ pub type PhotosListByUserRow {
     views: Int,
     downloads: Int,
     created_at: Timestamp,
-    file_size: Int,
   )
 }
 
@@ -348,7 +426,6 @@ pub type PhotosListByUserRow {
 pub fn photos_list_by_user(
   db: pog.Connection,
   creator: Uuid,
-  arg_2: Bool,
 ) -> Result(pog.Returned(PhotosListByUserRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -356,21 +433,22 @@ pub fn photos_list_by_user(
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
-    use privacy <- decode.field(5, photo_privacy_decoder())
-    use show_on_profile <- decode.field(6, decode.bool)
-    use location <- decode.field(7, decode.optional(decode.string))
-    use camera <- decode.field(8, decode.optional(decode.string))
-    use likes_count <- decode.field(9, decode.int)
-    use views <- decode.field(10, decode.int)
-    use downloads <- decode.field(11, decode.int)
-    use created_at <- decode.field(12, pog.timestamp_decoder())
-    use file_size <- decode.field(13, decode.int)
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use location <- decode.field(8, decode.optional(decode.string))
+    use camera <- decode.field(9, decode.optional(decode.string))
+    use likes_count <- decode.field(10, decode.int)
+    use views <- decode.field(11, decode.int)
+    use downloads <- decode.field(12, decode.int)
+    use created_at <- decode.field(13, pog.timestamp_decoder())
     decode.success(PhotosListByUserRow(
       id:,
       public_id:,
       asset_id:,
       description:,
       creator:,
+      file_size:,
       privacy:,
       show_on_profile:,
       location:,
@@ -379,32 +457,16 @@ pub fn photos_list_by_user(
       views:,
       downloads:,
       created_at:,
-      file_size:,
     ))
   }
 
-  "SELECT
-    id,
-    public_id,
-    asset_id,
-    description,
-    creator,
-    privacy,
-    show_on_profile,
-    location,
-    camera,
-    likes_count,
-    views,
-    downloads,
-    created_at,
-    file_size
+  "SELECT *
 FROM photos
 WHERE creator = $1
-AND show_on_profile = $2;
+AND show_on_profile = true;
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(creator)))
-  |> pog.parameter(pog.bool(arg_2))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
