@@ -1,6 +1,7 @@
 import random
 from connection import Connection
 import os
+import utils
 import string
 from photo import Privacy, Photo, Coordinate
 import photo
@@ -33,13 +34,20 @@ def cookie_to_header(cookies: dict[str, str]) -> str:
 
 
 async def upload_examples(conn: Connection, cookies):
-    for f in os.scandir("./photos"):
+    # padding_size = 2_040_000  # Adjust slightly to leave room for the masks
+    # p_padding = Photo(
+    #     description="quotafiller", data=utils.placeholder_png() + (b"A" * padding_size)
+    # )
+    # await photo.upload(conn=conn, cookies=cookies, photo=p_padding)
+
+    for f in sorted(os.scandir("./photos"), key=lambda e: e.name, reverse=True):
         if f.is_file() is not True:
             continue
         with open(f.path, "rb") as file:
             p: Photo = Photo(
                 description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
                 privacy=random.choice([Privacy.Private, Privacy.Public]),
+                # privacy=Privacy.Public,
                 camera="go pro",
                 tags=[],
                 data=file.read(),
@@ -59,10 +67,10 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
     async def exceed_quota(mask):
         index = 0
         for i in range(40):
-            index += 1
             msg = await photo.censor(conn, p.public_id, [mask])
             if ":" in msg[0]:
                 break
+            index += 1
         return index
 
     index1 = await exceed_quota(full)

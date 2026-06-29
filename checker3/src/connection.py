@@ -48,7 +48,5 @@ class Connection(httpx.AsyncClient):
         return wrapped_client
 
     async def get_addr(self) -> Address:
-        r: httpx.Response = await self.get("/")
-        a = r.extensions.get("network_stream").get_extra_info("server_addr")
-        addr = Address(a[0], a[1])
-        return addr
+        port = self.base_url.port or (443 if self.base_url.scheme == "https" else 80)
+        return Address(self.base_url.host, port)

@@ -39,12 +39,13 @@ async def register(
         },
     )
     assert_equals(r.status_code, expected_code)
+    return dict(r.cookies)
 
 
 async def get_profile(
     connection: Connection, username: str, cookie=None, expected_code: int = 200
 ):
-    r = await connection.get(f"/napi/users/{username}", cookies=cookie)
+    r = await connection.get(f"/napi/users/{username}", cookies=cookie, timeout=15)
     assert_equals(r.status_code, expected_code)
     return r.json()
 

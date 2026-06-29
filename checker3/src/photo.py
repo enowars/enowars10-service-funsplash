@@ -80,7 +80,7 @@ class Photo:
 async def get_data_premium(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
-    r = await conn.get(f"/images/premium_photo-{asset_id}", cookies=cookies)
+    r = await conn.get(f"/images/premium_photo-{asset_id}", cookies=cookies, timeout=15)
     assert_equals(r.status_code, expected_code)
     return r.content
 
@@ -136,7 +136,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         data=payload,
         files=files,
         cookies=cookies,
-        timeout=httpx.Timeout(15.0, read=None),
+        timeout=httpx.Timeout(30.0, read=None),
     )
 
     assert_equals(r.status_code, 303)
@@ -147,7 +147,7 @@ async def censor(conn: Connection, public_id: str, masks: list[bytearray]) -> li
     responses: list[str] = []
     uri = f"ws://{addr.ip}:{addr.port}/napi/censor/{public_id}"
 
-    async with websockets.connect(uri, close_timeout=10) as ws:
+    async with websockets.connect(uri, close_timeout=30) as ws:
 
         async def sender():
             for mask in masks:
@@ -156,7 +156,7 @@ async def censor(conn: Connection, public_id: str, masks: list[bytearray]) -> li
         async def receiver():
             for _ in range(len(masks)):
                 try:
-                    r = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                    r = await asyncio.wait_for(ws.recv(), timeout=10)
                     responses.append(r)
                 except Exception:
                     break

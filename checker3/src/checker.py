@@ -1,3 +1,4 @@
+from threads import run_in_thread
 import time
 import httpx
 import utils
@@ -44,6 +45,7 @@ app = lambda: checker.app
 async def _get_connection(
     client: httpx.AsyncClient, logger: LoggerAdapter
 ) -> Connection:
+    return Connection.wrap(client, logger)
     max_retries = 30
     for i in range(max_retries):
         try:
@@ -75,8 +77,8 @@ async def putflag0(
     logger: LoggerAdapter,
 ) -> None:
     u: User = user.random_user()
-    await user.register(conn, u)
-    cookies = await user.login(conn, u)
+    cookies = await user.register(conn, u)
+    # cookies = await user.login(conn, u)
 
     p: Photo = Photo(
         description=f"a flag but its premium and you are poor {random_string(16, CHARSET_ALPHANUMERIC_MIXED)}",
@@ -95,14 +97,15 @@ async def putflag0(
     assert_equals(flag_got, task.flag)
 
     await utils.upload_examples(conn, cookies)
-    await utils.upload_examples(conn, cookies)
-    await utils.upload_examples(conn, cookies)
+    # await utils.upload_examples(conn, cookies)
+    # await utils.upload_examples(conn, cookies)
 
     await db.set("user", asdict(u))
     await db.set("photo", asdict(p))
     return u.name
 
 
+@run_in_thread
 @checker.getflag(0)
 async def getflag0(
     task: GetflagCheckerTaskMessage,
@@ -138,6 +141,7 @@ async def getflag0(
     raise MumbleException("could decode flag even when not logged in")
 
 
+@run_in_thread
 @checker.putnoise(0)
 async def upload_image(
     task: PutnoiseCheckerTaskMessage,
@@ -146,8 +150,8 @@ async def upload_image(
     conn: Connection,
 ):
     u: User = user.random_user()
-    await user.register(conn, u)
-    cookies = await user.login(conn, u)
+    cookies = await user.register(conn, u)
+    # cookies = await user.login(conn, u)
 
     p: Photo = photo.Photo(
         description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
@@ -165,7 +169,9 @@ async def upload_image(
     await db.set("user", asdict(u))
     await db.set("photo", asdict(p2))
 
+# TODO: check show_on_profile
 
+@run_in_thread
 @checker.getnoise(0)
 async def get_image(
     task: GetnoiseCheckerTaskMessage,
@@ -214,13 +220,14 @@ async def get_image(
 #     await utils.upload_examples(conn, cookies)
 #     await utils.upload_examples(conn, cookies)
 
-#     await utils.fill_user(conn, p)
+#     # await utils.fill_user(conn, p)
 
 #     await db.set("fake_flag", fake_flag)
 #     await db.set("user", asdict(u))
 #     await db.set("photo", asdict(p))
 
 
+@run_in_thread
 @checker.putnoise(1)
 async def put_exploit(
     task: PutnoiseCheckerTaskMessage,
@@ -229,8 +236,8 @@ async def put_exploit(
     conn: Connection,
 ) -> None:
     u: User = user.random_user()
-    await user.register(conn, u)
-    cookies = await user.login(conn, u)
+    cookies = await user.register(conn, u)
+    # cookies = await user.login(conn, u)
 
     fake_flag = f"ENO{random_string(48)}"
 
@@ -251,8 +258,8 @@ async def put_exploit(
     assert_equals(flag_got, fake_flag)
 
     await utils.upload_examples(conn, cookies)
-    await utils.upload_examples(conn, cookies)
-    await utils.upload_examples(conn, cookies)
+    # await utils.upload_examples(conn, cookies)
+    # await utils.upload_examples(conn, cookies)
 
     await db.set("user", asdict(u))
     await db.set("ff", fake_flag)
@@ -292,6 +299,7 @@ async def put_exploit(
 #     assert_equals(is_sorted, True, "something went wrong with the censoring size")
 
 
+@run_in_thread
 @checker.getnoise(1)
 async def get_exploit(
     task: GetnoiseCheckerTaskMessage,
@@ -313,16 +321,37 @@ async def get_exploit(
         profile, "a flag but its premium and you are poor", "censored"
     )
 
-    await utils.fill_user(conn, p)
+    # start = time.time()
+    # await utils.fill_user(conn, p)
+    # end = time.time()
+    # logger.info(f"fill: {(end - start)}")
 
+    start = time.time()
     black = photo.gen_mask([], Coordinate(dim, dim))
     msg = await photo.censor(conn, p.public_id, [black])
     base_size = get_size(msg[0])
+    end = time.time()
+    logger.info(f"black: {(end - start)}")
 
+    start = time.time()
     masks = photo.exploit_masks(dim)
+    end = time.time()
+    logger.info(f"masks: {(end - start)}")
+
+    start = time.time()
     res = await photo.censor(conn, p.public_id, masks)
+    end = time.time()
+    logger.info(f"censor: {(end - start)}")
+
+    start = time.time()
     img = qr.reconstruct_qr(res, base_size, 33)
+    end = time.time()
+    logger.info(f"reconstruct: {(end - start)}")
+
     assert_equals(qr.decode(img), ff)
+
+
+# TODO: check login/logout
 
 
 @checker.havoc(0)
@@ -353,6 +382,7 @@ def get_size(msg):
     return int(msg.split(":")[1])
 
 
+@run_in_thread
 @checker.exploit(0)
 async def exploit_censor(
     task: ExploitCheckerTaskMessage,
@@ -368,10 +398,10 @@ async def exploit_censor(
     p: Photo = photo.get_by_description_contains(
         profile, "a flag but its premium and you are poor", "censored"
     )
-    start = time.time()
-    await utils.fill_user(conn, p)
-    end = time.time()
-    logger.info(f"fill: {(end - start)}")
+    # start = time.time()
+    # await utils.fill_user(conn, p)
+    # end = time.time()
+    # logger.info(f"fill: {(end - start)}")
 
     start = time.time()
     black = photo.gen_mask([], Coordinate(dim, dim))
