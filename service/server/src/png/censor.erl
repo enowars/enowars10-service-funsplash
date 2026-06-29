@@ -8,8 +8,8 @@ apply_mask(PhotoPixels, MaskPixels, Width, BitDepth, ColorType) ->
 
     BitsPerRow = Width * Channels * BitDepth,
     PhotoRowBytes = (BitsPerRow + 7) div 8,
-    BlackMaskRow = binary:copy(<<0, 0, 0, 255>>, Width),
     MaskRowBytes = Width * 4,
+    BlackMaskRow = binary:copy(<<0, 0, 0, 255>>, PhotoRowBytes div 4),
 
     process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, BlackMaskRow, PhotoPixels, MaskPixels, []).
 
@@ -18,9 +18,10 @@ process_rows(_PRB, _MRB, _Depth, _Type, _BlackMaskRow, <<>>, <<>>, Acc) ->
 process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, BlackMaskRow, RawPhoto, Mask, Acc) ->
     <<RawRow:PhotoRowBytes/binary, PhotoRest/binary>> = RawPhoto,
     <<_MaskFilter:8, MaskRow:MaskRowBytes/binary, MaskRest/binary>> = Mask,
-    if MaskRow =:= BlackMaskRow ->
-            process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType,BlackMaskRow,  PhotoRest, MaskRest, [[0, MaskRow] | Acc]);
+    case MaskRow =:= BlackMaskRow of
 	true ->
+            process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, BlackMaskRow, PhotoRest, MaskRest, [[0, BlackMaskRow] | Acc]);
+	false ->
             case is_transparent_censored(MaskRow) of
                 true ->
                     process_rows(PhotoRowBytes, MaskRowBytes, BitDepth, ColorType, BlackMaskRow, PhotoRest, MaskRest, [[0, RawRow] | Acc]);
