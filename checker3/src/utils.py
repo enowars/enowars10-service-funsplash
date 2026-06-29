@@ -76,3 +76,7 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
     index1 = await exceed_quota(full)
     index2 = await exceed_quota(black)
     print(f"fill index: {index1}, {index2}")
+
+
+def get_size(msg):
+    return int(msg.split(":")[1])

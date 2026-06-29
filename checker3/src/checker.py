@@ -2,6 +2,7 @@ from threads import run_in_thread
 import time
 import httpx
 import utils
+from utils import get_size
 import asyncio
 from dataclasses import asdict
 import user
@@ -151,7 +152,6 @@ async def upload_image(
 ):
     u: User = user.random_user()
     cookies = await user.register(conn, u)
-    # cookies = await user.login(conn, u)
 
     p: Photo = photo.Photo(
         description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
@@ -168,6 +168,7 @@ async def upload_image(
 
     await db.set("user", asdict(u))
     await db.set("photo", asdict(p2))
+
 
 # TODO: check show_on_profile
 
@@ -192,163 +193,71 @@ async def get_image(
     assert_equals(p, p3)
 
 
-# @checker.putnoise(1)
-# async def censor_put(
-#     task: PutnoiseCheckerTaskMessage,
-#     db: ChainDB,
-#     logger: LoggerAdapter,
-#     conn: Connection,
-# ):
-#     u: User = user.random_user()
-#     await user.register(conn, u)
-#     cookies = await user.login(conn, u)
-
-#     fake_flag = f"ONE{random_string(48)}"
-
-#     p: Photo = photo.Photo(
-#         description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
-#         privacy=Privacy.Premium,
-#         camera="Sony Alpha",
-#         tags=["idk", "flag"],
-#         data=qr.generate_qr_flag(fake_flag),
-#     )
-#     await photo.upload(conn=conn, cookies=cookies, photo=p)
-#     profile = await user.get_profile(conn, u.name)
-#     p: Photo = photo.get_by_description_contains(profile, p.description)
-
-#     await utils.upload_examples(conn, cookies)
-#     await utils.upload_examples(conn, cookies)
-#     await utils.upload_examples(conn, cookies)
-
-#     # await utils.fill_user(conn, p)
-
-#     await db.set("fake_flag", fake_flag)
-#     await db.set("user", asdict(u))
-#     await db.set("photo", asdict(p))
-
-
 @run_in_thread
 @checker.putnoise(1)
-async def put_exploit(
+async def censor_put(
     task: PutnoiseCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
     conn: Connection,
-) -> None:
+):
     u: User = user.random_user()
     cookies = await user.register(conn, u)
-    # cookies = await user.login(conn, u)
 
-    fake_flag = f"ENO{random_string(48)}"
+    fake_flag = f"ONE{random_string(48)}"
 
-    p: Photo = Photo(
-        description=f"a flag but its premium and you are poor {random_string(16, CHARSET_ALPHANUMERIC_MIXED)}",
+    p: Photo = photo.Photo(
+        description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
         privacy=Privacy.Premium,
-        tags=[],
+        camera="Sony Alpha",
+        tags=["idk", "flag"],
         data=qr.generate_qr_flag(fake_flag),
     )
     await photo.upload(conn=conn, cookies=cookies, photo=p)
-
     profile = await user.get_profile(conn, u.name)
-    pid: str = photo.get_by_description_contains(profile, p.description).public_id
-    p: Photo = await photo.get(conn, pid)
-    data = await photo.get_data_premium(conn, p.asset_id, cookies)
-
-    flag_got = qr.decode(data)
-    assert_equals(flag_got, fake_flag)
+    p: Photo = photo.get_by_description_contains(profile, p.description)
 
     await utils.upload_examples(conn, cookies)
-    # await utils.upload_examples(conn, cookies)
-    # await utils.upload_examples(conn, cookies)
 
+    # await utils.fill_user(conn, p)
+
+    await db.set("fake_flag", fake_flag)
     await db.set("user", asdict(u))
-    await db.set("ff", fake_flag)
+    await db.set("photo", asdict(p))
 
 
-# @checker.getnoise(1)
-# async def censor_get(
-#     task: GetnoiseCheckerTaskMessage,
-#     db: ChainDB,
-#     logger: LoggerAdapter,
-#     conn: Connection,
-# ):
-#     try:
-#         ff: str = await db.get("fake_flag")
-#         u: User = User(**await db.get("user"))
-#         p: Photo = Photo(**await db.get("photo"))
-#     except KeyError:
-#         raise MumbleException("Missing database entry from putnoise")
-
-#     dim = 33
-#     black = photo.gen_mask([], Coordinate(dim, dim))
-#     half = photo.gen_mask_range(
-#         Coordinate(0, 0), Coordinate(dim, dim // 2), Coordinate(dim, dim)
-#     )
-#     full = photo.gen_mask_range(
-#         Coordinate(0, 0), Coordinate(dim, dim), Coordinate(dim, dim)
-#     )
-
-#     msgs = await photo.censor(conn, p.public_id, [black, half, full])
-
-#     is_sorted = all(
-#         get_size(msgs[i]) < get_size(msgs[i + 1]) for i in range(len(msgs) - 1)
-#     )
-
-#     # TODO: save image and check if censoring/not censoring worked
-
-#     assert_equals(is_sorted, True, "something went wrong with the censoring size")
-
-
-@run_in_thread
 @checker.getnoise(1)
-async def get_exploit(
+async def censor_get(
     task: GetnoiseCheckerTaskMessage,
     db: ChainDB,
     logger: LoggerAdapter,
     conn: Connection,
-) -> str:
+):
     try:
+        ff: str = await db.get("fake_flag")
         u: User = User(**await db.get("user"))
-        ff: str = await db.get("ff")
+        p: Photo = Photo(**await db.get("photo"))
     except KeyError:
         raise MumbleException("Missing database entry from putnoise")
 
     dim = 33
-
-    username = u.name
-    profile = await user.get_profile(conn, username)
-    p: Photo = photo.get_by_description_contains(
-        profile, "a flag but its premium and you are poor", "censored"
+    black = photo.gen_mask([], Coordinate(dim, dim))
+    half = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim // 2), Coordinate(dim, dim)
+    )
+    full = photo.gen_mask_range(
+        Coordinate(0, 0), Coordinate(dim, dim), Coordinate(dim, dim)
     )
 
-    # start = time.time()
-    # await utils.fill_user(conn, p)
-    # end = time.time()
-    # logger.info(f"fill: {(end - start)}")
+    msgs = await photo.censor(conn, p.public_id, [black, half, full])
 
-    start = time.time()
-    black = photo.gen_mask([], Coordinate(dim, dim))
-    msg = await photo.censor(conn, p.public_id, [black])
-    base_size = get_size(msg[0])
-    end = time.time()
-    logger.info(f"black: {(end - start)}")
+    is_sorted = all(
+        get_size(msgs[i]) < get_size(msgs[i + 1]) for i in range(len(msgs) - 1)
+    )
 
-    start = time.time()
-    masks = photo.exploit_masks(dim)
-    end = time.time()
-    logger.info(f"masks: {(end - start)}")
+    # TODO: save image and check if censoring/not censoring worked
 
-    start = time.time()
-    res = await photo.censor(conn, p.public_id, masks)
-    end = time.time()
-    logger.info(f"censor: {(end - start)}")
-
-    start = time.time()
-    img = qr.reconstruct_qr(res, base_size, 33)
-    end = time.time()
-    logger.info(f"reconstruct: {(end - start)}")
-
-    assert_equals(qr.decode(img), ff)
+    assert_equals(is_sorted, True, "something went wrong with the censoring size")
 
 
 # TODO: check login/logout
@@ -376,10 +285,6 @@ async def get_non_existant_photo(
     task: HavocCheckerTaskMessage, logger: LoggerAdapter, conn: Connection
 ):
     await photo.get_data(conn, uuid.uuid7(), expected_code=404)
-
-
-def get_size(msg):
-    return int(msg.split(":")[1])
 
 
 @run_in_thread
