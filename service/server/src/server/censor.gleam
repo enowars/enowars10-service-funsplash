@@ -11,6 +11,7 @@ import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
+import prng/random
 import server/photo
 import server/sql
 import server/user
@@ -129,11 +130,15 @@ fn handler(
           let new_quota = state.user.storage_quota_used + png.size(censored_png)
           let #(response, state) = case new_quota < state.user.storage_quota {
             True -> #("ok;", State(..state, out_photo: Some(censored_png)))
-            False -> #(
-              "quota_exceeded_by:"
-                <> int.to_string(new_quota - state.user.storage_quota),
-              state,
-            )
+            False -> {
+              let #(value, _) =
+                random.step(random.int(0, 10), random.new_seed(11))
+              #(
+                "quota_exceeded_by:"
+                  <> int.to_string(new_quota - state.user.storage_quota + value),
+                state,
+              )
+            }
           }
           let _ = mist.send_text_frame(connection, response)
           mist.continue(state)
