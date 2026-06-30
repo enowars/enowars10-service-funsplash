@@ -1,6 +1,5 @@
 import bravo
 import bravo/uset
-import envoy
 import gleam/erlang/process
 import gleam/http/request
 import gleam/option.{None}

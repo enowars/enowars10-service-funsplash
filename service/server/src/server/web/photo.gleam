@@ -185,3 +185,10 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
     }
   }
 }
+
+pub fn user_liked(
+  request: wisp.Request,
+  context: web.Context,
+) -> wisp.Response {
+  todo
+}

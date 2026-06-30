@@ -5,14 +5,18 @@ import gleam/option
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, nav}
+import lustre/element/html.{a, button, div, form, input, nav}
 import lustre/event
+import modem
 import route
 import rsvp
+import gleam/list
+import gleam/uri
 
 pub type Message {
   UserClickedLogout
   LogoutCompleted(Result(String, rsvp.Error(String)))
+  SearchSubmitted(data: List(#(String, String)))
 }
 
 pub fn update(message: Message) -> Effect(Message) {
@@ -25,6 +29,17 @@ pub fn update(message: Message) -> Effect(Message) {
     LogoutCompleted(_) -> {
       effect.from(fn(_) { browser.navigate_to("/") })
     }
+    SearchSubmitted(data) -> {
+      case list.key_find(data, "q") {
+        Ok(q) ->
+          modem.push(
+            "/users",
+            option.Some("q=" <> uri.percent_encode(q)),
+            option.None,
+          )
+        Error(_) -> effect.none()
+      }
+    }
   }
 }
 
@@ -32,20 +47,42 @@ pub fn navbar(auth: Auth) -> Element(Message) {
   nav(
     [
       class(
-        "flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white",
+        "flex items-center gap-6 px-5 py-3 border-b border-gray-200 bg-white",
       ),
     ],
     [
-      a(
-        [
-          attribute.href("/"),
-          class("text-xl font-bold tracking-tight text-black"),
-        ],
-        [
-          text("funsplash"),
-        ],
-      ),
-      div([class("flex items-center gap-4")], case auth {
+      div([class("flex items-center gap-6 flex-shrink-0")], [
+        a(
+          [
+            attribute.href("/"),
+            class("text-xl font-bold tracking-tight text-black"),
+          ],
+          [
+            text("funsplash"),
+          ],
+        ),
+        a(
+          [
+            attribute.href("/users"),
+            class("text-sm font-medium text-gray-600 hover:text-black"),
+          ],
+          [
+            text("Users"),
+          ],
+        ),
+      ]),
+      form([event.on_submit(SearchSubmitted), class("flex-1 flex items-center")], [
+        input([
+          attribute.type_("text"),
+          attribute.name("q"),
+          attribute.placeholder("Search users..."),
+          class(
+            "w-full rounded-full bg-gray-100 border-transparent px-4 py-1.5 text-sm focus:border-black focus:bg-white focus:ring-1 focus:ring-black focus:outline-none transition-all",
+          ),
+        ]),
+        button([attribute.type_("submit"), class("hidden")], []),
+      ]),
+      div([class("flex items-center gap-4 flex-shrink-0")], case auth {
         auth.LoggedIn(user) -> [
           a(
             [

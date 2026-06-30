@@ -13,8 +13,10 @@ import pages/not_found
 import pages/photo
 import pages/profile
 import pages/upload
+import pages/users_search
 import route.{
   Collection, Index, Join, Login, NotFound, Photo, Redirect, Upload, User,
+  UsersSearch,
 }
 
 pub fn init(initial_uri: Result(Uri, Nil)) -> #(Page, Effect(Message)) {
@@ -31,6 +33,7 @@ pub type Page {
   ProfilePage(model: profile.Model)
   AuthPage(model: auth_page.Model)
   UploadPage(model: upload.Model)
+  UsersSearchPage(model: users_search.Model)
   CensorPage(model: censor.Model)
   NotFoundPage
 }
@@ -42,6 +45,7 @@ pub type Message {
   ProfilePageSentMessage(message: profile.Message)
   AuthPageSentMessage(message: auth_page.Message)
   UploadPageSentMessage(message: upload.Message)
+  UsersSearchPageSentMessage(message: users_search.Message)
   CensorPageSentMessage(message: censor.Message)
   NavbarSentMessage(message: navbar.Message)
 }
@@ -82,6 +86,10 @@ pub fn update(
     UploadPageSentMessage(p_msg), UploadPage(p_model) -> {
       let #(model, effect) = upload.update(p_model, p_msg)
       #(UploadPage(model), effect.map(effect, UploadPageSentMessage))
+    }
+    UsersSearchPageSentMessage(p_msg), UsersSearchPage(p_model) -> {
+      let #(model, effect) = users_search.update(p_model, p_msg)
+      #(UsersSearchPage(model), effect.map(effect, UsersSearchPageSentMessage))
     }
     CensorPageSentMessage(p_msg), CensorPage(p_model) -> {
       let #(model, effect) = censor.update(p_model, p_msg)
@@ -126,6 +134,10 @@ pub fn page_from_route(
     Upload(query), auth.LoggedIn(_) -> {
       let #(model, eff) = upload.init(query)
       #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
+    }
+    UsersSearch(query), _ -> {
+      let #(model, eff) = users_search.init(query)
+      #(UsersSearchPage(model), effect.map(eff, UsersSearchPageSentMessage))
     }
     // Not logged in → redirect to login
     Upload(_), _ -> redirect_login()
@@ -172,6 +184,8 @@ pub fn view(page: Page, auth: Auth) -> Element(Message) {
         auth_page.view(model) |> element.map(AuthPageSentMessage)
       UploadPage(model) ->
         upload.view(model) |> element.map(UploadPageSentMessage)
+      UsersSearchPage(model) ->
+        users_search.view(model) |> element.map(UsersSearchPageSentMessage)
       CensorPage(model) ->
         censor.view(model) |> element.map(CensorPageSentMessage)
       NotFoundPage -> not_found.view()

@@ -1,4 +1,5 @@
 import bravo/uset
+import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
@@ -18,32 +19,40 @@ pub type User {
     bio: Option(String),
     available_for_hire: Bool,
     premium: Bool,
-    created_at: Timestamp,
-    updated_at: Timestamp,
     storage_quota: Int,
     storage_quota_used: Int,
   )
 }
-
-// TODO: remove password from struct
-// add 3 photos to struct
 
 pub fn get_by_id(db: pog.Connection, id: Uuid) -> Result(User, Error) {
   use user <- utils.db_limit(sql.user_find_by_id(db, id), NotFound)
   Ok(user |> from_user_find_by_id)
 }
 
-pub fn update_cached(
-  user_cache uc: uset.USet(Uuid, User),
-  user user: User,
-  new_user new_user: fn(User) -> User,
-) {
-  use cached_user <- result.try(uset.lookup(uc, user.id))
-  let user = new_user(cached_user)
-  let _ = uset.insert(uc, user.id, user)
+pub fn search(db, username: String) -> List(shared_user.User) {
+  let result = {
+    use res <- result.try(sql.user_search(db, username))
+    Ok(list.map(res.rows, fn(row) { shared_user_from_user_search(row) }))
+  }
+  case result {
+    Ok(ok) -> ok
+    Error(_) -> []
+  }
 }
 
 // mappers
+
+fn shared_user_from_user_search(user u: sql.UserSearchRow) {
+  shared_user.User(
+    username: u.username,
+    first_name: u.first_name,
+    last_name: u.last_name,
+    bio: u.bio,
+    available_for_hire: u.available_for_hire,
+    premium: u.premium,
+    photos: [],
+  )
+}
 
 pub fn from_user_create(user u: sql.UserCreateRow) -> User {
   User(
@@ -54,8 +63,6 @@ pub fn from_user_create(user u: sql.UserCreateRow) -> User {
     bio: u.bio,
     available_for_hire: u.available_for_hire,
     premium: u.premium,
-    created_at: u.created_at,
-    updated_at: u.updated_at,
     storage_quota: u.storage_quota,
     storage_quota_used: u.storage_quota_used,
   )
@@ -70,8 +77,6 @@ pub fn from_user_find_by_id(user u: sql.UserFindByIdRow) -> User {
     bio: u.bio,
     available_for_hire: u.available_for_hire,
     premium: u.premium,
-    created_at: u.created_at,
-    updated_at: u.updated_at,
     storage_quota: u.storage_quota,
     storage_quota_used: u.storage_quota_used,
   )
@@ -101,8 +106,6 @@ pub fn from_user_find_by_name(user u: sql.UserFindByNameRow) -> User {
     bio: u.bio,
     available_for_hire: u.available_for_hire,
     premium: u.premium,
-    created_at: u.created_at,
-    updated_at: u.updated_at,
     storage_quota: u.storage_quota,
     storage_quota_used: u.storage_quota_used,
   )

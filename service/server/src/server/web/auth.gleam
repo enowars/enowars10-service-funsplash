@@ -47,7 +47,8 @@ pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
 
 pub fn logout(request, context: web.Context) -> wisp.Response {
   use user <- require_login(context)
-  let _ = uset.delete_key(context.user_cache, user.id)
+  // let _ = uset.delete_key(context.user_cache, user.id)
+  let _ = uset.delete_key(context.profile_cache, user.username)
   wisp.ok() |> unset_cookies(request)
 }
 
@@ -66,14 +67,19 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> form.run
       |> result.replace_error(shared_login.InvalidData),
     )
+    let username = validated_form.username
+    let password = validated_form.password
+
     use user <- utils.db_limit(
       sql.user_find_by_name(context.db, validated_form.username),
       shared_login.UserNotFound,
     )
 
+    let _ = uset.insert_new(context.profile_cache, username, user.id)
+
     use <- bool.guard(
       // when: argus.verify(user.password, validated_form.password) != Ok(True),
-      user.password != validated_form.password,
+      user.password != password,
       return: Error(shared_login.InvalidCredentials),
     )
     Ok(user)
@@ -103,6 +109,8 @@ fn set_cookies(response, request, user: User) {
 }
 
 pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
+  use <- bool.guard(option.is_some(context.user), logout(request, context))
+
   use form_data <- wisp.require_form(request)
   let user = {
     use validated_form <- result.try(
@@ -134,13 +142,12 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
     Ok(user)
   }
-  // or just insert
-  // let _ = uset.insert_new(context.user_cache, user.id, user)
 
   case user {
     Ok(user) -> {
       let user = user |> user.from_user_create
       let _ = uset.insert_new(context.user_cache, user.id, user)
+      let _ = uset.insert_new(context.profile_cache, user.username, user.id)
       set_cookies(wisp.redirect("/?registered=true"), request, user)
     }
     Error(e) -> wisp.redirect("/?error=" <> shared_signup.error_to_uri(e))
@@ -170,8 +177,13 @@ pub fn get_user_from_session(
 
     case uset.lookup(cache, uid) {
       Ok(user) -> Ok(user)
-      Error(_) ->
-        user.get_by_id(db, uid) |> result.replace_error(shared_user.NotFound)
+      Error(_) -> {
+        use user <- result.try(
+          user.get_by_id(db, uid) |> result.replace_error(shared_user.NotFound),
+        )
+        let _ = uset.insert(cache, user.id, user)
+        Ok(user)
+      }
     }
   }
 

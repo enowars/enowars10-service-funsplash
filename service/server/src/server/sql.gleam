@@ -905,6 +905,60 @@ WHERE id = $2
   |> pog.execute(db)
 }
 
+/// A row you get from running the `user_search` query
+/// defined in `./src/server/sql/user_search.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type UserSearchRow {
+  UserSearchRow(
+    username: String,
+    first_name: String,
+    last_name: Option(String),
+    bio: Option(String),
+    available_for_hire: Bool,
+    premium: Bool,
+  )
+}
+
+/// Runs the `user_search` query
+/// defined in `./src/server/sql/user_search.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_search(
+  db: pog.Connection,
+  arg_1: String,
+) -> Result(pog.Returned(UserSearchRow), pog.QueryError) {
+  let decoder = {
+    use username <- decode.field(0, decode.string)
+    use first_name <- decode.field(1, decode.string)
+    use last_name <- decode.field(2, decode.optional(decode.string))
+    use bio <- decode.field(3, decode.optional(decode.string))
+    use available_for_hire <- decode.field(4, decode.bool)
+    use premium <- decode.field(5, decode.bool)
+    decode.success(UserSearchRow(
+      username:,
+      first_name:,
+      last_name:,
+      bio:,
+      available_for_hire:,
+      premium:,
+    ))
+  }
+
+  "SELECT username, first_name, last_name, bio, available_for_hire, premium
+FROM users
+WHERE username ILIKE $1 || '%' ORDER BY created_at ASC;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `user_unlikes_photo` query
 /// defined in `./src/server/sql/user_unlikes_photo.sql`.
 ///
