@@ -83,16 +83,24 @@ pub fn get_data_premium(
 
 pub fn get_data_public(
   _request: wisp.Request,
-  _context: web.Context,
+  context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
   // TODO: move photo files into privacy dirs /public /private etc. so we dont have to call db here
-  use asset_id <- utils.result_guard(
-    asset_id |> uuid.from_string,
-    wisp.not_found(),
-  )
+  let p = {
+    use asset_id <- result.try(
+      asset_id |> uuid.from_string |> result.replace_error(wisp.not_found()),
+    )
+    use photo <- utils.db_limit(
+      sql.photo_find_by_asset_id(context.db, asset_id, sql.Public),
+      wisp.not_found(),
+    )
+    Ok(photo)
+  }
 
-  case photo.get_data(Public, asset_id) {
+  use photo <- utils.result_guard(p, wisp.not_found())
+
+  case photo.get_data(Public, photo.asset_id) {
     Ok(data) -> {
       wisp.ok()
       |> wisp.set_header("content-type", "image/png")
