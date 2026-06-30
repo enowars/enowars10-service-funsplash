@@ -16,7 +16,7 @@ pub fn handle_request(
   case wisp.path_segments(request) {
     ["napi", ..api] ->
       case api {
-        ["users"] -> profile.search(request, context)
+        ["s", "users", username] -> profile.search(request, context, username)
         ["users", user] -> profile.get(request, context, user)
         ["photos", public_id] -> photo.get(request, context, public_id)
         ["collections", collection] ->

@@ -61,15 +61,11 @@ pub fn get(
 }
 
 pub fn search(
-  request: wisp.Request,
+  _request: wisp.Request,
   context: web.Context,
+  username: String,
 ) -> wisp.Response {
-  let query = wisp.get_query(request)
-  let q = case list.key_find(query, "q") {
-    Ok(q) -> q
-    Error(_) -> ""
-  }
-  let users = user.search(context.db, q)
+  let users = user.search(context.db, username)
   let json_array =
     json.array(users, shared_user.user_to_json) |> json.to_string()
   wisp.json_response(json_array, 200)

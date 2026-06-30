@@ -1,7 +1,9 @@
 import api/api_photo
 import auth.{type Auth}
 import browser
+import gleam/list
 import gleam/option
+import gleam/uri
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -10,8 +12,7 @@ import lustre/event
 import modem
 import route
 import rsvp
-import gleam/list
-import gleam/uri
+import shared/shared_user
 
 pub type Message {
   UserClickedLogout
@@ -30,13 +31,14 @@ pub fn update(message: Message) -> Effect(Message) {
       effect.from(fn(_) { browser.navigate_to("/") })
     }
     SearchSubmitted(data) -> {
-      case list.key_find(data, "q") {
-        Ok(q) ->
+      case list.key_find(data, "search_bar") {
+        Ok(username) ->
           modem.push(
-            "/users",
-            option.Some("q=" <> uri.percent_encode(q)),
+            shared_user.search_uri <> uri.percent_encode(username),
+            option.None,
             option.None,
           )
+
         Error(_) -> effect.none()
       }
     }
@@ -71,17 +73,20 @@ pub fn navbar(auth: Auth) -> Element(Message) {
           ],
         ),
       ]),
-      form([event.on_submit(SearchSubmitted), class("flex-1 flex items-center")], [
-        input([
-          attribute.type_("text"),
-          attribute.name("q"),
-          attribute.placeholder("Search users..."),
-          class(
-            "w-full rounded-full bg-gray-100 border-transparent px-4 py-1.5 text-sm focus:border-black focus:bg-white focus:ring-1 focus:ring-black focus:outline-none transition-all",
-          ),
-        ]),
-        button([attribute.type_("submit"), class("hidden")], []),
-      ]),
+      form(
+        [event.on_submit(SearchSubmitted), class("flex-1 flex items-center")],
+        [
+          input([
+            attribute.type_("text"),
+            attribute.name("search_bar"),
+            attribute.placeholder("Search users..."),
+            class(
+              "w-full rounded-full bg-gray-100 border-transparent px-4 py-1.5 text-sm focus:border-black focus:bg-white focus:ring-1 focus:ring-black focus:outline-none transition-all",
+            ),
+          ]),
+          button([attribute.type_("submit"), class("hidden")], []),
+        ],
+      ),
       div([class("flex items-center gap-4 flex-shrink-0")], case auth {
         auth.LoggedIn(user) -> [
           a(

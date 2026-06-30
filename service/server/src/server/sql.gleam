@@ -883,24 +883,26 @@ AND photo_id = $2;
 pub fn user_likes_photo(
   db: pog.Connection,
   arg_1: Uuid,
-  id: Uuid,
+  public_id: String,
 ) -> Result(pog.Returned(Nil), pog.QueryError) {
   let decoder = decode.map(decode.dynamic, fn(_) { Nil })
 
-  "WITH inserted_like AS (
+  "WITH new_like AS (
     INSERT INTO likes (user_id, photo_id)
-    VALUES ($1, $2)
+    SELECT $1, id
+    FROM photos
+    WHERE public_id = $2
     ON CONFLICT (user_id, photo_id) DO NOTHING
-    RETURNING *
+    RETURNING photo_id
 )
 UPDATE photos
 SET likes_count = likes_count + 1
-WHERE id = $2
-  AND EXISTS (SELECT 1 FROM inserted_like);
+FROM new_like
+WHERE photos.id = new_like.photo_id;
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(arg_1)))
-  |> pog.parameter(pog.text(uuid.to_string(id)))
+  |> pog.parameter(pog.text(public_id))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

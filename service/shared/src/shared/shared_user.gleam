@@ -4,6 +4,8 @@ import gleam/option.{type Option}
 import gleam/uri
 import shared/shared_thumbnail
 
+pub const search_uri = "/s/users/"
+
 pub type User {
   User(
     username: String,

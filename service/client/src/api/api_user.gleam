@@ -18,9 +18,11 @@ pub fn search(
   query: String,
   on_response: fn(Result(List(shared_user.User), rsvp.Error(String))) -> message,
 ) -> Effect(message) {
-  let url = api_photo.api_base_url() <> "/users?q=" <> uri.percent_encode(query)
+  let url =
+    api_photo.api_base_url()
+    <> shared_user.search_uri
+    <> uri.percent_encode(query)
   let handler =
     rsvp.expect_json(decode.list(shared_user.user_decoder()), on_response)
   rsvp.get(url, handler)
 }
-

@@ -14,7 +14,7 @@ pub type Route {
   Login(query: option.Option(String))
   Join(query: option.Option(String))
   Upload(query: option.Option(String))
-  UsersSearch(query: option.Option(String))
+  UsersSearch(username: String)
   NotFound(uri: uri.Uri)
   Redirect(url: String)
 }
@@ -39,7 +39,7 @@ pub fn parse(uri: uri.Uri) -> Route {
     ["login"] -> Login(query: uri.query)
     ["join"] -> Join(query: uri.query)
     ["upload"] -> Upload(query: uri.query)
-    ["users"] -> UsersSearch(query: uri.query)
+    ["s", "users", username] -> UsersSearch(username)
     [username] -> Redirect("/@" <> username)
 
     _ -> NotFound(uri:)

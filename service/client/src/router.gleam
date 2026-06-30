@@ -135,8 +135,8 @@ pub fn page_from_route(
       let #(model, eff) = upload.init(query)
       #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
     }
-    UsersSearch(query), _ -> {
-      let #(model, eff) = users_search.init(query)
+    UsersSearch(username), _ -> {
+      let #(model, eff) = users_search.init(username)
       #(UsersSearchPage(model), effect.map(eff, UsersSearchPageSentMessage))
     }
     // Not logged in → redirect to login

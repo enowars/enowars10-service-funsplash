@@ -22,23 +22,9 @@ pub type Message {
   ApiReturnedUsers(Result(List(shared_user.User), rsvp.Error(String)))
 }
 
-pub fn init(query: option.Option(String)) -> #(Model, Effect(Message)) {
-  let initial_query = case query {
-    option.Some(q) -> {
-      case uri.parse_query(q) {
-        Ok(params) ->
-          case list.key_find(params, "q") {
-            Ok(val) -> val
-            Error(_) -> ""
-          }
-        Error(_) -> ""
-      }
-    }
-    option.None -> ""
-  }
-  let initial_model =
-    Model(query: initial_query, users: [], loading: initial_query != "")
-  let eff = case initial_query {
+pub fn init(username: String) -> #(Model, Effect(Message)) {
+  let initial_model = Model(query: username, users: [], loading: username != "")
+  let eff = case username {
     "" -> effect.none()
     q -> api_user.search(q, ApiReturnedUsers)
   }
@@ -71,7 +57,9 @@ pub fn view(model: Model) -> Element(Message) {
       False, [] ->
         case model.query {
           "" ->
-            p([class("text-gray-500")], [text("Search for a user from the navigation bar.")])
+            p([class("text-gray-500")], [
+              text("Search for a user from the navigation bar."),
+            ])
           _ -> p([class("text-gray-500")], [text("No users found.")])
         }
       False, users ->
