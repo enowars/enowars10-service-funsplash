@@ -6,6 +6,7 @@ import gleam/uri.{type Uri}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import modem
+import pages/account as account_page
 import pages/auth as auth_page
 import pages/censor
 import pages/home
@@ -35,6 +36,7 @@ pub type Page {
   UploadPage(model: upload.Model)
   UsersSearchPage(model: users_search.Model)
   CensorPage(model: censor.Model)
+  AccountPage(model: account_page.Model)
   NotFoundPage
 }
 
@@ -47,6 +49,7 @@ pub type Message {
   UploadPageSentMessage(message: upload.Message)
   UsersSearchPageSentMessage(message: users_search.Message)
   CensorPageSentMessage(message: censor.Message)
+  AccountPageSentMessage(message: account_page.Message)
   NavbarSentMessage(message: navbar.Message)
 }
 
@@ -95,6 +98,10 @@ pub fn update(
       let #(model, effect) = censor.update(p_model, p_msg)
       #(CensorPage(model), effect.map(effect, CensorPageSentMessage))
     }
+    AccountPageSentMessage(p_msg), AccountPage(p_model) -> {
+      let #(model, effect) = account_page.update(p_model, p_msg)
+      #(AccountPage(model), effect.map(effect, AccountPageSentMessage))
+    }
     _, _ -> #(page, effect.none())
   }
 }
@@ -130,17 +137,25 @@ pub fn page_from_route(
       let #(model, eff) = auth_page.init(auth_page.SignUpMode, query)
       #(AuthPage(model), effect.map(eff, AuthPageSentMessage))
     }
-    // Logged in → allow upload
-    Upload(query), auth.LoggedIn(_) -> {
+    // Logged in or Unknown → allow upload/account
+    Upload(query), auth.LoggedIn(_) | Upload(query), auth.Unknown -> {
       let #(model, eff) = upload.init(query)
       #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
+    }
+    route.Account(query), auth.LoggedIn(_) | route.Account(query), auth.Unknown -> {
+      let #(model, eff) = account_page.init(account_page.EditProfileMode, query)
+      #(AccountPage(model), effect.map(eff, AccountPageSentMessage))
+    }
+    route.AccountPassword(query), auth.LoggedIn(_) | route.AccountPassword(query), auth.Unknown -> {
+      let #(model, eff) = account_page.init(account_page.ChangePasswordMode, query)
+      #(AccountPage(model), effect.map(eff, AccountPageSentMessage))
     }
     UsersSearch(username), _ -> {
       let #(model, eff) = users_search.init(username)
       #(UsersSearchPage(model), effect.map(eff, UsersSearchPageSentMessage))
     }
     // Not logged in → redirect to login
-    Upload(_), _ -> redirect_login()
+    Upload(_), _ | route.Account(_), _ | route.AccountPassword(_), _ -> redirect_login()
     Collection(_), _ | NotFound(_), _ -> #(NotFoundPage, effect.none())
     Redirect(url), _ -> {
       let target = route.parse(uri.Uri(..uri.empty, path: url))
@@ -188,6 +203,8 @@ pub fn view(page: Page, auth: Auth) -> Element(Message) {
         users_search.view(model) |> element.map(UsersSearchPageSentMessage)
       CensorPage(model) ->
         censor.view(model) |> element.map(CensorPageSentMessage)
+      AccountPage(model) ->
+        account_page.view(model, auth) |> element.map(AccountPageSentMessage)
       NotFoundPage -> not_found.view()
     },
   ])
@@ -204,6 +221,7 @@ pub fn check_auth_redirect(page: Page, auth: Auth) -> #(Page, Effect(Message)) {
   case page, auth {
     AuthPage(_), auth.LoggedIn(_) -> redirect_home()
     UploadPage(_), auth.LoggedOut -> redirect_login()
+    AccountPage(_), auth.LoggedOut -> redirect_login()
     _, _ -> #(page, effect.none())
   }
 }

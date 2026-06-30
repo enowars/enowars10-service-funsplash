@@ -110,3 +110,17 @@ pub fn from_user_find_by_name(user u: sql.UserFindByNameRow) -> User {
     storage_quota_used: u.storage_quota_used,
   )
 }
+
+pub fn from_user_update(user u: sql.UserUpdateRow) -> User {
+  User(
+    id: u.id,
+    username: u.username,
+    first_name: u.first_name,
+    last_name: u.last_name,
+    bio: u.bio,
+    available_for_hire: u.available_for_hire,
+    premium: u.premium,
+    storage_quota: u.storage_quota,
+    storage_quota_used: u.storage_quota_used,
+  )
+}

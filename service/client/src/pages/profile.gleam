@@ -7,7 +7,8 @@ import gleam/string
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{div, h1, p, span}
+import lustre/element/html.{a, div, h1, p, span}
+import route
 import rsvp
 import shared/shared_user
 
@@ -87,6 +88,19 @@ fn profile_view(
             [text("Available for hire")],
           )
         False -> element.none()
+      },
+      case current_auth {
+        auth.LoggedIn(logged_in_user) if logged_in_user.username == user.username ->
+          a(
+            [
+              route.href(route.Account(option.None)),
+              class(
+                "mt-4 inline-block rounded-md border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50",
+              ),
+            ],
+            [text("Edit Profile")],
+          )
+        _ -> element.none()
       },
     ]),
     // Photo grid

@@ -1,6 +1,7 @@
 import gleam/http
 import server/collection
 import server/web
+import server/web/account
 import server/web/auth
 import server/web/photo
 import server/web/profile
@@ -25,6 +26,9 @@ pub fn handle_request(
         ["logout"] -> auth.logout(request, context)
         ["join"] -> auth.sign_up(request, context)
         ["upload"] -> photo.upload(request, context)
+        ["like", public_id] -> photo.like(request, context, public_id)
+        ["account"] -> account.update(request, context)
+        ["account", "password"] -> account.change_password(request, context)
         ["me"] -> auth.me(request, context)
         _ -> wisp.not_found()
       }

@@ -186,9 +186,11 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
   }
 }
 
-pub fn user_liked(
+pub fn like(
   request: wisp.Request,
   context: web.Context,
+  public_id: String,
 ) -> wisp.Response {
-  todo
+  // sql.user_likes_photo(context.db, context.user.id, )
+  wisp.internal_server_error()
 }

@@ -17,6 +17,8 @@ pub type Route {
   UsersSearch(username: String)
   NotFound(uri: uri.Uri)
   Redirect(url: String)
+  Account(query: option.Option(String))
+  AccountPassword(query: option.Option(String))
 }
 
 pub fn parse(uri: uri.Uri) -> Route {
@@ -39,6 +41,8 @@ pub fn parse(uri: uri.Uri) -> Route {
     ["login"] -> Login(query: uri.query)
     ["join"] -> Join(query: uri.query)
     ["upload"] -> Upload(query: uri.query)
+    ["account"] -> Account(query: uri.query)
+    ["account", "password"] -> AccountPassword(query: uri.query)
     ["s", "users", username] -> UsersSearch(username)
     [username] -> Redirect("/@" <> username)
 
@@ -59,6 +63,8 @@ pub fn href(route: Route) -> attribute.Attribute(message) {
     Join(_) -> "/join/"
     Upload(_) -> "/upload/"
     UsersSearch(_) -> "/users/"
+    Account(_) -> "/account"
+    AccountPassword(_) -> "/account/password"
     NotFound(uri: _) -> "/404?"
     Redirect(url:) -> url
   }

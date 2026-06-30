@@ -991,6 +991,117 @@ AND EXISTS (SELECT 1 FROM deleted_like);
   |> pog.execute(db)
 }
 
+/// A row you get from running the `user_update` query
+/// defined in `./src/server/sql/user_update.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type UserUpdateRow {
+  UserUpdateRow(
+    id: Uuid,
+    username: String,
+    first_name: String,
+    last_name: Option(String),
+    bio: Option(String),
+    available_for_hire: Bool,
+    premium: Bool,
+    password: String,
+    created_at: Timestamp,
+    updated_at: Timestamp,
+    storage_quota: Int,
+    storage_quota_used: Int,
+  )
+}
+
+/// Runs the `user_update` query
+/// defined in `./src/server/sql/user_update.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_update(
+  db: pog.Connection,
+  id: Uuid,
+  arg_2: String,
+  first_name: String,
+  arg_4: String,
+  arg_5: String,
+  available_for_hire: Bool,
+) -> Result(pog.Returned(UserUpdateRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use username <- decode.field(1, decode.string)
+    use first_name <- decode.field(2, decode.string)
+    use last_name <- decode.field(3, decode.optional(decode.string))
+    use bio <- decode.field(4, decode.optional(decode.string))
+    use available_for_hire <- decode.field(5, decode.bool)
+    use premium <- decode.field(6, decode.bool)
+    use password <- decode.field(7, decode.string)
+    use created_at <- decode.field(8, pog.timestamp_decoder())
+    use updated_at <- decode.field(9, pog.timestamp_decoder())
+    use storage_quota <- decode.field(10, decode.int)
+    use storage_quota_used <- decode.field(11, decode.int)
+    decode.success(UserUpdateRow(
+      id:,
+      username:,
+      first_name:,
+      last_name:,
+      bio:,
+      available_for_hire:,
+      premium:,
+      password:,
+      created_at:,
+      updated_at:,
+      storage_quota:,
+      storage_quota_used:,
+    ))
+  }
+
+  "UPDATE users
+SET username = $2,
+    first_name = $3 ,
+    last_name = nullif($4,''),
+    bio = nullif($5,''),
+    available_for_hire = $6
+where id = $1
+RETURNING *;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(id)))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.parameter(pog.text(first_name))
+  |> pog.parameter(pog.text(arg_4))
+  |> pog.parameter(pog.text(arg_5))
+  |> pog.parameter(pog.bool(available_for_hire))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// Runs the `user_update_password` query
+/// defined in `./src/server/sql/user_update_password.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn user_update_password(
+  db: pog.Connection,
+  arg_1: Uuid,
+  password: String,
+) -> Result(pog.Returned(Nil), pog.QueryError) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "UPDATE users
+SET password = $2
+where id = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(password))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// Runs the `user_update_quota` query
 /// defined in `./src/server/sql/user_update_quota.sql`.
 ///
