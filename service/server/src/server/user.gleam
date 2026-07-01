@@ -2,7 +2,6 @@ import bravo/uset
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import gleam/time/timestamp.{type Timestamp}
 import pog
 import server/sql
 import shared/shared_thumbnail
@@ -29,15 +28,17 @@ pub fn get_by_id(db: pog.Connection, id: Uuid) -> Result(User, Error) {
   Ok(user |> from_user_find_by_id)
 }
 
-pub fn search(db, username: String) -> List(shared_user.User) {
-  let result = {
-    use res <- result.try(sql.user_search(db, username))
+pub fn search(db, username: String, profile_cache) -> List(shared_user.User) {
+  {
+    use res <- result.try(
+      sql.user_search(db, username) |> result.replace_error(Nil),
+    )
+    use first <- result.try(list.first(res.rows))
+    // insert_new fails if already exists so this is safe
+    let _ = uset.insert_new(profile_cache, first.username, first.id)
     Ok(list.map(res.rows, fn(row) { shared_user_from_user_search(row) }))
   }
-  case result {
-    Ok(ok) -> ok
-    Error(_) -> []
-  }
+  |> result.unwrap([])
 }
 
 // mappers

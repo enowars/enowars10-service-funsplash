@@ -915,6 +915,7 @@ WHERE photos.id = new_like.photo_id;
 ///
 pub type UserSearchRow {
   UserSearchRow(
+    id: Uuid,
     username: String,
     first_name: String,
     last_name: Option(String),
@@ -935,13 +936,15 @@ pub fn user_search(
   arg_1: String,
 ) -> Result(pog.Returned(UserSearchRow), pog.QueryError) {
   let decoder = {
-    use username <- decode.field(0, decode.string)
-    use first_name <- decode.field(1, decode.string)
-    use last_name <- decode.field(2, decode.optional(decode.string))
-    use bio <- decode.field(3, decode.optional(decode.string))
-    use available_for_hire <- decode.field(4, decode.bool)
-    use premium <- decode.field(5, decode.bool)
+    use id <- decode.field(0, uuid_decoder())
+    use username <- decode.field(1, decode.string)
+    use first_name <- decode.field(2, decode.string)
+    use last_name <- decode.field(3, decode.optional(decode.string))
+    use bio <- decode.field(4, decode.optional(decode.string))
+    use available_for_hire <- decode.field(5, decode.bool)
+    use premium <- decode.field(6, decode.bool)
     decode.success(UserSearchRow(
+      id:,
       username:,
       first_name:,
       last_name:,
@@ -951,7 +954,7 @@ pub fn user_search(
     ))
   }
 
-  "SELECT username, first_name, last_name, bio, available_for_hire, premium
+  "SELECT id, username, first_name, last_name, bio, available_for_hire, premium
 FROM users
 WHERE username ILIKE $1 || '%' ORDER BY created_at ASC;
 "
