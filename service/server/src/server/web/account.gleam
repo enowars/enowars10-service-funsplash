@@ -16,47 +16,54 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
   use form_data <- wisp.require_form(request)
 
   let new_user = {
-    use f <- result.try(
+    use form <- result.try(
       shared_account.edit_form()
       |> form.add_values(form_data.values)
       |> form.run
       |> result.replace_error(shared_account.InvalidData),
     )
 
-    let id =
-      uset.lookup(context.profile_cache, f.username) |> option.from_result
-
-    let new_user = case id {
-      Some(id) -> {
-        let _ = uset.insert_new(context.profile_cache, f.username, id)
-        Error(shared_account.UsernameExists)
-      }
+    let new_user = case
+      uset.lookup(context.profile_cache, form.username) |> option.from_result
+    {
+      // username exists in cache
+      Some(_) -> Error(shared_account.UsernameExists)
+      // username doesn't exists in cache
       None -> {
-        use new_user <- utils.db_limit(
-          sql.user_update(
-            context.db,
-            user.id,
-            f.username,
-            f.first_name,
-            f.last_name |> option.unwrap(""),
-            f.bio |> option.unwrap(""),
-            f.available_for_hire,
-          ),
-          shared_account.UsernameExists,
-        )
-        let _ = uset.delete_key(context.profile_cache, user.username)
+        let new_user = case
+          utils.db_limit(sql.user_find_by_name(context.db, form.username))
+        {
+          // username exists in db so dont update
+          Ok(user) -> Ok(user |> user.from_user_find_by_name)
+          // username doesn't exists in db, so update existing entry
+          Error(_) -> {
+            use new_user <- utils.db_limit_try(
+              sql.user_update(
+                context.db,
+                user.id,
+                form.username,
+                form.first_name,
+                form.last_name |> option.unwrap(""),
+                form.bio |> option.unwrap(""),
+                form.available_for_hire,
+              ),
+              shared_account.UsernameExists,
+            )
+            Ok(new_user |> user.from_user_update)
+          }
+        }
+        use new_user <- result.try(new_user)
+        let _ =
+          uset.insert_new(context.profile_cache, form.username, new_user.id)
+
         Ok(new_user)
       }
     }
-
-    let _ = uset.insert_new(context.profile_cache, f.username, user.id)
-
-    new_user
   }
 
   case new_user {
-    Ok(new_user) -> {
-      let user = new_user |> user.from_user_update
+    Ok(user) -> {
+      let _ = uset.insert_new(context.user_cache, user.id, user)
       let _ = uset.insert_new(context.user_cache, user.id, user)
       wisp.redirect("/?ok")
     }
