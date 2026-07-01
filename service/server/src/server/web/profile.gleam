@@ -31,7 +31,7 @@ pub fn get(
           }
         }
       Error(_) -> {
-        use user <- utils.db_limit(
+        use user <- utils.db_limit_try(
           sql.user_find_by_name(context.db, username),
           NotFound,
         )

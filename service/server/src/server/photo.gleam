@@ -55,7 +55,7 @@ pub fn get_tags(db: pog.Connection, photo_id: Uuid) -> List(String) {
 }
 
 pub fn get(db, public_id) -> Result(Photo, Nil) {
-  use photo <- utils.db_limit(
+  use photo <- utils.db_limit_try(
     sql.photo_find_by_public_id(db, public_id)
       |> result.replace_error(Nil),
     Nil,
@@ -100,7 +100,7 @@ pub fn upload(
     Error(shared_upload.QuotaExceeded(user.storage_quota_used)),
   )
 
-  use new_photo <- utils.db_limit(
+  use new_photo <- utils.db_limit_try(
     sql.photo_create(
       db,
       p.description |> option.unwrap(""),

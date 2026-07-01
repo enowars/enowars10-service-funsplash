@@ -9,24 +9,39 @@ pub fn defer(defer: fn() -> a, first: fn() -> b) -> b {
 }
 
 pub fn db_limit(
+  res: Result(pog.Returned(a), pog.QueryError),
+) -> Result(a, pog.QueryError) {
+  case res {
+    Ok(ok) -> {
+      case
+        ok.rows
+        |> list.first
+        |> result.replace_error(pog.PostgresqlError(
+          "P0002",
+          "no_data_found",
+          "no_data_found",
+        ))
+      {
+        Ok(row) -> Ok(row)
+        Error(err) -> Error(err)
+      }
+    }
+    Error(err) -> Error(err)
+  }
+}
+
+pub fn db_limit_try(
   res: Result(pog.Returned(a), pe),
   err: e,
   next: fn(a) -> Result(b, e),
 ) -> Result(b, e) {
   case res {
-    Ok(ok) -> db_limit_(ok, err, next)
+    Ok(ok) ->
+      case ok.rows |> list.first |> result.replace_error(err) {
+        Ok(ok) -> next(ok)
+        Error(e) -> Error(e)
+      }
     Error(_) -> Error(err)
-  }
-}
-
-fn db_limit_(
-  res: pog.Returned(a),
-  err: e,
-  next: fn(a) -> Result(b, e),
-) -> Result(b, e) {
-  case res.rows |> list.first |> result.replace_error(err) {
-    Ok(ok) -> next(ok)
-    Error(e) -> Error(e)
   }
 }
 

@@ -25,7 +25,7 @@ pub type User {
 }
 
 pub fn get_by_id(db: pog.Connection, id: Uuid) -> Result(User, Error) {
-  use user <- utils.db_limit(sql.user_find_by_id(db, id), NotFound)
+  use user <- utils.db_limit_try(sql.user_find_by_id(db, id), NotFound)
   Ok(user |> from_user_find_by_id)
 }
 

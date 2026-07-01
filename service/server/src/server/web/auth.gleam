@@ -70,7 +70,7 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
     let username = validated_form.username
     let password = validated_form.password
 
-    use user <- utils.db_limit(
+    use user <- utils.db_limit_try(
       sql.user_find_by_name(context.db, validated_form.username),
       shared_login.UserNotFound,
     )
@@ -128,7 +128,7 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
 
     // TODO: clean user_cache so we can query it if user exists before hitting db
 
-    use user <- utils.db_limit(
+    use user <- utils.db_limit_try(
       sql.user_create(
         context.db,
         validated_form.username,
