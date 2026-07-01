@@ -30,9 +30,7 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
       Some(_) -> Error(shared_account.UsernameExists)
       // username doesn't exists in cache
       None -> {
-        let new_user = case
-          utils.db_limit(sql.user_find_by_name(context.db, form.username))
-        {
+        case utils.db_limit(sql.user_find_by_name(context.db, form.username)) {
           // username exists in db so dont update
           Ok(user) -> Ok(user |> user.from_user_find_by_name)
           // username doesn't exists in db, so update existing entry
@@ -52,11 +50,6 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
             Ok(new_user |> user.from_user_update)
           }
         }
-        use new_user <- result.try(new_user)
-        let _ =
-          uset.insert_new(context.profile_cache, form.username, new_user.id)
-
-        Ok(new_user)
       }
     }
   }
