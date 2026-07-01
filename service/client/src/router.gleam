@@ -142,12 +142,17 @@ pub fn page_from_route(
       let #(model, eff) = upload.init(query)
       #(UploadPage(model), effect.map(eff, UploadPageSentMessage))
     }
-    route.Account(query), auth.LoggedIn(_) | route.Account(query), auth.Unknown -> {
+    route.Account(query), auth.LoggedIn(_)
+    | route.Account(query), auth.Unknown
+    -> {
       let #(model, eff) = account_page.init(account_page.EditProfileMode, query)
       #(AccountPage(model), effect.map(eff, AccountPageSentMessage))
     }
-    route.AccountPassword(query), auth.LoggedIn(_) | route.AccountPassword(query), auth.Unknown -> {
-      let #(model, eff) = account_page.init(account_page.ChangePasswordMode, query)
+    route.AccountPassword(query), auth.LoggedIn(_)
+    | route.AccountPassword(query), auth.Unknown
+    -> {
+      let #(model, eff) =
+        account_page.init(account_page.ChangePasswordMode, query)
       #(AccountPage(model), effect.map(eff, AccountPageSentMessage))
     }
     UsersSearch(username), _ -> {
@@ -155,7 +160,8 @@ pub fn page_from_route(
       #(UsersSearchPage(model), effect.map(eff, UsersSearchPageSentMessage))
     }
     // Not logged in → redirect to login
-    Upload(_), _ | route.Account(_), _ | route.AccountPassword(_), _ -> redirect_login()
+    Upload(_), _ | route.Account(_), _ | route.AccountPassword(_), _ ->
+      redirect_login()
     Collection(_), _ | NotFound(_), _ -> #(NotFoundPage, effect.none())
     Redirect(url), _ -> {
       let target = route.parse(uri.Uri(..uri.empty, path: url))

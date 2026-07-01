@@ -90,7 +90,9 @@ fn profile_view(
         False -> element.none()
       },
       case current_auth {
-        auth.LoggedIn(logged_in_user) if logged_in_user.username == user.username ->
+        auth.LoggedIn(logged_in_user)
+          if logged_in_user.username == user.username
+        ->
           a(
             [
               route.href(route.Account(option.None)),

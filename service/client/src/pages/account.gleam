@@ -64,17 +64,21 @@ fn account_view(model: Model, user: shared_user.User) -> Element(Message) {
       h1([class("text-2xl font-bold mb-4")], [text("Account Settings")]),
       div([class("flex flex-col space-y-1")], [
         nav_link("Edit Profile", "/account", model.mode == EditProfileMode),
-        nav_link("Change Password", "/account/password", model.mode == ChangePasswordMode),
-      ])
+        nav_link(
+          "Change Password",
+          "/account/password",
+          model.mode == ChangePasswordMode,
+        ),
+      ]),
     ]),
-    
+
     // Content
     div([class("flex-grow")], [
       case model.mode {
         EditProfileMode -> edit_profile_view(model, user)
         ChangePasswordMode -> change_password_view(model)
-      }
-    ])
+      },
+    ]),
   ])
 }
 
@@ -104,7 +108,12 @@ fn edit_profile_view(model: Model, user: shared_user.User) -> Element(Message) {
         field(form, "first_name", "First name", "text", Some(user.first_name)),
         field(form, "last_name", "Last name", "text", user.last_name),
         field(form, "bio", "Bio", "text", user.bio),
-        checkbox_field(form, "available_for_hire", "Available for hire", user.available_for_hire),
+        checkbox_field(
+          form,
+          "available_for_hire",
+          "Available for hire",
+          user.available_for_hire,
+        ),
         button(
           [
             type_("submit"),
@@ -134,7 +143,13 @@ fn change_password_view(model: Model) -> Element(Message) {
       [
         field(form, "old_password", "Current Password", "password", None),
         field(form, "new_password", "New Password", "password", None),
-        field(form, "confirm_new_password", "Confirm New Password", "password", None),
+        field(
+          form,
+          "confirm_new_password",
+          "Confirm New Password",
+          "password",
+          None,
+        ),
         button(
           [
             type_("submit"),
