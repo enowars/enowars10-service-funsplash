@@ -12,7 +12,7 @@ import utils
 import wisp
 
 pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
-  use user <- auth.require_login(context)
+  use logged_in <- auth.require_login(context)
   use form_data <- wisp.require_form(request)
 
   let new_user = {
@@ -23,7 +23,7 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> result.replace_error(shared_account.InvalidData),
     )
 
-    let new_user = case
+    case
       uset.lookup(context.profile_cache, form.username) |> option.from_result
     {
       // username exists in cache
@@ -38,7 +38,7 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
             use new_user <- utils.db_limit_try(
               sql.user_update(
                 context.db,
-                user.id,
+                logged_in.id,
                 form.username,
                 form.first_name,
                 form.last_name |> option.unwrap(""),
@@ -56,7 +56,8 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
 
   case new_user {
     Ok(user) -> {
-      let _ = uset.insert_new(context.user_cache, user.id, user)
+      let _ =
+        uset.insert_new(context.profile_cache, user.username, logged_in.id)
       let _ = uset.insert_new(context.user_cache, user.id, user)
       wisp.redirect("/?ok")
     }
