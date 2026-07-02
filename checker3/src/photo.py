@@ -85,10 +85,17 @@ async def get_data_premium(
     return r.content
 
 
-async def get_data(
+async def get_data_public(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
     r = await conn.get(f"/images/photo-{asset_id}", cookies=cookies)
+    assert_equals(r.status_code, expected_code)
+    return r.content
+
+async def get_private(
+    conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
+):
+    r = await conn.get(f"/images/private_photo-{asset_id}", cookies=cookies)
     assert_equals(r.status_code, expected_code)
     return r.content
 
@@ -122,6 +129,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         "description": photo.description,
         "location": photo.location,
         "camera": photo.camera,
+        "show_on_pofile": photo.show_on_profile,
         "tags": ",".join(photo.tags),
     }
 
@@ -136,7 +144,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         data=payload,
         files=files,
         cookies=cookies,
-        timeout=httpx.Timeout(30.0, read=None),
+        timeout=httpx.Timeout(15.0, read=None),
     )
 
     assert_equals(r.status_code, 303)
