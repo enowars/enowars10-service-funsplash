@@ -19,7 +19,13 @@ pub type Mode {
 }
 
 pub type Model {
-  Model(mode: Mode, error: Option(String), success: Option(String))
+  Model(
+    mode: Mode,
+    error: Option(String),
+    success: Option(String),
+    edit_form: form.Form(shared_account.User),
+    password_form: form.Form(shared_account.ChangePasswordForm),
+  )
 }
 
 pub fn init(mode: Mode, query: Option(String)) -> #(Model, Effect(Message)) {
@@ -37,15 +43,51 @@ pub fn init(mode: Mode, query: Option(String)) -> #(Model, Effect(Message)) {
     Some(_) -> Some("Updated successfully.")
     _ -> None
   }
-  #(Model(mode:, error: error_msg, success: success_msg), effect.none())
+  #(
+    Model(
+      mode:,
+      error: error_msg,
+      success: success_msg,
+      edit_form: shared_account.edit_form(),
+      password_form: shared_account.change_password_form(),
+    ),
+    effect.none(),
+  )
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub type Message
+import browser
+import lustre/event
 
-pub fn update(model: Model, _message: Message) -> #(Model, Effect(Message)) {
-  #(model, effect.none())
+pub type Message {
+  EditProfileSubmitted(values: List(#(String, String)))
+  ChangePasswordSubmitted(values: List(#(String, String)))
+}
+
+pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
+    EditProfileSubmitted(values) -> {
+      let f = shared_account.edit_form() |> form.add_values(values)
+      case form.run(f) {
+        Ok(_) -> #(model, browser.submit_form_effect("edit-profile-form"))
+        Error(f_with_errors) -> #(
+          Model(..model, edit_form: f_with_errors),
+          effect.none(),
+        )
+      }
+    }
+    ChangePasswordSubmitted(values) -> {
+      let f = shared_account.change_password_form() |> form.add_values(values)
+      case form.run(f) {
+        Ok(_) -> #(model, browser.submit_form_effect("change-password-form"))
+        Error(f_with_errors) -> #(
+          Model(..model, password_form: f_with_errors),
+          effect.none(),
+        )
+      }
+    }
+  }
 }
 
 // VIEW ------------------------------------------------------------------------
@@ -92,7 +134,7 @@ fn nav_link(label_text: String, href: String, active: Bool) -> Element(msg) {
 }
 
 fn edit_profile_view(model: Model, user: shared_user.User) -> Element(Message) {
-  let form = shared_account.edit_form()
+  let form = model.edit_form
   div([], [
     h2([class("text-xl font-semibold mb-6")], [text("Edit Profile")]),
     success_banner(model.success),
@@ -101,6 +143,8 @@ fn edit_profile_view(model: Model, user: shared_user.User) -> Element(Message) {
       [
         attribute.action("/napi/account"),
         attribute.method("POST"),
+        attribute.id("edit-profile-form"),
+        event.on_submit(EditProfileSubmitted),
         class("space-y-4 max-w-md"),
       ],
       [
@@ -129,7 +173,7 @@ fn edit_profile_view(model: Model, user: shared_user.User) -> Element(Message) {
 }
 
 fn change_password_view(model: Model) -> Element(Message) {
-  let form = shared_account.change_password_form()
+  let form = model.password_form
   div([], [
     h2([class("text-xl font-semibold mb-6")], [text("Change Password")]),
     success_banner(model.success),
@@ -138,6 +182,8 @@ fn change_password_view(model: Model) -> Element(Message) {
       [
         attribute.action("/napi/account/password"),
         attribute.method("POST"),
+        attribute.id("change-password-form"),
+        event.on_submit(ChangePasswordSubmitted),
         class("space-y-4 max-w-md"),
       ],
       [

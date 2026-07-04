@@ -14,6 +14,22 @@ export function add_body_class(class_name) {
     document.body.classList.add(class_name);
 }
 
+export function submit_form(id) {
+    let form = document.getElementById(id);
+    if (form) {
+        form.submit();
+    }
+}
+
+export function get_file_size_from_submit_event(event) {
+    try {
+        let file = event.target.querySelector('input[type="file"]').files[0];
+        return file ? file.size : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
 export function navigate_to(url) {
     window.location.href = url;
 }

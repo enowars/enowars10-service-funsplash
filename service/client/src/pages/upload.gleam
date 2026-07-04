@@ -1,3 +1,6 @@
+import browser
+import gleam/dynamic
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/uri
@@ -7,7 +10,11 @@ import lustre/element.{type Element, text}
 import lustre/element/html.{
   button, div, h1, input, label, option, p, select, small, textarea,
 }
+import lustre/event
 import shared/shared_privacy
+import shared/shared_upload
+
+import gleam/dynamic/decode
 
 // MODEL -----------------------------------------------------------------------
 
@@ -21,21 +28,48 @@ pub fn init(query: Option(String)) -> #(Model, Effect(Message)) {
     None -> []
   }
   let error_msg = list.key_find(params, "error") |> option.from_result
+  let error_msg = case error_msg {
+    Some(e) -> Some(e |> uri.percent_decode |> result.unwrap(e))
+    None -> None
+  }
 
   #(Model(error: error_msg), effect.none())
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub type Message
+pub type Message {
+  SubmitUpload(size: Int)
+}
 
-pub fn update(model: Model, _message: Message) -> #(Model, Effect(Message)) {
-  #(model, effect.none())
+pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
+    SubmitUpload(size) -> {
+      case size > shared_upload.max_allowed_size {
+        True -> {
+          let msg =
+            "Image is too large. The maximum allowed size is: "
+            <> int.to_string(shared_upload.max_allowed_size)
+          #(Model(error: Some(msg)), effect.none())
+        }
+        False -> #(model, browser.submit_form_effect("upload-form"))
+      }
+    }
+  }
 }
 
 // VIEW ------------------------------------------------------------------------
 
 pub fn view(model: Model) -> Element(Message) {
+  let on_submit_handler =
+    event.prevent_default(
+      event.on("submit", {
+        use e <- decode.map(decode.dynamic)
+        let size = browser.get_file_size(e)
+        SubmitUpload(size)
+      }),
+    )
+
   div([class("max-w-lg mx-auto py-12 px-4")], [
     h1([class("text-2xl font-bold mb-6")], [text("Upload a photo")]),
     error_banner(model.error),
@@ -44,6 +78,8 @@ pub fn view(model: Model) -> Element(Message) {
         attribute.action("/napi/upload"),
         attribute.method("POST"),
         attribute.attribute("enctype", "multipart/form-data"),
+        attribute.id("upload-form"),
+        on_submit_handler,
         class("space-y-5"),
       ],
       [

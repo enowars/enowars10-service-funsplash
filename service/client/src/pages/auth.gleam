@@ -17,7 +17,13 @@ pub type Mode {
 }
 
 pub type Model {
-  Model(mode: Mode, error: Option(String), success: Option(String))
+  Model(
+    mode: Mode,
+    error: Option(String),
+    success: Option(String),
+    login_form: form.Form(shared_login.LoginForm),
+    signup_form: form.Form(shared_signup.SignUpForm),
+  )
 }
 
 pub fn init(mode: Mode, query: Option(String)) -> #(Model, Effect(Message)) {
@@ -31,22 +37,58 @@ pub fn init(mode: Mode, query: Option(String)) -> #(Model, Effect(Message)) {
     Some("invalid_credentials") -> Some("Invalid username or password.")
     Some("invalid_data") ->
       Some("Could not create account. Username may be taken.")
-    Some(_) -> Some("An error occurred.")
+    Some(e) -> Some(e |> uri.percent_decode |> result.unwrap(e))
     None -> None
   }
   let success_msg = case success {
     Some("true") -> Some("Account created! Please log in.")
     _ -> None
   }
-  #(Model(mode:, error: error_msg, success: success_msg), effect.none())
+  #(
+    Model(
+      mode:,
+      error: error_msg,
+      success: success_msg,
+      login_form: shared_login.form(),
+      signup_form: shared_signup.form(),
+    ),
+    effect.none(),
+  )
 }
 
 // UPDATE ----------------------------------------------------------------------
 
-pub type Message
+import browser
+import lustre/event
 
-pub fn update(model: Model, _message: Message) -> #(Model, Effect(Message)) {
-  #(model, effect.none())
+pub type Message {
+  LoginSubmitted(values: List(#(String, String)))
+  SignupSubmitted(values: List(#(String, String)))
+}
+
+pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
+  case message {
+    LoginSubmitted(values) -> {
+      let f = shared_login.form() |> form.add_values(values)
+      case form.run(f) {
+        Ok(_) -> #(model, browser.submit_form_effect("login-form"))
+        Error(f_with_errors) -> #(
+          Model(..model, login_form: f_with_errors),
+          effect.none(),
+        )
+      }
+    }
+    SignupSubmitted(values) -> {
+      let f = shared_signup.form() |> form.add_values(values)
+      case form.run(f) {
+        Ok(_) -> #(model, browser.submit_form_effect("signup-form"))
+        Error(f_with_errors) -> #(
+          Model(..model, signup_form: f_with_errors),
+          effect.none(),
+        )
+      }
+    }
+  }
 }
 
 // VIEW ------------------------------------------------------------------------
@@ -63,11 +105,15 @@ pub fn view(model: Model) -> Element(Message) {
 }
 
 fn login_view(model: Model) -> Element(Message) {
-  let form = shared_login.form()
-  div([], [
-    h1([class("text-2xl font-bold text-center mb-1")], [text("Login")]),
-    p([class("text-sm text-gray-500 text-center mb-6")], [
-      text("Welcome back."),
+  let form = model.login_form
+  div([class("w-full max-w-sm px-4")], [
+    div([class("mb-10 text-center")], [
+      h1([class("text-3xl font-bold tracking-tight text-black")], [
+        text("Welcome back"),
+      ]),
+      p([class("mt-2 text-sm text-gray-500")], [
+        text("Please enter your details to sign in."),
+      ]),
     ]),
     success_banner(model.success),
     error_banner(model.error),
@@ -75,6 +121,8 @@ fn login_view(model: Model) -> Element(Message) {
       [
         attribute.action("/napi/login"),
         attribute.method("POST"),
+        attribute.id("login-form"),
+        event.on_submit(LoginSubmitted),
         class("space-y-4"),
       ],
       [
@@ -87,12 +135,12 @@ fn login_view(model: Model) -> Element(Message) {
               "w-full rounded-md bg-black py-2.5 text-sm font-medium text-white hover:bg-gray-800",
             ),
           ],
-          [text("Log in")],
+          [text("Sign in")],
         ),
         p([class("text-center text-sm text-gray-500 mt-4")], [
           text("Don't have an account? "),
-          html.a([attribute.href("/join"), class("text-black underline")], [
-            text("Join"),
+          html.a([attribute.href("/signup"), class("text-black underline")], [
+            text("Sign up"),
           ]),
         ]),
       ],
@@ -101,17 +149,24 @@ fn login_view(model: Model) -> Element(Message) {
 }
 
 fn signup_view(model: Model) -> Element(Message) {
-  let form = shared_signup.form()
-  div([], [
-    h1([class("text-2xl font-bold text-center mb-1")], [text("Join funsplash")]),
-    p([class("text-sm text-gray-500 text-center mb-6")], [
-      text("Create your free account."),
+  let form = model.signup_form
+  div([class("w-full max-w-sm px-4")], [
+    div([class("mb-10 text-center")], [
+      h1([class("text-3xl font-bold tracking-tight text-black")], [
+        text("Create an account"),
+      ]),
+      p([class("mt-2 text-sm text-gray-500")], [
+        text("Join us to start sharing your photos."),
+      ]),
     ]),
+    success_banner(model.success),
     error_banner(model.error),
     html.form(
       [
         attribute.action("/napi/join"),
         attribute.method("POST"),
+        attribute.id("signup-form"),
+        event.on_submit(SignupSubmitted),
         class("space-y-4"),
       ],
       [
