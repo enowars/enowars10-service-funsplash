@@ -1,7 +1,7 @@
+import qr
 import random
 from connection import Connection
 import os
-import utils
 import string
 from photo import Privacy, Photo, Coordinate
 import photo
@@ -12,6 +12,11 @@ CHARSET_LETTERS = string.ascii_letters
 CHARSET_ALPHANUMERIC_MIXED = string.ascii_letters + string.digits
 CHARSET_UPPER_ALPHANUMERIC = string.ascii_uppercase + string.digits
 
+def random_capitalize(text):
+    return "".join(
+        char.upper() if random.choice([True, False]) else char.lower()
+        for char in text
+    )
 
 def random_string(length: int, charset: str = CHARSET_ALPHANUMERIC) -> str:
     """Generates a random string of a given length from a given charset."""
@@ -54,10 +59,19 @@ async def upload_examples(conn: Connection, cookies):
             )
             await photo.upload(conn, cookies, p)
 
+    p: Photo = photo.Photo(
+        description=random_string(36, CHARSET_UPPER_ALPHANUMERIC),
+        privacy=Privacy.Premium,
+        camera="Sony Alpha",
+        tags=["idk", "flag"],
+        data=qr.generate_fake_flag(),
+    )
+    await photo.upload(conn=conn, cookies=cookies, photo=p)
+
 
 async def fill_user(conn: Connection, p: Photo, dim: int = 33):
     black = photo.gen_mask([], Coordinate(dim, dim))
-    half = photo.gen_mask_range(
+    _half = photo.gen_mask_range(
         Coordinate(0, 0), Coordinate(dim, dim // 2), Coordinate(dim, dim)
     )
     full = photo.gen_mask_range(

@@ -1,4 +1,4 @@
-import zlib
+import utils
 import io
 from PIL import Image
 import qrcode
@@ -11,6 +11,27 @@ def generate_qr_flag(flag: str) -> bytes:
         version=4,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=1,  # 1 module = exactly 1 pixel
+        border=0,  # Remove the standard 4-module quiet zone to keep it 33x33
+    )
+
+    qr.add_data(flag)
+
+    # fit=False forces it to stay at Version 3 even if it could fit in a smaller one
+    qr.make(fit=False)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def generate_fake_flag() -> bytes:
+    flag = f"ONE{utils.random_string(48)}"
+    qr = qrcode.QRCode(
+        version=3,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=1,  # 1 module = exactly 1 pixel
         border=0,  # Remove the standard 4-module quiet zone to keep it 29x29
     )
 
@@ -21,7 +42,6 @@ def generate_qr_flag(flag: str) -> bytes:
 
     img = qr.make_image(fill_color="black", back_color="white")
 
-    # 5. Convert to PNG bytes for upload
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()

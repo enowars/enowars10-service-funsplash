@@ -15,6 +15,8 @@ class User:
     name: str
     first_name: str
     password: str
+    last_name: str = ""
+    bio: str = ""
 
 
 def random_user() -> User:
@@ -23,6 +25,26 @@ def random_user() -> User:
         first_name=random_string(random.randrange(3, 10), CHARSET_LETTERS),
         password=random_string(random.randrange(15, 30), CHARSET_ALPHANUMERIC_MIXED),
     )
+
+
+async def update(
+    connection: Connection,
+    user: User,
+    cookies=None,
+    expected_code: int = 303,
+) -> None:
+    r = await connection.post(
+        "/napi/account",
+        data={
+            "username": user.name,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "bio": user.bio,
+        },
+        cookies=cookies,
+    )
+    assert_equals(r.status_code, expected_code)
+    return
 
 
 async def register(
@@ -36,6 +58,8 @@ async def register(
             "username": user.name,
             "password": user.password,
             "first_name": user.first_name,
+            "last_name": user.last_name,
+            "bio": user.bio,
         },
     )
     assert_equals(r.status_code, expected_code)
