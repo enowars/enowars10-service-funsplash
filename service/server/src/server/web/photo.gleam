@@ -171,7 +171,12 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
       shared_upload.upload_form(user.id, data)
       |> form.add_values(multipart.values)
       |> form.run
-      |> result.replace_error(shared_upload.InvalidForm),
+      |> result.map_error(fn(f) {
+        case form.field_errors(f, "photo") {
+          [_, ..] -> shared_upload.ImageTooLarge(shared_upload.max_allowed_size)
+          _ -> shared_upload.InvalidForm
+        }
+      }),
     )
 
     form

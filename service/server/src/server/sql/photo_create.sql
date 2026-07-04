@@ -3,12 +3,13 @@ WITH updated_user AS (
      SET storage_quota_used = storage_quota_used + $7
      WHERE id = $2
 )
-INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size)
+INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype)
 VALUES (nullif($1,''),
 	$2,
 	$3,
 	nullif($4,''),
 	nullif($5,''),
 	$6,
-	$7)
+	$7,
+	$8)
 RETURNING id, asset_id;

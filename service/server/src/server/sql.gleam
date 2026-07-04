@@ -60,6 +60,7 @@ pub fn photo_create(
   arg_5: String,
   arg_6: Bool,
   arg_7: Int,
+  arg_8: Mimetype,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -72,14 +73,15 @@ pub fn photo_create(
      SET storage_quota_used = storage_quota_used + $7
      WHERE id = $2
 )
-INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size)
+INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype)
 VALUES (nullif($1,''),
 	$2,
 	$3,
 	nullif($4,''),
 	nullif($5,''),
 	$6,
-	$7)
+	$7,
+	$8)
 RETURNING id, asset_id;
 "
   |> pog.query
@@ -90,6 +92,7 @@ RETURNING id, asset_id;
   |> pog.parameter(pog.text(arg_5))
   |> pog.parameter(pog.bool(arg_6))
   |> pog.parameter(pog.int(arg_7))
+  |> pog.parameter(mimetype_encoder(arg_8))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -110,6 +113,7 @@ pub type PhotoFindByAssetIdRow {
     file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
+    mimetype: Mimetype,
     location: Option(String),
     camera: Option(String),
     likes_count: Int,
@@ -139,12 +143,13 @@ pub fn photo_find_by_asset_id(
     use file_size <- decode.field(5, decode.int)
     use privacy <- decode.field(6, photo_privacy_decoder())
     use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotoFindByAssetIdRow(
       id:,
       public_id:,
@@ -154,6 +159,7 @@ pub fn photo_find_by_asset_id(
       file_size:,
       privacy:,
       show_on_profile:,
+      mimetype:,
       location:,
       camera:,
       likes_count:,
@@ -192,6 +198,7 @@ pub type PhotoFindByPublicIdRow {
     file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
+    mimetype: Mimetype,
     location: Option(String),
     camera: Option(String),
     likes_count: Int,
@@ -220,12 +227,13 @@ pub fn photo_find_by_public_id(
     use file_size <- decode.field(5, decode.int)
     use privacy <- decode.field(6, photo_privacy_decoder())
     use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotoFindByPublicIdRow(
       id:,
       public_id:,
@@ -235,6 +243,7 @@ pub fn photo_find_by_public_id(
       file_size:,
       privacy:,
       show_on_profile:,
+      mimetype:,
       location:,
       camera:,
       likes_count:,
@@ -294,6 +303,7 @@ pub type PhotosListByOwnerRow {
     file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
+    mimetype: Mimetype,
     location: Option(String),
     camera: Option(String),
     likes_count: Int,
@@ -322,12 +332,13 @@ pub fn photos_list_by_owner(
     use file_size <- decode.field(5, decode.int)
     use privacy <- decode.field(6, photo_privacy_decoder())
     use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotosListByOwnerRow(
       id:,
       public_id:,
@@ -337,6 +348,7 @@ pub fn photos_list_by_owner(
       file_size:,
       privacy:,
       show_on_profile:,
+      mimetype:,
       location:,
       camera:,
       likes_count:,
@@ -408,6 +420,7 @@ pub type PhotosListByUserRow {
     file_size: Int,
     privacy: PhotoPrivacy,
     show_on_profile: Bool,
+    mimetype: Mimetype,
     location: Option(String),
     camera: Option(String),
     likes_count: Int,
@@ -436,12 +449,13 @@ pub fn photos_list_by_user(
     use file_size <- decode.field(5, decode.int)
     use privacy <- decode.field(6, photo_privacy_decoder())
     use show_on_profile <- decode.field(7, decode.bool)
-    use location <- decode.field(8, decode.optional(decode.string))
-    use camera <- decode.field(9, decode.optional(decode.string))
-    use likes_count <- decode.field(10, decode.int)
-    use views <- decode.field(11, decode.int)
-    use downloads <- decode.field(12, decode.int)
-    use created_at <- decode.field(13, pog.timestamp_decoder())
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
     decode.success(PhotosListByUserRow(
       id:,
       public_id:,
@@ -451,6 +465,7 @@ pub fn photos_list_by_user(
       file_size:,
       privacy:,
       show_on_profile:,
+      mimetype:,
       location:,
       camera:,
       likes_count:,
@@ -1128,6 +1143,39 @@ pub fn user_update_quota(
 }
 
 // --- Enums -------------------------------------------------------------------
+
+/// Corresponds to the Postgres `mimetype` enum.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type Mimetype {
+  Other
+  Webp
+  Jpg
+  Png
+}
+
+fn mimetype_decoder() -> decode.Decoder(Mimetype) {
+  use mimetype <- decode.then(decode.string)
+  case mimetype {
+    "other" -> decode.success(Other)
+    "webp" -> decode.success(Webp)
+    "jpg" -> decode.success(Jpg)
+    "png" -> decode.success(Png)
+    _ -> decode.failure(Other, "Mimetype")
+  }
+}
+
+fn mimetype_encoder(mimetype) -> pog.Value {
+  case mimetype {
+    Other -> "other"
+    Webp -> "webp"
+    Jpg -> "jpg"
+    Png -> "png"
+  }
+  |> pog.text
+}
 
 /// Corresponds to the Postgres `photo_privacy` enum.
 ///

@@ -163,7 +163,7 @@ fn unset_cookies(response, request) {
 pub fn get_user_from_session(
   request req: request.Request(wisp.Connection),
   db db: pog.Connection,
-  user_cache cache: USet(uuid.Uuid, User),
+  user_cache cache: user.UserCache,
   next next: fn(Option(User)) -> wisp.Response,
 ) -> wisp.Response {
   let user = {

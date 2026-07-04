@@ -21,6 +21,7 @@ CREATE INDEX users_created_at_idx ON users (created_at);
 
 
 CREATE TYPE photo_privacy AS ENUM ('private', 'premium', 'public');
+CREATE TYPE mimetype AS ENUM ('png', 'jpg', 'webp', 'other');
 
 CREATE TABLE photos (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -34,6 +35,7 @@ file_size INT NOT NULL,
 CONSTRAINT max_file_size CHECK (file_size < 1024000), --1MB
 privacy photo_privacy NOT NULL DEFAULT 'public',
 show_on_profile BOOLEAN NOT NULL DEFAULT true,
+mimetype mimetype NOT NULL DEFAULT 'other',
 location TEXT,
 camera TEXT,
 likes_count INT NOT NULL DEFAULT 0,

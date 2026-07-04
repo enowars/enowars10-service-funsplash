@@ -1,10 +1,12 @@
 import bravo/uset
+import file_streams/file_stream
 import gleam/bit_array
 import gleam/bool
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
+import mimetype
 import pog
 import server/sql
 import server/user.{type User, User}
@@ -25,6 +27,7 @@ pub type Photo {
     description: Option(String),
     creator: Uuid,
     privacy: Privacy,
+    mimetype: shared_upload.MimeType,
     show_on_profile: Bool,
     location: Option(String),
     camera: Option(String),
@@ -77,10 +80,10 @@ pub fn user_liked(
 pub fn upload(
   photo p: shared_upload.Upload,
   db_connection db: pog.Connection,
-  user_cache uc: uset.USet(uuid.Uuid, User),
+  user_cache uc: user.UserCache,
 ) -> Result(Nil, shared_upload.Error) {
   let size = case p.data {
-    shared_upload.InMemory(data:) -> bit_array.byte_size(data)
+    shared_upload.InMemory(data:, mimetype: _) -> bit_array.byte_size(data)
     shared_upload.File(path: _, size:) -> size
   }
 
@@ -100,6 +103,12 @@ pub fn upload(
     Error(shared_upload.QuotaExceeded(user.storage_quota_used)),
   )
 
+  let mimetype = case p.data {
+    shared_upload.InMemory(data: _, mimetype:) -> mimetype
+    shared_upload.File(path:, size: _) ->
+      path |> detect_mimetype() |> result.unwrap(shared_upload.Other)
+  }
+
   use new_photo <- utils.db_limit_try(
     sql.photo_create(
       db,
@@ -110,6 +119,7 @@ pub fn upload(
       p.camera |> option.unwrap(""),
       p.show_on_profile,
       size,
+      mimetype |> shared_mimetype_to_sql,
     ),
     shared_upload.InternalError,
   )
@@ -120,7 +130,8 @@ pub fn upload(
   let fs_path = "/app/data/photos/" <> uuid.to_string(new_photo.asset_id)
   use _ <- result.try(
     case p.data {
-      shared_upload.InMemory(data:) -> simplifile.write_bits(fs_path, data)
+      shared_upload.InMemory(data:, mimetype: _) ->
+        simplifile.write_bits(fs_path, data)
       shared_upload.File(path:, size: _) -> simplifile.rename(path, fs_path)
     }
     |> result.replace_error(shared_upload.InternalError),
@@ -132,7 +143,51 @@ pub fn upload(
   })
 }
 
+fn detect_mimetype(path: String) -> Result(shared_upload.MimeType, Nil) {
+  use stream <- result.try(
+    file_stream.open_read(path) |> result.replace_error(Nil),
+  )
+  use top <- result.try(
+    file_stream.read_bytes(stream, 32) |> result.replace_error(Nil),
+  )
+  mimetype.detect(top)
+  |> mimetype_to_shared
+  |> Ok()
+}
+
 // mappers
+
+fn sql_to_shared_mimetype(mimetype: sql.Mimetype) -> shared_upload.MimeType {
+  case mimetype {
+    sql.Other -> shared_upload.Other
+    sql.Webp -> shared_upload.Webp
+    sql.Jpg -> shared_upload.Jpg
+    sql.Png -> shared_upload.Png
+  }
+}
+
+pub fn shared_mimetype_to_sql(
+  mimetype: shared_upload.MimeType,
+) -> sql.Mimetype {
+  case mimetype {
+    shared_upload.Png -> sql.Png
+    shared_upload.Jpg -> sql.Jpg
+    shared_upload.Webp -> sql.Webp
+    shared_upload.Other -> sql.Other
+  }
+}
+
+pub fn mimetype_to_shared(
+  mimetype: mimetype.MimeType,
+) -> shared_upload.MimeType {
+  case mimetype.to_string(mimetype) {
+    "image/png" -> shared_upload.Png
+    "image/jpeg" -> shared_upload.Jpg
+    "image/webp" -> shared_upload.Webp
+    _ -> shared_upload.Other
+  }
+}
+
 pub fn privacy_to_sql(priv: Privacy) -> sql.PhotoPrivacy {
   case priv {
     Public -> sql.Public
@@ -201,6 +256,7 @@ pub fn from_photo_find_by_public_id_row(
     creator: p.creator,
     privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
+    mimetype: p.mimetype |> sql_to_shared_mimetype,
     location: p.location,
     camera: p.camera,
     likes_count: p.likes_count,
@@ -220,6 +276,7 @@ pub fn from_photos_list_by_user_row(photo p: sql.PhotosListByUserRow) -> Photo {
     creator: p.creator,
     privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
+    mimetype: p.mimetype |> sql_to_shared_mimetype,
     location: p.location,
     camera: p.camera,
     likes_count: p.likes_count,
@@ -241,6 +298,7 @@ pub fn from_photos_list_by_owner_row(
     creator: p.creator,
     privacy: p.privacy |> sql_to_privacy,
     show_on_profile: p.show_on_profile,
+    mimetype: p.mimetype |> sql_to_shared_mimetype,
     location: p.location,
     camera: p.camera,
     likes_count: p.likes_count,

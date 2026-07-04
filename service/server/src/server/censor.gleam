@@ -106,7 +106,7 @@ fn close_socket(state: State) -> Nil {
         location: p.location,
         camera: p.camera,
         show_on_profile: p.show_on_profile,
-        data: shared_upload.InMemory(data |> png.pack),
+        data: shared_upload.InMemory(data |> png.pack, p.mimetype),
         tags: [],
       )
       |> photo.upload(state.bg_db, state.context.user_cache)

@@ -65,10 +65,10 @@ pub fn search(
   context: web.Context,
   username: String,
 ) -> wisp.Response {
-  let users = user.search(context.db, username, context.profile_cache)
-  let json_array =
-    json.array(users, shared_user.user_to_json) |> json.to_string()
-  wisp.json_response(json_array, 200)
+  user.search(context.db, username, context.profile_cache)
+  |> json.array(shared_user.user_to_json)
+  |> json.to_string()
+  |> wisp.json_response(200)
 }
 
 // TODO: change to most recent 3 for pagination from oset cache

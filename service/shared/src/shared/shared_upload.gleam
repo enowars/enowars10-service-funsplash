@@ -7,8 +7,15 @@ import youid/uuid.{type Uuid}
 
 pub const max_allowed_size = 1_024_000
 
+pub type MimeType {
+  Png
+  Jpg
+  Webp
+  Other
+}
+
 pub type Data {
-  InMemory(data: BitArray)
+  InMemory(data: BitArray, mimetype: MimeType)
   File(path: String, size: Int)
 }
 
@@ -47,17 +54,33 @@ pub fn error_to_string(err: Error) -> String {
     InvalidForm -> "The form data provided was invalid."
     QuotaExceeded(remaining) ->
       "Storage quota exceeded. You have: "
-      <> int.to_string(remaining)
-      <> " remaining. Please delete some photos to upload more."
+      <> int.to_string(remaining / 1000)
+      <> "KB remaining. Please delete some photos to upload more."
     ImageTooLarge(allowed) ->
       "Image is too large. The maximum allowed size is: "
-      <> int.to_string(allowed)
+      <> int.to_string(allowed / 1000)
+      <> "KB"
     AuthorizationError -> "Something wrong with your user account"
   }
 }
 
 pub fn upload_form(creator: Uuid, data: Data) -> Form(Upload) {
   form.new({
+    use _photo_check <- form.field(
+      "photo",
+      form.parse_optional(form.parse_string)
+        |> form.check(fn(val) {
+          case data {
+            File(_, size) if size > max_allowed_size ->
+              Error(
+                "Image is too large. The maximum allowed size is: "
+                <> int.to_string(max_allowed_size),
+              )
+            _ -> Ok(val)
+          }
+        }),
+    )
+
     use description <- form.field(
       "description",
       form.parse_optional(form.parse_string),
@@ -72,13 +95,6 @@ pub fn upload_form(creator: Uuid, data: Data) -> Form(Upload) {
     use show_on_profile <- form.field("show_on_profile", form.parse_checkbox)
 
     use tags <- form.field("tags", form.parse_list(form.parse_string))
-
-    // let _ = case data {
-    //   InMemory(_) -> todo
-    //   File(path: _, size:) if size > max_allowed_size ->
-    //     form.CustomError("File too large")
-    //   _ -> Nil
-    // }
 
     form.success(Upload(
       creator:,

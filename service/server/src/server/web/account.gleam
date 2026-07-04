@@ -8,7 +8,7 @@ import server/user
 import server/web
 import server/web/auth
 import shared/shared_account
-import utils
+
 import wisp
 
 pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
@@ -22,43 +22,20 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> form.run
       |> result.replace_error(shared_account.InvalidData),
     )
-    let username = form.username
-    let id = context_user.id
 
-    // TODO: maybe delete old first and insert new or restore later
-
-    case uset.lookup(context.profile_cache, username) |> option.from_result {
-      // username exists in cache
-      Some(_) -> Error(shared_account.UsernameExists)
-      // username doesn't exists in cache
-      None -> {
-        let new_user = case
-          utils.db_limit(sql.user_find_by_name(context.db, username))
-        {
-          // username exists in db so dont update
-          Ok(user) -> Ok(user |> user.from_user_find_by_name)
-          // username doesn't exists in db, so update existing entry
-          Error(_) -> {
-            use new_user <- utils.db_limit_try(
-              sql.user_update(
-                context.db,
-                id,
-                username,
-                form.first_name,
-                form.last_name |> option.unwrap(""),
-                form.bio |> option.unwrap(""),
-                form.available_for_hire,
-              ),
-              shared_account.UsernameExists,
-            )
-            Ok(new_user |> user.from_user_update)
-          }
-        }
-        let _ = uset.delete_key(context.user_cache, id)
-        let _ = uset.insert_new(context.profile_cache, username, id)
-        new_user
-      }
-    }
+    shared_account.UpdateUser(
+      username: form.username,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      bio: form.bio,
+      available_for_hire: form.available_for_hire,
+    )
+    |> user.update(
+      context_user.id,
+      context.db,
+      context.profile_cache,
+      context.user_cache,
+    )
   }
 
   case new_user {

@@ -20,8 +20,8 @@ pub fn error_to_uri(err: Error) -> String {
   err |> error_to_string |> uri.percent_encode
 }
 
-pub type EditForm {
-  EditForm(
+pub type User {
+  UpdateUser(
     username: String,
     first_name: String,
     last_name: Option(String),
@@ -34,7 +34,7 @@ pub type ChangePasswordForm {
   ChangePasswordForm(old: String, new: String, confirm: String)
 }
 
-pub fn edit_form() -> Form(EditForm) {
+pub fn edit_form() -> Form(User) {
   form.new({
     use username <- form.field(
       "username",
@@ -53,7 +53,7 @@ pub fn edit_form() -> Form(EditForm) {
       "available_for_hire",
       form.parse_checkbox,
     )
-    form.success(EditForm(
+    form.success(UpdateUser(
       username:,
       first_name:,
       last_name:,

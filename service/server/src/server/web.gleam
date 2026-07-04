@@ -2,7 +2,7 @@ import bravo/oset
 import bravo/uset.{type USet}
 import gleam/option.{type Option}
 import pog
-import server/user.{type User}
+import server/user.{type ProfileCache, type User, type UserCache}
 import wisp
 import youid/uuid.{type Uuid}
 
@@ -11,8 +11,8 @@ pub type Context {
     db: pog.Connection,
     static_dir: String,
     user: Option(User),
-    user_cache: USet(Uuid, User),
-    profile_cache: USet(String, Uuid),
+    user_cache: UserCache,
+    profile_cache: ProfileCache,
   )
 }
 
