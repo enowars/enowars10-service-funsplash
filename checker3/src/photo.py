@@ -92,7 +92,7 @@ async def get_data_public(
     assert_equals(r.status_code, expected_code)
     return r.content
 
-async def get_private(
+async def get_data_private(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
     r = await conn.get(f"/images/private_photo-{asset_id}", cookies=cookies)
