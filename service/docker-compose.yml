@@ -2,6 +2,7 @@ services:
   cleanup:
     image: postgres:18-alpine
     entrypoint: [ "sh", "/cleanup.sh" ]
+    # entrypoint: [ "sleep", "1000" ]
     volumes:
       - ./cleanup.sh:/cleanup.sh:ro,z
       - photos_data:/app/data:z
