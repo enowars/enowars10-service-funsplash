@@ -1,10 +1,9 @@
 import bravo/uset
 import formal/form
 import gleam/bool
-import gleam/option.{None, Some}
 import gleam/result
 import server/sql
-import server/user
+import server/users
 import server/web
 import server/web/auth
 import shared/shared_account
@@ -30,17 +29,12 @@ pub fn update(request: wisp.Request, context: web.Context) -> wisp.Response {
       bio: form.bio,
       available_for_hire: form.available_for_hire,
     )
-    |> user.update(
-      context_user.id,
-      context.db,
-      context.profile_cache,
-      context.user_cache,
-    )
+    |> users.update(context_user.id, context.state)
   }
 
   case new_user {
     Ok(new_user) -> {
-      let _ = uset.insert_new(context.user_cache, new_user.id, new_user)
+      let _ = uset.insert_new(context.state.user_cache, new_user.id, new_user)
       wisp.redirect("/?ok")
     }
     Error(e) -> wisp.redirect("/?error=" <> shared_account.error_to_uri(e))
@@ -55,14 +49,15 @@ pub fn change_password(
   use form_data <- wisp.require_form(request)
 
   let change_result = {
-    use f <- result.try(
+    use form <- result.try(
       shared_account.change_password_form()
       |> form.add_values(form_data.values)
       |> form.run
       |> result.replace_error(shared_account.InvalidData),
     )
 
-    let update_res = sql.user_update_password(context.db, user.id, f.new)
+    let update_res =
+      sql.user_update_password(context.state.db, user.id, form.new)
     use <- bool.guard(
       result.is_error(update_res),
       Error(shared_account.InternalError),

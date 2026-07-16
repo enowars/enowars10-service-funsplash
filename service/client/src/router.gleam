@@ -9,6 +9,7 @@ import modem
 import pages/account as account_page
 import pages/auth as auth_page
 import pages/censor
+import pages/collection
 import pages/home
 import pages/not_found
 import pages/photo
@@ -37,6 +38,7 @@ pub type Page {
   UsersSearchPage(model: users_search.Model)
   CensorPage(model: censor.Model)
   AccountPage(model: account_page.Model)
+  CollectionPage(model: collection.Model)
   NotFoundPage
 }
 
@@ -50,6 +52,7 @@ pub type Message {
   UsersSearchPageSentMessage(message: users_search.Message)
   CensorPageSentMessage(message: censor.Message)
   AccountPageSentMessage(message: account_page.Message)
+  CollectionPageSentMessage(message: collection.Message)
   NavbarSentMessage(message: navbar.Message)
 }
 
@@ -101,6 +104,10 @@ pub fn update(
     AccountPageSentMessage(p_msg), AccountPage(p_model) -> {
       let #(model, effect) = account_page.update(p_model, p_msg)
       #(AccountPage(model), effect.map(effect, AccountPageSentMessage))
+    }
+    CollectionPageSentMessage(p_msg), CollectionPage(p_model) -> {
+      let #(model, effect) = collection.update(p_model, p_msg)
+      #(CollectionPage(model), effect.map(effect, CollectionPageSentMessage))
     }
     _, _ -> #(page, effect.none())
   }
@@ -162,7 +169,11 @@ pub fn page_from_route(
     // Not logged in → redirect to login
     Upload(_), _ | route.Account(_), _ | route.AccountPassword(_), _ ->
       redirect_login()
-    Collection(_), _ | NotFound(_), _ -> #(NotFoundPage, effect.none())
+    Collection(id), _ -> {
+      let #(model, eff) = collection.init(id)
+      #(CollectionPage(model), effect.map(eff, CollectionPageSentMessage))
+    }
+    NotFound(_), _ -> #(NotFoundPage, effect.none())
     Redirect(url), _ -> {
       let target = route.parse(uri.Uri(..uri.empty, path: url))
       let #(page, page_effect) = page_from_route(target, auth)
@@ -211,6 +222,8 @@ pub fn view(page: Page, auth: Auth) -> Element(Message) {
         censor.view(model) |> element.map(CensorPageSentMessage)
       AccountPage(model) ->
         account_page.view(model, auth) |> element.map(AccountPageSentMessage)
+      CollectionPage(model) ->
+        collection.view(model, auth) |> element.map(CollectionPageSentMessage)
       NotFoundPage -> not_found.view()
     },
   ])

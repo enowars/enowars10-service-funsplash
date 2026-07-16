@@ -1,40 +1,36 @@
+import formal/form.{type Form}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
-import gleam/time/timestamp.{type Timestamp}
+import shared/shared_user
+
+// pub type CollectionPreview {
+//   CollectionPreview(id: String, name: String, private: Bool)
+// }
+
+pub type Id =
+  String
 
 pub type Collection {
   Collection(
-    id: String,
+    id: Id,
     name: String,
-    creator_username: String,
-    creator_display_name: String,
-    description: Option(String),
-    images: List(String),
     private: Bool,
+    user: shared_user.User,
+    description: Option(String),
   )
 }
 
 pub fn collection_to_json(collection: Collection) -> json.Json {
-  let Collection(
-    id:,
-    name:,
-    creator_username:,
-    creator_display_name:,
-    description:,
-    images:,
-    private:,
-  ) = collection
+  let Collection(id:, name:, user:, description:, private:) = collection
   json.object([
     #("id", json.string(id)),
     #("name", json.string(name)),
-    #("creator_username", json.string(creator_username)),
-    #("creator_display_name", json.string(creator_display_name)),
+    #("user", shared_user.user_to_json(user)),
     #("description", case description {
       option.None -> json.null()
       option.Some(value) -> json.string(value)
     }),
-    #("images", json.array(images, json.string)),
     #("private", json.bool(private)),
   ])
 }
@@ -42,21 +38,49 @@ pub fn collection_to_json(collection: Collection) -> json.Json {
 pub fn collection_decoder() -> decode.Decoder(Collection) {
   use id <- decode.field("id", decode.string)
   use name <- decode.field("name", decode.string)
-  use creator_username <- decode.field("creator_username", decode.string)
-  use creator_display_name <- decode.field(
-    "creator_display_name",
-    decode.string,
-  )
+  use user <- decode.field("user", shared_user.user_decoder())
   use description <- decode.field("description", decode.optional(decode.string))
-  use images <- decode.field("images", decode.list(decode.string))
   use private <- decode.field("private", decode.bool)
-  decode.success(Collection(
-    id:,
-    name:,
-    creator_username:,
-    creator_display_name:,
-    description:,
-    images:,
-    private:,
-  ))
+  decode.success(Collection(id:, name:, user:, description:, private:))
+}
+
+pub type CollectionCreateRequest {
+  CollectionCreateRequest(
+    name: String,
+    description: String,
+    private: Bool,
+    photo_public_id: Option(String),
+    redirect_to: Option(String),
+  )
+}
+
+pub fn collection_create_form() -> Form(CollectionCreateRequest) {
+  form.new({
+    use name <- form.field(
+      "name",
+      form.parse_string
+        |> form.check_not_empty,
+    )
+    use description <- form.field(
+      "description",
+      form.parse_optional(form.parse_string),
+    )
+    use private <- form.field("private", form.parse_checkbox)
+    use photo_public_id <- form.field(
+      "photo_public_id",
+      form.parse_optional(form.parse_string),
+    )
+    use redirect_to <- form.field(
+      "redirect_to",
+      form.parse_optional(form.parse_string),
+    )
+
+    form.success(CollectionCreateRequest(
+      name:,
+      description: option.unwrap(description, ""),
+      private:,
+      photo_public_id:,
+      redirect_to:,
+    ))
+  })
 }

@@ -99,7 +99,7 @@ pub fn view(model: Model) -> Element(Message) {
     ]),
     html.p([class("text-gray-600 mb-6")], [
       html.text(
-        "Drag your mouse over the image to censor parts of it. Changes are streamed to the server.",
+        "Drag your mouse over the image to censor parts of it. Changes are collaborative and streamed to the server. (Only PNG supported for now. Don't try other formats)",
       ),
     ]),
     case model {

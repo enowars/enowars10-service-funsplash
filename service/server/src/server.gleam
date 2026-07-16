@@ -1,5 +1,3 @@
-import bravo
-import bravo/uset
 import gleam/erlang/process
 import gleam/http/request
 import gleam/option.{None}
@@ -8,6 +6,7 @@ import pog
 import server/censor
 import server/config.{type Config}
 import server/router
+import server/state
 import server/web
 import server/web/auth
 import simplifile
@@ -15,30 +14,29 @@ import wisp
 import wisp/wisp_mist
 
 fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
-  let _ = simplifile.create_directory_all("/app/data/photos")
-  let _ = simplifile.create_directory_all("/app/data/tmp")
-
-  let assert Ok(user_cache) = uset.new("user_cache", bravo.Public)
-  let assert Ok(profile_cache) = uset.new("profile_cache", bravo.Public)
-
   wisp.configure_logger()
 
-  let assert Ok(priv_directory) = wisp.priv_directory("server")
-  let static_directory = priv_directory <> "/static"
+  let _ = simplifile.create_directory_all(config.data_dir <> "/photos")
+  let _ = simplifile.create_directory_all(config.data_dir <> "/photos_premium")
+  let _ = simplifile.create_directory_all(config.data_dir <> "/tmp")
+
+  let assert Ok(priv_dir) = wisp.priv_directory("server")
+  let static_dir = priv_dir <> "/static"
+
+  let state = state.init(config.data_dir, static_dir, db)
+  state.start_ttl_sweeper(state, 60_000, 720_000)
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {
     let request = request |> wisp.set_max_body_size(1000)
-    use user <- auth.get_user_from_session(request, db, user_cache)
-    let context =
-      web.Context(db, static_directory, user, user_cache, profile_cache)
+    use user <- auth.get_user_from_session(request, state)
+    let context = web.Context(user:, state:)
     router.handle_request(request, context)
   }
 
   let wisp_app = wisp_mist.handler(handle_request, config.server_secret)
 
   let mist_handler = fn(request: request.Request(mist.Connection)) {
-    let context =
-      web.Context(db, static_directory, None, user_cache, profile_cache)
+    let context = web.Context(user: None, state:)
     case request.path_segments(request) {
       ["napi", "censor", photo_id] ->
         censor.upgrade(request, photo_id, context, bg_db)

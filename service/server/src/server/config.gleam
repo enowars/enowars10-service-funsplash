@@ -7,6 +7,7 @@ pub type Config {
     server_secret: String,
     server_host: String,
     server_port: Int,
+    data_dir: String,
     db_user: String,
     db_host: String,
     db_password: String,
@@ -21,6 +22,7 @@ pub fn config() -> Config {
   let assert Ok(server_host) = envoy.get("SERVER_HOST")
   let assert Ok(server_port) =
     result.unwrap(envoy.get("SERVER_PORT"), "a") |> int.parse
+  let assert Ok(data_dir) = envoy.get("DATA_DIR")
   let assert Ok(db_user) = envoy.get("PGUSER")
   let assert Ok(db_host) = envoy.get("PGHOST")
   let assert Ok(db_password) = envoy.get("PGPASSWORD")
@@ -32,6 +34,7 @@ pub fn config() -> Config {
     server_secret:,
     server_host:,
     server_port:,
+    data_dir:,
     db_user:,
     db_host:,
     db_password:,

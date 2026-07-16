@@ -1,10 +1,10 @@
 import gleam/http
-import server/collection
 import server/web
 import server/web/account
 import server/web/auth
+import server/web/collection
 import server/web/photo
-import server/web/profile
+import server/web/user
 import simplifile
 import wisp
 
@@ -17,11 +17,13 @@ pub fn handle_request(
   case wisp.path_segments(request) {
     ["napi", ..api] ->
       case api {
-        ["s", "users", username] -> profile.search(request, context, username)
-        ["users", user] -> profile.get(request, context, user)
+        ["s", "users", username] -> user.search(request, context, username)
+        ["users", username] -> user.get(request, context, username)
+        ["users", username, "photos"] ->
+          user.get_photos(request, context, username)
+        ["users", username, "collections"] ->
+          user.get_collections(request, context, username)
         ["photos", public_id] -> photo.get(request, context, public_id)
-        ["collections", collection] ->
-          collection.get(request, context, collection)
         ["login"] -> auth.login(request, context)
         ["logout"] -> auth.logout(request, context)
         ["join"] -> auth.sign_up(request, context)
@@ -30,6 +32,18 @@ pub fn handle_request(
         ["account"] -> account.update(request, context)
         ["account", "password"] -> account.change_password(request, context)
         ["me"] -> auth.me(request, context)
+        ["collections", ..path] -> {
+          case path {
+            [] -> collection.create(request, context)
+            [col_id] -> collection.get(request, context, col_id)
+            [col_id, "photos"] -> collection.photos(request, context, col_id)
+            [col_id, "add", photo_id] ->
+              collection.add_photo(request, context, col_id, photo_id)
+            [col_id, "remove", photo_id] ->
+              collection.remove_photo(request, context, col_id, photo_id)
+            _ -> wisp.not_found()
+          }
+        }
         _ -> wisp.not_found()
       }
     ["images", ..images] ->
@@ -48,7 +62,7 @@ pub fn handle_request(
 }
 
 fn serve_index(context: web.Context) -> wisp.Response {
-  case simplifile.read(context.static_dir <> "/index.html") {
+  case simplifile.read(context.state.static_dir <> "/index.html") {
     Ok(html) -> wisp.ok() |> wisp.html_body(html)
     Error(_) -> wisp.internal_server_error()
   }

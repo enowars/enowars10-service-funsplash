@@ -57,6 +57,7 @@ pub fn photo_decoder() -> decode.Decoder(Photo) {
   use camera <- decode.field("camera", decode.optional(decode.string))
   use created_at <- decode.field("created_at", decode.float)
   use tags <- decode.field("tags", decode.list(decode.string))
+
   decode.success(Photo(
     thumbnail:,
     stats:,

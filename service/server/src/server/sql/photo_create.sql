@@ -12,4 +12,4 @@ VALUES (nullif($1,''),
 	$6,
 	$7,
 	$8)
-RETURNING id, asset_id;
+RETURNING *;

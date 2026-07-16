@@ -75,10 +75,14 @@ pub fn change_password_form() -> Form(ChangePasswordForm) {
     )
 
     use confirm <- form.field(
-      "confirm_new_password",
+      "confirm",
       form.parse_string
-        |> form.check_string_length_more_than(4)
-        |> form.check_confirms(new),
+        |> form.check(fn(confirm) {
+          case confirm == new {
+            True -> Ok(confirm)
+            False -> Error("passwords don't match")
+          }
+        }),
     )
 
     form.success(ChangePasswordForm(old:, new:, confirm:))

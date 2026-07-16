@@ -1,3 +1,3 @@
-SELECT id, username, first_name, last_name, bio, available_for_hire, premium
+SELECT *
 FROM users
 WHERE username ILIKE $1 || '%' ORDER BY created_at ASC;

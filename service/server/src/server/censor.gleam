@@ -5,15 +5,15 @@ import gleam/http/request
 import gleam/http/response
 import gleam/int
 import gleam/io
-import gleam/list
 import gleam/option.{type Option, None, Some}
 import mist
 import png/censor
 import png/png.{type Compressed, type Uncompressed}
 import pog
-import server/photo
-import server/sql
-import server/user
+import server/models/photo
+import server/models/user
+import server/photos
+import server/users
 import server/web
 import shared/shared_privacy.{Private}
 import shared/shared_upload
@@ -48,11 +48,9 @@ pub fn upgrade(
   // let assert Ok(uid) = auth_cookie |> uuid.from_string
 
   io.println("Connected")
-  let assert Ok(res) = sql.photo_find_by_public_id(context.db, public_id)
-  let assert Ok(photo_row) = list.first(res.rows)
-  let photo = photo_row |> photo.from_photo_find_by_public_id_row
+  let assert Ok(photo) = photos.get_by_public(context.state, public_id)
 
-  let assert Ok(user) = user.get_by_id(context.db, photo.creator)
+  let assert Ok(user) = users.get_by_id(context.state, photo.creator)
 
   use <- bool.guard(
     photo.privacy == Private,
@@ -63,7 +61,8 @@ pub fn upgrade(
     State,
     Option(process.Selector(b)),
   ) {
-    let assert Ok(data) = photo.get_data(photo.privacy, photo.asset_id)
+    let assert Ok(data) =
+      photos.get_data(context.state, photo.asset_id, photo.privacy)
     let data = data |> png.parse
     let z_stream = png.init_compressor()
     #(
@@ -109,7 +108,7 @@ fn close_socket(state: State) -> Nil {
         data: shared_upload.InMemory(data |> png.pack, p.mimetype),
         tags: [],
       )
-      |> photo.upload(state.bg_db, state.context.user_cache)
+      |> photos.upload(state.context.state)
     })
   }
   Nil

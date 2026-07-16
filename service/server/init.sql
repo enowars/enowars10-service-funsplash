@@ -66,7 +66,7 @@ name TEXT NOT NULL,
 description TEXT,
 creator UUID NOT NULL,
 	FOREIGN KEY (creator) REFERENCES users(id) ON DELETE CASCADE,
-private BOOLEAN NOT NULL
+private BOOLEAN NOT NULL DEFAULT false
 );
 
 create table collections_photos (

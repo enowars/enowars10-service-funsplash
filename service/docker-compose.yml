@@ -1,11 +1,11 @@
 services:
   cleanup:
     image: postgres:18-alpine
-    entrypoint: [ "sh", "/cleanup.sh" ]
-    # entrypoint: [ "sleep", "1000" ]
+    # entrypoint: [ "sh", "/cleanup.sh" ]
+    entrypoint: [ "sleep", "1000" ]
     volumes:
       - ./cleanup.sh:/cleanup.sh:ro,z
-      - photos_data:/app/data:z
+      - photos_data:${DATA_DIR}:z
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,13 +24,13 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - photos_data:/app/data:z
+      - photos_data:${DATA_DIR}:z
     ports:
       - "1337:1337"
     env_file:
       - .env
     environment:
-      - TMPDIR=/app/data/tmp
+      - TMPDIR=${DATA_DIR}/tmp
     networks:
       - funsplash
     restart: unless-stopped
@@ -40,8 +40,8 @@ services:
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
     env_file:
       - .env
     networks:

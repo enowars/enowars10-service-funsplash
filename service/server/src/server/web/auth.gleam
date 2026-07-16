@@ -1,4 +1,4 @@
-import bravo/uset.{type USet}
+import bravo/uset
 import formal/form
 import gleam/bool
 import gleam/http
@@ -6,9 +6,10 @@ import gleam/http/request
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import pog
+import server/models/user.{type User}
 import server/sql
-import server/user.{type User}
+import server/state
+import server/users
 import server/web
 import shared/shared_login
 import shared/shared_signup
@@ -39,24 +40,19 @@ pub fn require_login(
 pub fn me(_request: wisp.Request, context: web.Context) -> wisp.Response {
   use user <- require_login(context)
   user
-  |> user.to_shared([])
+  |> user.to_shared()
   |> shared_user.user_to_json()
   |> json.to_string()
   |> wisp.json_response(200)
 }
 
 pub fn logout(request, context: web.Context) -> wisp.Response {
-  use user <- require_login(context)
-  // let _ = uset.delete_key(context.user_cache, user.id)
-  let _ = uset.delete_key(context.profile_cache, user.username)
+  use _user <- require_login(context)
   wisp.ok() |> unset_cookies(request)
 }
 
 pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
-  use <- bool.guard(
-    request.method != http.Post,
-    wisp.method_not_allowed([http.Post]),
-  )
+  use <- wisp.require_method(request, http.Post)
 
   use form_data <- wisp.require_form(request)
 
@@ -71,11 +67,11 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
     let password = validated_form.password
 
     use user <- utils.db_limit_try(
-      sql.user_find_by_name(context.db, validated_form.username),
+      sql.user_find_by_name(context.state.db, validated_form.username),
       shared_login.UserNotFound,
     )
 
-    let _ = uset.insert_new(context.profile_cache, username, user.id)
+    let _ = uset.insert_new(context.state.profile_cache, username, user.id)
 
     use <- bool.guard(
       // when: argus.verify(user.password, validated_form.password) != Ok(True),
@@ -87,8 +83,8 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
 
   case login_result {
     Ok(user) -> {
-      let user = user |> user.from_user_find_by_name
-      let _ = uset.insert(context.user_cache, user.id, user)
+      let user = user |> user.from_find_by_name
+      let _ = uset.insert(context.state.user_cache, user.id, user)
       wisp.redirect("/") |> set_cookies(request, user)
     }
 
@@ -130,7 +126,7 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
 
     use user <- utils.db_limit_try(
       sql.user_create(
-        context.db,
+        context.state.db,
         validated_form.username,
         validated_form.first_name,
         validated_form.last_name |> option.unwrap(""),
@@ -145,9 +141,10 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
 
   case user {
     Ok(user) -> {
-      let user = user |> user.from_user_create
-      let _ = uset.insert_new(context.user_cache, user.id, user)
-      let _ = uset.insert_new(context.profile_cache, user.username, user.id)
+      let user = user |> user.from_create
+      let _ = uset.insert_new(context.state.user_cache, user.id, user)
+      let _ =
+        uset.insert_new(context.state.profile_cache, user.username, user.id)
       set_cookies(wisp.redirect("/?registered=true"), request, user)
     }
     Error(e) -> wisp.redirect("/?error=" <> shared_signup.error_to_uri(e))
@@ -162,8 +159,7 @@ fn unset_cookies(response, request) {
 
 pub fn get_user_from_session(
   request req: request.Request(wisp.Connection),
-  db db: pog.Connection,
-  user_cache cache: user.UserCache,
+  state state: state.State,
   next next: fn(Option(User)) -> wisp.Response,
 ) -> wisp.Response {
   let user = {
@@ -174,17 +170,7 @@ pub fn get_user_from_session(
     use uid <- result.try(
       uid |> uuid.from_string |> result.replace_error(shared_user.Invalid),
     )
-
-    case uset.lookup(cache, uid) {
-      Ok(user) -> Ok(user)
-      Error(_) -> {
-        use user <- result.try(
-          user.get_by_id(db, uid) |> result.replace_error(shared_user.NotFound),
-        )
-        let _ = uset.insert(cache, user.id, user)
-        Ok(user)
-      }
-    }
+    users.get_by_id(state, uid)
   }
 
   case user {

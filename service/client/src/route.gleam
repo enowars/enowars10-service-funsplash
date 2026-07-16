@@ -7,7 +7,7 @@ pub type Route {
   Index
   Photo(id: String)
   Censor(id: String)
-  Collection(id: Int)
+  Collection(id: String)
   User(name: String)
   UserCollections(name: String)
   UserStats(name: String)
@@ -30,13 +30,7 @@ pub fn parse(uri: uri.Uri) -> Route {
     ["photos", photo_id] -> Photo(id: photo_id)
     ["photos", photo_id, "censor"] -> Censor(id: photo_id)
 
-    ["collections", collection_id] -> {
-      let result = int.parse(collection_id)
-      case result {
-        Ok(collection_id) -> Collection(id: collection_id)
-        Error(_) -> NotFound(uri:)
-      }
-    }
+    ["collections", collection_id] -> Collection(id: collection_id)
 
     ["login"] -> Login(query: uri.query)
     ["join"] -> Join(query: uri.query)
@@ -55,7 +49,7 @@ pub fn href(route: Route) -> attribute.Attribute(message) {
     Index -> "/"
     Photo(id:) -> "/photos/" <> id
     Censor(id:) -> "/photos/" <> id <> "/censor"
-    Collection(id:) -> "/collections/" <> int.to_string(id)
+    Collection(id:) -> "/collections/" <> id
     User(name:) -> "/@" <> name
     UserCollections(name:) -> "/@" <> name <> "/collections"
     UserStats(name:) -> "/@" <> name <> "/stats"

@@ -2,7 +2,6 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
 import gleam/uri
-import shared/shared_thumbnail
 
 pub const search_uri = "/s/users/"
 
@@ -14,7 +13,6 @@ pub type User {
     bio: Option(String),
     available_for_hire: Bool,
     premium: Bool,
-    photos: List(shared_thumbnail.Thumbnail),
   )
 }
 
@@ -50,7 +48,6 @@ pub fn user_to_json(user: User) -> json.Json {
     bio:,
     available_for_hire:,
     premium:,
-    photos:,
   ) = user
   json.object([
     #("username", json.string(username)),
@@ -65,7 +62,6 @@ pub fn user_to_json(user: User) -> json.Json {
     }),
     #("available_for_hire", json.bool(available_for_hire)),
     #("premium", json.bool(premium)),
-    #("photos", json.array(photos, shared_thumbnail.thumbnail_to_json)),
   ])
 }
 
@@ -76,10 +72,6 @@ pub fn user_decoder() -> decode.Decoder(User) {
   use bio <- decode.field("bio", decode.optional(decode.string))
   use available_for_hire <- decode.field("available_for_hire", decode.bool)
   use premium <- decode.field("premium", decode.bool)
-  use photos <- decode.field(
-    "photos",
-    decode.list(shared_thumbnail.thumbnail_decoder()),
-  )
   decode.success(User(
     username:,
     first_name:,
@@ -87,6 +79,5 @@ pub fn user_decoder() -> decode.Decoder(User) {
     bio:,
     available_for_hire:,
     premium:,
-    photos:,
   ))
 }

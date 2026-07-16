@@ -1,35 +1,42 @@
 import formal/form
 import gleam/bool
 import gleam/bytes_tree
+import gleam/http
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
-import pog
-import server/photo
+import server/models/photo.{type Photo}
+import server/models/user
+import server/photos
 import server/premium
-import server/sql
+import server/state.{type State}
+import server/users
 import server/web
 import server/web/auth
+import server/web/helper
 import shared/shared_photo
 import shared/shared_privacy.{Premium, Private, Public}
 import shared/shared_upload
 import simplifile
-import utils
+import utils.{result_guard}
 import wisp
 import youid/uuid
 
-fn get_meta(
-  db: pog.Connection,
+fn try_get_asset(
   asset_id: String,
-  privacy: shared_privacy.Privacy,
-) -> Result(sql.PhotoFindByAssetIdRow, Nil) {
-  use asset_id <- result.try(uuid.from_string(asset_id))
-  use res <- result.try(
-    sql.photo_find_by_asset_id(db, asset_id, privacy |> photo.privacy_to_sql)
-    |> result.replace_error(Nil),
+  state: State,
+  next: fn(Photo) -> wisp.Response,
+) -> wisp.Response {
+  use asset_id <- utils.result_guard(
+    asset_id |> uuid.from_string,
+    wisp.not_found(),
   )
-  res.rows |> list.first
+  use photo <- utils.result_guard(
+    photos.get_by_asset(asset_id, state),
+    wisp.not_found(),
+  )
+  next(photo)
 }
 
 pub fn get_data_private(
@@ -38,22 +45,17 @@ pub fn get_data_private(
   asset_id: String,
 ) -> wisp.Response {
   use user <- auth.require_login(context)
+  use photo <- try_get_asset(asset_id, context.state)
 
-  use photo <- utils.result_guard(
-    get_meta(context.db, asset_id, Private),
-    wisp.not_found(),
-  )
-
+  use <- bool.guard(photo.privacy != Private, wisp.not_found())
   use <- bool.guard(photo.creator != user.id, wisp.response(403))
 
-  use data <- utils.result_guard(
-    photo.get_data(Private, photo.asset_id),
-    wisp.response(500),
-  )
+  let fs_path =
+    context.state.data_dir <> "/photos/" <> uuid.to_string(photo.asset_id)
 
   wisp.ok()
   |> wisp.set_header("content-type", "image/png")
-  |> wisp.set_body(data |> bytes_tree.from_bit_array |> wisp.Bytes)
+  |> wisp.set_body(wisp.File(fs_path, offset: 0, limit: None))
 }
 
 pub fn get_data_premium(
@@ -61,16 +63,23 @@ pub fn get_data_premium(
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  use photo <- utils.result_guard(
-    get_meta(context.db, asset_id, Premium),
-    wisp.not_found(),
-  )
+  use photo <- try_get_asset(asset_id, context.state)
+
+  use <- bool.guard(photo.privacy != Premium, wisp.not_found())
+
+  // let fs_path =
+  //   context.state.data_dir
+  //   <> case context.user {
+  //     Some(user) if user.id == photo.creator || user.premium == True ->
+  //       "/photos/"
+  //     _ -> "/photos_premium/"
+  //   }
+  //   <> uuid.to_string(photo.asset_id)
 
   use data <- utils.result_guard(
-    photo.get_data(Premium, photo.asset_id),
+    photos.get_data(context.state, photo.asset_id, Premium),
     wisp.response(500),
   )
-
   let data = case context.user {
     Some(user) if user.id == photo.creator || user.premium == True -> data
     _ -> data |> premium.censor
@@ -79,6 +88,7 @@ pub fn get_data_premium(
   wisp.ok()
   |> wisp.set_header("content-type", "image/png")
   |> wisp.set_body(data |> bytes_tree.from_bit_array |> wisp.Bytes)
+  // |> wisp.set_body(wisp.File(fs_path, offset: 0, limit: None))
 }
 
 pub fn get_data_public(
@@ -87,19 +97,16 @@ pub fn get_data_public(
   asset_id: String,
 ) -> wisp.Response {
   // TODO: move photo files into privacy dirs /public /private etc. so we dont have to call db here
-  use photo <- utils.result_guard(
-    get_meta(context.db, asset_id, Public),
-    wisp.not_found(),
-  )
+  use photo <- try_get_asset(asset_id, context.state)
 
-  case photo.get_data(Public, photo.asset_id) {
-    Ok(data) -> {
-      wisp.ok()
-      |> wisp.set_header("content-type", "image/png")
-      |> wisp.set_body(wisp.Bytes(data |> bytes_tree.from_bit_array))
-    }
-    Error(_) -> wisp.not_found()
-  }
+  use <- bool.guard(photo.privacy != Public, wisp.not_found())
+
+  let fs_path =
+    context.state.data_dir <> "/photos/" <> uuid.to_string(photo.asset_id)
+
+  wisp.ok()
+  |> wisp.set_header("content-type", "image/png")
+  |> wisp.set_body(wisp.File(fs_path, offset: 0, limit: None))
 }
 
 pub fn get(
@@ -107,47 +114,32 @@ pub fn get(
   context: web.Context,
   public_id: String,
 ) -> wisp.Response {
-  let result = {
-    use res <- result.try(
-      sql.photo_find_by_public_id(context.db, public_id)
-      |> result.replace_error(wisp.not_found()),
-    )
-    use photo <- result.try(
-      res.rows |> list.first |> result.replace_error(wisp.not_found()),
-    )
+  use photo <- utils.result_guard(
+    photos.get_by_public(context.state, public_id),
+    wisp.not_found(),
+  )
+  use user <- utils.result_guard(
+    users.get_by_id(context.state, photo.creator),
+    wisp.internal_server_error(),
+  )
 
-    use res <- result.try(
-      sql.user_find_by_id(context.db, photo.creator)
-      |> result.replace_error(wisp.internal_server_error()),
-    )
-    use user <- result.try(
-      res.rows
-      |> list.first
-      |> result.replace_error(wisp.internal_server_error()),
-    )
+  let cols = helper.current_user_collections(context, photo)
 
-    let tags = photo.get_tags(context.db, photo.id)
+  use tags <- utils.result_guard(
+    photos.get_tags(context.state, photo.id),
+    wisp.internal_server_error(),
+  )
 
-    let user_liked = case context.user {
-      Some(viewer) -> photo.user_liked(context.db, photo.id, viewer.id)
-      None -> False
-    }
-
-    let response =
-      photo
-      |> photo.from_photo_find_by_public_id_row
-      |> photo.to_shared(user.username, tags, user_liked)
-      |> shared_photo.photo_to_json
-      |> json.to_string
-      |> wisp.json_response(200)
-
-    Ok(response)
+  let user_liked = case context.user {
+    Some(viewer) -> photos.has_user_liked(context.state, photo.id, viewer.id)
+    None -> False
   }
 
-  case result {
-    Ok(response) -> response
-    Error(error_response) -> error_response
-  }
+  photo
+  |> photo.to_shared(user |> user.to_shared, tags, user_liked, cols)
+  |> shared_photo.photo_to_json
+  |> json.to_string
+  |> wisp.json_response(200)
 }
 
 pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
@@ -180,7 +172,7 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
 
     form
-    |> photo.upload(context.db, context.user_cache)
+    |> photos.upload(context.state)
   }
 
   case upload_result {
@@ -194,8 +186,26 @@ pub fn upload(request: wisp.Request, context: web.Context) -> wisp.Response {
 pub fn like(
   request: wisp.Request,
   context: web.Context,
-  public_id: String,
+  public_id pid: String,
 ) -> wisp.Response {
-  // sql.user_likes_photo(context.db, context.user.id, )
-  wisp.internal_server_error()
+  use user <- auth.require_login(context)
+  use p <- result_guard(
+    photos.get_by_public(context.state, pid),
+    wisp.not_found(),
+  )
+
+  let res = case request.method {
+    http.Post -> Ok(photos.like(context.state, p.id, user.id))
+    http.Delete -> Ok(photos.unlike(context.state, p.id, user.id))
+    _ -> Error(Nil)
+  }
+
+  case res {
+    Ok(res) ->
+      case res {
+        Ok(_) -> wisp.ok()
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.method_not_allowed([http.Delete, http.Post])
+  }
 }

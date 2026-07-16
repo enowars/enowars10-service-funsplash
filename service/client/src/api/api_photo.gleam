@@ -1,6 +1,7 @@
 import auth
 import browser
 import gleam/int
+import gleam/json
 import lustre/effect.{type Effect}
 import rsvp
 import shared/shared_error
@@ -40,6 +41,27 @@ pub fn fetch(
   rsvp.get(url, handler)
 }
 
+pub fn like(
+  public_id: String,
+  is_like: Bool,
+  on_response: fn(Result(Nil, rsvp.Error(String))) -> message,
+) -> Effect(message) {
+  let url = api_base_url() <> "/like/" <> public_id
+  let handler =
+    rsvp.expect_text(fn(res) {
+      case res {
+        Ok(_) -> on_response(Ok(Nil))
+        Error(e) -> on_response(Error(e))
+      }
+    })
+
+  // Note: RSVP uses empty body for POST
+  case is_like {
+    True -> rsvp.post(url, json.object([]), handler)
+    False -> rsvp.delete(url, json.object([]), handler)
+  }
+}
+
 pub fn data_url(thumb: shared_thumbnail.Thumbnail) {
   case thumb.privacy {
     Private -> "/images/private_photo-" <> thumb.asset_id
@@ -53,7 +75,7 @@ pub fn src_url(
   current_auth: auth.Auth,
 ) -> String {
   let is_owner = case current_auth {
-    auth.LoggedIn(user) -> user.username == thumb.creator
+    auth.LoggedIn(user) -> user.username == thumb.creator.username
     _ -> False
   }
 
