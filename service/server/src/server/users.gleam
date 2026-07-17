@@ -95,7 +95,7 @@ pub fn update(
       }
     }
   }
-  // TODO: make less obvious
+
   use new_user <- result.try(created_user)
   let real_new_user = User(..new_user, username: user.username, id: uid)
   let _ = uset.insert_new(state.profile_cache, user.username, new_user.id)
