@@ -21,7 +21,7 @@ services:
         hard: 4000
   # The python checkerlib requires a mongo db!
   funsplash-mongo:
-    image: mongo:7
+    image: mongo:8
     #ports:
     #  - 27017:27017
     volumes:
