@@ -454,7 +454,7 @@ async def get_prng_collection_flag(
     assert_in(task.flag, desc, f"flag not found in collection description: {desc}")
 
 
-@run_in_thread
+
 @checker.exploit(2)
 async def exploit_prng(
     task: ExploitCheckerTaskMessage,
@@ -471,24 +471,23 @@ async def exploit_prng(
     observed: list[str] = []
     for _ in range(prng_recover.BURST_SIZE):
         pid = await collection.create(
-            conn,
-            cookies,
+            conn, cookies,
             name=utils.random_string(10, CHARSET_UPPER_ALPHANUMERIC),
             description="",
             private=False,
         )
         observed.append(pid)
 
-    logger.info(f"observed {len(observed)} public_ids, recovering counter...")
+    logger.info(f"observed {len(observed)} public_ids, recovering via escript...")
 
-    start_counter = prng_recover.recover_state(observed)
-    if start_counter is None:
-        raise MumbleException("failed to recover counter from observed public_ids")
+    predictions = prng_recover.recover_state(observed)
+    if predictions is None:
+        raise MumbleException("escript failed")
 
-    logger.info(f"recovered start counter: {start_counter}")
+    logger.info(f"got {len(predictions)} predictions, scanning...")
 
     description = await prng_recover.find_victim_collection(
-        conn, start_counter, victim_name
+        conn, predictions, victim_name
     )
     if description is None:
         raise MumbleException("did not find victim's collection")
