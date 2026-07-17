@@ -1,6 +1,8 @@
 import formal/form.{type Form}
 import gleam/int
+import gleam/list
 import gleam/option.{type Option}
+import gleam/string
 import gleam/uri
 import shared/shared_privacy.{type Privacy}
 import youid/uuid.{type Uuid}
@@ -94,7 +96,11 @@ pub fn upload_form(creator: Uuid, data: Data) -> Form(Upload) {
     use camera <- form.field("camera", form.parse_optional(form.parse_string))
     use show_on_profile <- form.field("show_on_profile", form.parse_checkbox)
 
-    use tags <- form.field("tags", form.parse_list(form.parse_string))
+    use tags_str <- form.field("tags", form.parse_optional(form.parse_string))
+    let tags =
+      string.split(option.unwrap(tags_str, ""), ",")
+      |> list.map(string.trim)
+      |> list.filter(fn(t) { t != "" })
 
     form.success(Upload(
       creator:,
