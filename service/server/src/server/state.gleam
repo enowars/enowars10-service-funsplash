@@ -14,6 +14,8 @@ pub fn init(data_dir, static_dir, db) -> State {
   let assert Ok(photo_cache) = uset.new("photo_cache", bravo.Public)
   let assert Ok(asset_cache) = uset.new("asset_cache", bravo.Public)
   let assert Ok(profile_cache) = uset.new("profile_cache", bravo.Public)
+  let assert Ok(collection_public_cache) =
+    uset.new("collection_public_cache", bravo.Public)
   let assert Ok(photo_public_cache) =
     uset.new("photo_public_cache", bravo.Public)
   let assert Ok(user_collections_cache) =
@@ -34,6 +36,7 @@ pub fn init(data_dir, static_dir, db) -> State {
     asset_cache:,
     photo_public_cache:,
     profile_cache:,
+    collection_public_cache:,
     user_collections_cache:,
     user_photos_cache:,
     collection_photos_cache:,
@@ -55,6 +58,7 @@ pub type State {
     asset_cache: AssetCache,
     photo_public_cache: PhotoPublicCache,
     profile_cache: ProfileCache,
+    collection_public_cache: CollectionPublicCache,
     // l2
     user_collections_cache: UserCollectionsCache,
     user_photos_cache: UserPhotosCache,
@@ -85,6 +89,9 @@ pub type PhotoPublicCache =
 
 pub type ProfileCache =
   USet(user.UserName, user.Id)
+
+pub type CollectionPublicCache =
+  USet(collection.PublicId, collection.Id)
 
 // l2
 
@@ -129,8 +136,9 @@ fn sweeper_loop(state: State, interval_ms: Int, ttl_ms: Int) {
     Nil
   })
 
-  sweep_cache(state.collection_cache, cutoff, fn(key, _collection) {
+  sweep_cache(state.collection_cache, cutoff, fn(key, collection) {
     let _ = uset.delete_key(state.collection_photos_cache, key)
+    let _ = uset.delete_key(state.collection_public_cache, collection.public_id)
     Nil
   })
 

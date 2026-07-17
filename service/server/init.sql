@@ -1,7 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS citext;
 
--- TODO: look at unsplash edit profile for more options
 CREATE TABLE users (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
 username CITEXT NOT NULL UNIQUE,
@@ -25,8 +24,7 @@ CREATE TYPE mimetype AS ENUM ('png', 'jpg', 'webp', 'other');
 
 CREATE TABLE photos (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
-public_id VARCHAR(12) NOT NULL UNIQUE DEFAULT
-	substring(translate(encode(gen_random_bytes(9), 'base64'), '+/', '-_'), 1, 11),
+public_id VARCHAR(12) NOT NULL UNIQUE,
 asset_id UUID NOT NULL UNIQUE DEFAULT uuidv7(),
 description TEXT,
 creator UUID NOT NULL,
@@ -62,6 +60,7 @@ PRIMARY KEY (tag, photo_id)
 
 CREATE TABLE collections (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
+public_id VARCHAR(12) NOT NULL UNIQUE,
 name TEXT NOT NULL,
 description TEXT,
 creator UUID NOT NULL,

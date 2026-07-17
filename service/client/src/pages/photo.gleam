@@ -1,17 +1,23 @@
-import browser
 import api/api_collection
 import api/api_photo
 import api/api_user
 import auth.{type Auth}
+import browser
 import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
-import lustre/attribute.{alt, class, placeholder, src, type_, value, action, method, name, rows, id, checked, selected, for}
+import lustre/attribute.{
+  action, alt, checked, class, for, id, method, name, placeholder, rows,
+  selected, src, type_, value,
+}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, h1, img, p, span, textarea, form, input, label, select, option as html_option}
+import lustre/element/html.{
+  a, button, div, form, h1, img, input, label, option as html_option, p, select,
+  span, textarea,
+}
 import lustre/event
 import route
 import rsvp
@@ -82,24 +88,74 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       effect.none(),
     )
     ApiReturnedPhoto(_), _ -> #(Failed, effect.none())
-    CloseDropdown, Loaded(photo, liked, _, user_collections, image_failed, _, ep) -> #(
+    CloseDropdown,
+      Loaded(photo, liked, _, user_collections, image_failed, _, ep)
+    -> #(
       Loaded(photo, liked, False, user_collections, image_failed, False, ep),
       effect.none(),
     )
-    ImageLoadError, Loaded(photo, liked, dropdown_open, user_collections, _, creating_collection, ep) -> #(
-      Loaded(photo, liked, dropdown_open, user_collections, True, creating_collection, ep),
+    ImageLoadError,
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        _,
+        creating_collection,
+        ep,
+      )
+    -> #(
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        True,
+        creating_collection,
+        ep,
+      ),
       effect.none(),
     )
     NoOp, _ -> #(model, effect.none())
-    OpenCreateCollection, Loaded(photo, liked, dropdown_open, user_collections, image_failed, _, ep) -> #(
-      Loaded(photo, liked, dropdown_open, user_collections, image_failed, True, ep),
+    OpenCreateCollection,
+      Loaded(photo, liked, dropdown_open, user_collections, image_failed, _, ep)
+    -> #(
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        True,
+        ep,
+      ),
       effect.none(),
     )
-    CloseCreateCollection, Loaded(photo, liked, dropdown_open, user_collections, image_failed, _, ep) -> #(
-      Loaded(photo, liked, dropdown_open, user_collections, image_failed, False, ep),
+    CloseCreateCollection,
+      Loaded(photo, liked, dropdown_open, user_collections, image_failed, _, ep)
+    -> #(
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        False,
+        ep,
+      ),
       effect.none(),
     )
-    UserClickedLike, Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep) -> {
+    UserClickedLike,
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        ep,
+      )
+    -> {
       let new_liked = !liked
       let delta = case new_liked {
         True -> 1
@@ -129,13 +185,40 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
           api_user.fetch_collections(username, ApiReturnedCollections)
         _, _ -> effect.none()
       }
-      #(Loaded(photo, liked, new_open, user_collections, image_failed, False, ep), eff)
+      #(
+        Loaded(
+          photo,
+          liked,
+          new_open,
+          user_collections,
+          image_failed,
+          False,
+          ep,
+        ),
+        eff,
+      )
     }
     ApiReturnedCollections(Ok(collections)),
-      Loaded(photo, liked, dropdown_open, _, image_failed, creating_collection, ep)
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        _,
+        image_failed,
+        creating_collection,
+        ep,
+      )
     -> {
       #(
-        Loaded(photo, liked, dropdown_open, option.Some(collections), image_failed, creating_collection, ep),
+        Loaded(
+          photo,
+          liked,
+          dropdown_open,
+          option.Some(collections),
+          image_failed,
+          creating_collection,
+          ep,
+        ),
         effect.none(),
       )
     }
@@ -148,7 +231,15 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       )
     }
     ApiReturnedAddPhoto(#(cid, Ok(_))),
-      Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep)
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        ep,
+      )
     -> {
       let new_thumb =
         shared_thumbnail.Thumbnail(..photo.thumbnail, current_user_collections: [
@@ -157,7 +248,15 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         ])
       let new_photo = shared_photo.Photo(..photo, thumbnail: new_thumb)
       #(
-        Loaded(new_photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep),
+        Loaded(
+          new_photo,
+          liked,
+          dropdown_open,
+          user_collections,
+          image_failed,
+          creating_collection,
+          ep,
+        ),
         effect.none(),
       )
     }
@@ -170,7 +269,15 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
       )
     }
     ApiReturnedRemovePhoto(#(cid, Ok(_))),
-      Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep)
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        ep,
+      )
     -> {
       let new_thumb =
         shared_thumbnail.Thumbnail(
@@ -182,17 +289,67 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         )
       let new_photo = shared_photo.Photo(..photo, thumbnail: new_thumb)
       #(
-        Loaded(new_photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep),
+        Loaded(
+          new_photo,
+          liked,
+          dropdown_open,
+          user_collections,
+          image_failed,
+          creating_collection,
+          ep,
+        ),
         effect.none(),
       )
     }
-    
-    OpenEditPhoto, Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, _) ->
-      #(Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, True), effect.none())
-    CloseEditPhoto, Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, _) ->
-      #(Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, False), effect.none())
-    DeletePhoto, Loaded(photo, _, _, _, _, _, _) ->
-      #(model, api_photo.delete_photo(photo.thumbnail.public_id, ApiReturnedDeletePhoto))
+
+    OpenEditPhoto,
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        _,
+      )
+    -> #(
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        True,
+      ),
+      effect.none(),
+    )
+    CloseEditPhoto,
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        _,
+      )
+    -> #(
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        False,
+      ),
+      effect.none(),
+    )
+    DeletePhoto, Loaded(photo, _, _, _, _, _, _) -> #(
+      model,
+      api_photo.delete_photo(photo.thumbnail.public_id, ApiReturnedDeletePhoto),
+    )
     ApiReturnedDeletePhoto(Ok(_)), Loaded(photo, _, _, _, _, _, _) -> {
       browser.navigate_to("/users/" <> photo.thumbnail.creator.username)
       #(model, effect.none())
@@ -208,8 +365,25 @@ pub fn view(model: Model, auth: Auth) -> Element(Message) {
   div([class("max-w-4xl mx-auto py-8 px-4"), event.on_click(CloseDropdown)], [
     case model {
       Loading -> loading_view()
-      Loaded(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep) ->
-        photo_view(photo, liked, dropdown_open, user_collections, image_failed, creating_collection, ep, auth)
+      Loaded(
+        photo,
+        liked,
+        dropdown_open,
+        user_collections,
+        image_failed,
+        creating_collection,
+        ep,
+      ) ->
+        photo_view(
+          photo,
+          liked,
+          dropdown_open,
+          user_collections,
+          image_failed,
+          creating_collection,
+          ep,
+          auth,
+        )
       Failed -> error_view()
     },
   ])
@@ -297,12 +471,30 @@ fn photo_view(
           ],
           [text("Censor Image")],
         ),
-        
+
         case is_owner {
           True ->
             div([class("flex items-center gap-2")], [
-              button([type_("button"), event.on_click(OpenEditPhoto), class("rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50")], [text("Edit")]),
-              button([type_("button"), event.on_click(DeletePhoto), class("rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50")], [text("Delete")]),
+              button(
+                [
+                  type_("button"),
+                  event.on_click(OpenEditPhoto),
+                  class(
+                    "rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50",
+                  ),
+                ],
+                [text("Edit")],
+              ),
+              button(
+                [
+                  type_("button"),
+                  event.on_click(DeletePhoto),
+                  class(
+                    "rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50",
+                  ),
+                ],
+                [text("Delete")],
+              ),
             ])
           False -> element.none()
         },
@@ -348,28 +540,121 @@ fn photo_view(
                       case creating_collection {
                         True -> [
                           div([class("flex items-center gap-2 mb-4")], [
-                            button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseCreateCollection))), class("text-gray-500 hover:text-black font-bold")], [text("<")]),
-                            html.h3([class("text-sm font-bold text-gray-800")], [text("Create a new collection")]),
+                            button(
+                              [
+                                type_("button"),
+                                event.prevent_default(
+                                  event.stop_propagation(event.on_click(
+                                    CloseCreateCollection,
+                                  )),
+                                ),
+                                class(
+                                  "text-gray-500 hover:text-black font-bold",
+                                ),
+                              ],
+                              [text("<")],
+                            ),
+                            html.h3([class("text-sm font-bold text-gray-800")], [
+                              text("Create a new collection"),
+                            ]),
                           ]),
-                          html.form([
-                            attribute.action("/napi/collections"),
-                            attribute.method("POST"),
-                          ], [
-                            html.input([type_("hidden"), attribute.name("redirect_to"), value("/photos/" <> photo.thumbnail.public_id)]),
-                            html.input([type_("hidden"), attribute.name("photo_public_id"), value(photo.thumbnail.public_id)]),
-                            p([class("text-xs font-bold text-gray-700 mb-1")], [text("Name")]),
-                            html.input([type_("text"), attribute.name("name"), placeholder("New collection name"), attribute.required(True), class("w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3")]),
-                            p([class("text-xs font-bold text-gray-700 mb-1")], [text("Description (optional)")]),
-                            textarea([attribute.name("description"), attribute.rows(2), class("w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3 resize-none")], ""),
-                            div([class("flex items-center gap-2 mb-4")], [
-                              html.input([type_("checkbox"), attribute.name("private"), attribute.id("private_collection_" <> photo.thumbnail.public_id)]),
-                              html.label([attribute.for("private_collection_" <> photo.thumbnail.public_id), class("text-xs text-gray-700")], [text("Private")]),
-                            ]),
-                            div([class("flex items-center justify-between mt-2")], [
-                              button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseCreateCollection))), class("text-sm text-gray-500 hover:text-black font-medium")], [text("Cancel")]),
-                              button([type_("submit"), class("bg-black text-white rounded px-4 py-1 text-sm font-medium")], [text("Create collection")]),
-                            ]),
-                          ])
+                          html.form(
+                            [
+                              attribute.action("/napi/collections"),
+                              attribute.method("POST"),
+                            ],
+                            [
+                              html.input([
+                                type_("hidden"),
+                                attribute.name("redirect_to"),
+                                value("/photos/" <> photo.thumbnail.public_id),
+                              ]),
+                              html.input([
+                                type_("hidden"),
+                                attribute.name("photo_public_id"),
+                                value(photo.thumbnail.public_id),
+                              ]),
+                              p(
+                                [class("text-xs font-bold text-gray-700 mb-1")],
+                                [text("Name")],
+                              ),
+                              html.input([
+                                type_("text"),
+                                attribute.name("name"),
+                                placeholder("New collection name"),
+                                attribute.required(True),
+                                class(
+                                  "w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3",
+                                ),
+                              ]),
+                              p(
+                                [class("text-xs font-bold text-gray-700 mb-1")],
+                                [text("Description (optional)")],
+                              ),
+                              textarea(
+                                [
+                                  attribute.name("description"),
+                                  attribute.rows(2),
+                                  class(
+                                    "w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3 resize-none",
+                                  ),
+                                ],
+                                "",
+                              ),
+                              div([class("flex items-center gap-2 mb-4")], [
+                                html.input([
+                                  type_("checkbox"),
+                                  attribute.name("private"),
+                                  attribute.id(
+                                    "private_collection_"
+                                    <> photo.thumbnail.public_id,
+                                  ),
+                                ]),
+                                html.label(
+                                  [
+                                    attribute.for(
+                                      "private_collection_"
+                                      <> photo.thumbnail.public_id,
+                                    ),
+                                    class("text-xs text-gray-700"),
+                                  ],
+                                  [text("Private")],
+                                ),
+                              ]),
+                              div(
+                                [
+                                  class(
+                                    "flex items-center justify-between mt-2",
+                                  ),
+                                ],
+                                [
+                                  button(
+                                    [
+                                      type_("button"),
+                                      event.prevent_default(
+                                        event.stop_propagation(event.on_click(
+                                          CloseCreateCollection,
+                                        )),
+                                      ),
+                                      class(
+                                        "text-sm text-gray-500 hover:text-black font-medium",
+                                      ),
+                                    ],
+                                    [text("Cancel")],
+                                  ),
+                                  button(
+                                    [
+                                      type_("submit"),
+                                      class(
+                                        "bg-black text-white rounded px-4 py-1 text-sm font-medium",
+                                      ),
+                                    ],
+                                    [text("Create collection")],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ]
                         False -> [
                           html.h3(
@@ -387,7 +672,11 @@ fn photo_view(
                               ])
                             option.Some(cols) ->
                               div(
-                                [class("max-h-40 overflow-y-auto mb-2 space-y-1")],
+                                [
+                                  class(
+                                    "max-h-40 overflow-y-auto mb-2 space-y-1",
+                                  ),
+                                ],
                                 list.map(cols, fn(c) {
                                   let in_collection =
                                     list.contains(
@@ -400,7 +689,11 @@ fn photo_view(
                                   }
                                   button(
                                     [
-                                      event.prevent_default(event.stop_propagation(event.on_click(click_msg))),
+                                      event.prevent_default(
+                                        event.stop_propagation(event.on_click(
+                                          click_msg,
+                                        )),
+                                      ),
                                       class(
                                         "w-full text-left flex items-center justify-between group hover:bg-gray-100 px-2 py-1.5 rounded",
                                       ),
@@ -466,11 +759,24 @@ fn photo_view(
                               )
                           },
                           div([class("pt-3 mt-2 border-t border-gray-200")], [
-                            button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(OpenCreateCollection))), class("w-full text-left flex items-center gap-2 text-sm text-gray-700 hover:text-black font-medium")], [
-                              span([class("text-lg font-normal")], [text("+")]),
-                              text("Create a new collection"),
-                            ])
-                          ])
+                            button(
+                              [
+                                type_("button"),
+                                event.prevent_default(
+                                  event.stop_propagation(event.on_click(
+                                    OpenCreateCollection,
+                                  )),
+                                ),
+                                class(
+                                  "w-full text-left flex items-center gap-2 text-sm text-gray-700 hover:text-black font-medium",
+                                ),
+                              ],
+                              [
+                                span([class("text-lg font-normal")], [text("+")]),
+                                text("Create a new collection"),
+                              ],
+                            ),
+                          ]),
                         ]
                       },
                     )
@@ -504,107 +810,215 @@ fn photo_view(
         },
       ]),
     ]),
-    
+
     case editing_photo {
-      True -> form([action("/napi/photos/" <> photo.thumbnail.public_id), method("POST"), class("bg-gray-50 p-6 rounded-lg space-y-4")], [
-        h1([class("text-xl font-bold text-gray-900 mb-4")], [text("Edit Photo")]),
-        p([class("text-xs font-bold text-gray-700 mb-1")], [text("Description")]),
-        textarea([name("description"), rows(3), class("w-full border border-gray-300 rounded px-3 py-2 text-sm")], case photo.description { option.Some(d) -> d option.None -> "" }),
-        
-        p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [text("Location")]),
-        input([type_("text"), name("location"), value(case photo.location { option.Some(l) -> l option.None -> "" }), class("w-full border border-gray-300 rounded px-3 py-2 text-sm")]),
-        
-        p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [text("Camera")]),
-        input([type_("text"), name("camera"), value(case photo.camera { option.Some(c) -> c option.None -> "" }), class("w-full border border-gray-300 rounded px-3 py-2 text-sm")]),
-        
-        p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [text("Tags (comma separated)")]),
-        input([type_("text"), name("tags"), value(string.join(photo.tags, ",")), class("w-full border border-gray-300 rounded px-3 py-2 text-sm")]),
-        
-        p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [text("Privacy")]),
-        select([name("privacy"), class("w-full border border-gray-300 rounded px-3 py-2 text-sm")], [
-          html_option([value("public"), selected(photo.thumbnail.privacy == shared_privacy.Public)], "Public"),
-          html_option([value("premium"), selected(photo.thumbnail.privacy == shared_privacy.Premium)], "Premium"),
-          html_option([value("private"), selected(photo.thumbnail.privacy == shared_privacy.Private)], "Private"),
-        ]),
-        
-        div([class("flex items-center gap-2 mt-4 mb-4")], [
-          input([type_("checkbox"), name("show_on_profile"), id("show_on_profile"), checked(photo.thumbnail.show_on_profile)]),
-          label([for("show_on_profile"), class("text-sm text-gray-700")], [text("Show on Profile")]),
-        ]),
-        
-        div([class("flex items-center justify-between mt-4 pt-4 border-t border-gray-200")], [
-          button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseEditPhoto))), class("text-sm text-gray-500 hover:text-black font-medium")], [text("Cancel")]),
-          button([type_("submit"), class("bg-black text-white rounded px-4 py-2 text-sm font-medium hover:bg-gray-800")], [text("Save Changes")]),
-        ])
-      ])
-      False -> div([class("space-y-6")], [
-        // Photo image
-        case image_failed {
-          True ->
+      True ->
+        form(
+          [
+            action("/napi/photos/" <> photo.thumbnail.public_id),
+            method("POST"),
+            class("bg-gray-50 p-6 rounded-lg space-y-4"),
+          ],
+          [
+            h1([class("text-xl font-bold text-gray-900 mb-4")], [
+              text("Edit Photo"),
+            ]),
+            p([class("text-xs font-bold text-gray-700 mb-1")], [
+              text("Description"),
+            ]),
+            textarea(
+              [
+                name("description"),
+                rows(3),
+                class("w-full border border-gray-300 rounded px-3 py-2 text-sm"),
+              ],
+              case photo.description {
+                option.Some(d) -> d
+                option.None -> ""
+              },
+            ),
+
+            p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [
+              text("Location"),
+            ]),
+            input([
+              type_("text"),
+              name("location"),
+              value(case photo.location {
+                option.Some(l) -> l
+                option.None -> ""
+              }),
+              class("w-full border border-gray-300 rounded px-3 py-2 text-sm"),
+            ]),
+
+            p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [
+              text("Camera"),
+            ]),
+            input([
+              type_("text"),
+              name("camera"),
+              value(case photo.camera {
+                option.Some(c) -> c
+                option.None -> ""
+              }),
+              class("w-full border border-gray-300 rounded px-3 py-2 text-sm"),
+            ]),
+
+            p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [
+              text("Tags (comma separated)"),
+            ]),
+            input([
+              type_("text"),
+              name("tags"),
+              value(string.join(photo.tags, ",")),
+              class("w-full border border-gray-300 rounded px-3 py-2 text-sm"),
+            ]),
+
+            p([class("text-xs font-bold text-gray-700 mt-3 mb-1")], [
+              text("Privacy"),
+            ]),
+            select(
+              [
+                name("privacy"),
+                class("w-full border border-gray-300 rounded px-3 py-2 text-sm"),
+              ],
+              [
+                html_option(
+                  [
+                    value("public"),
+                    selected(photo.thumbnail.privacy == shared_privacy.Public),
+                  ],
+                  "Public",
+                ),
+                html_option(
+                  [
+                    value("premium"),
+                    selected(photo.thumbnail.privacy == shared_privacy.Premium),
+                  ],
+                  "Premium",
+                ),
+                html_option(
+                  [
+                    value("private"),
+                    selected(photo.thumbnail.privacy == shared_privacy.Private),
+                  ],
+                  "Private",
+                ),
+              ],
+            ),
+
+            div([class("flex items-center gap-2 mt-4 mb-4")], [
+              input([
+                type_("checkbox"),
+                name("show_on_profile"),
+                id("show_on_profile"),
+                checked(photo.thumbnail.show_on_profile),
+              ]),
+              label([for("show_on_profile"), class("text-sm text-gray-700")], [
+                text("Show on Profile"),
+              ]),
+            ]),
+
             div(
               [
                 class(
-                  "w-full rounded-lg min-h-96 bg-gray-200 flex flex-col items-center justify-center text-gray-400",
+                  "flex items-center justify-between mt-4 pt-4 border-t border-gray-200",
                 ),
               ],
               [
-                div([class("text-6xl mb-4")], [text("🔒")]),
-                span([class("text-lg font-medium")], [text("Premium content")]),
-              ],
-            )
-          False ->
-            img([
-              src(api_photo.src_url(photo.thumbnail, auth)),
-              alt(case photo.description {
-                option.Some(t) -> t
-                option.None -> "Photo"
-              }),
-              event.on("error", decode.success(ImageLoadError)),
-              class("w-full rounded-lg"),
-            ])
-        },
-        // Description
-        case photo.thumbnail.description {
-          option.Some(desc) -> p([class("text-sm text-gray-600")], [text(desc)])
-          option.None -> element.none()
-        },
-        // Stats row
-        div([class("flex gap-6 text-sm text-gray-500")], [
-          stat("Views", photo.stats.views),
-          stat("Likes", photo.stats.likes),
-          stat("Downloads", photo.stats.downloads),
-        ]),
-        // Details
-        case photo.location {
-          option.Some(loc) ->
-            p([class("text-sm text-gray-500")], [text("📍 " <> loc)])
-          option.None -> element.none()
-        },
-        case photo.camera {
-          option.Some(cam) ->
-            p([class("text-sm text-gray-500")], [text("📷 " <> cam)])
-          option.None -> element.none()
-        },
-        // Tags
-        case photo.tags {
-          [] -> element.none()
-          tags ->
-            div(
-              [class("flex flex-wrap gap-2")],
-              list.map(tags, fn(tag) {
-                span(
+                button(
                   [
+                    type_("button"),
+                    event.prevent_default(
+                      event.stop_propagation(event.on_click(CloseEditPhoto)),
+                    ),
+                    class("text-sm text-gray-500 hover:text-black font-medium"),
+                  ],
+                  [text("Cancel")],
+                ),
+                button(
+                  [
+                    type_("submit"),
                     class(
-                      "rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600",
+                      "bg-black text-white rounded px-4 py-2 text-sm font-medium hover:bg-gray-800",
                     ),
                   ],
-                  [text(tag)],
-                )
-              }),
-            )
-        }
-      ])
-    }
+                  [text("Save Changes")],
+                ),
+              ],
+            ),
+          ],
+        )
+      False ->
+        div([class("space-y-6")], [
+          // Photo image
+          case image_failed {
+            True ->
+              div(
+                [
+                  class(
+                    "w-full rounded-lg min-h-96 bg-gray-200 flex flex-col items-center justify-center text-gray-400",
+                  ),
+                ],
+                [
+                  div([class("text-6xl mb-4")], [text("🔒")]),
+                  span([class("text-lg font-medium")], [text("Premium content")]),
+                ],
+              )
+            False ->
+              img([
+                src(api_photo.src_url(photo.thumbnail, auth)),
+                alt(case photo.description {
+                  option.Some(t) -> t
+                  option.None -> "Photo"
+                }),
+                event.on("error", decode.success(ImageLoadError)),
+                class("w-full rounded-lg"),
+              ])
+          },
+          // Description
+          case photo.thumbnail.description {
+            option.Some(desc) ->
+              p([class("text-sm text-gray-600")], [text(desc)])
+            option.None -> element.none()
+          },
+          // Stats row
+          div([class("flex gap-6 text-sm text-gray-500")], [
+            stat("Views", photo.stats.views),
+            stat("Likes", photo.stats.likes),
+            stat("Downloads", photo.stats.downloads),
+          ]),
+          // Details
+          case photo.location {
+            option.Some(loc) ->
+              p([class("text-sm text-gray-500")], [text("📍 " <> loc)])
+            option.None -> element.none()
+          },
+          case photo.camera {
+            option.Some(cam) ->
+              p([class("text-sm text-gray-500")], [text("📷 " <> cam)])
+            option.None -> element.none()
+          },
+          // Tags
+          case photo.tags {
+            [] -> element.none()
+            tags ->
+              div(
+                [class("flex flex-wrap gap-2")],
+                list.map(tags, fn(tag) {
+                  span(
+                    [
+                      class(
+                        "rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600",
+                      ),
+                    ],
+                    [text(tag)],
+                  )
+                }),
+              )
+          },
+        ])
+    },
   ])
 }
 

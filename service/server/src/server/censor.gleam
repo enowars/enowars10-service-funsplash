@@ -126,14 +126,20 @@ fn handler(
       case censor.censor_raw(state.in_photo, mask, state.z_stream) {
         Ok(censored_png) -> {
           let new_quota = state.user.storage_quota_used + png.size(censored_png)
-          let #(response, state) = case new_quota < state.user.storage_quota {
-            True -> #("ok;", State(..state, out_photo: Some(censored_png)))
-            False -> #(
-              "quota_exceeded_by:"
-                <> int.to_string(new_quota - state.user.storage_quota),
-              state,
-            )
+          let #(ok, state) = case new_quota < state.user.storage_quota {
+            True -> #("true", State(..state, out_photo: Some(censored_png)))
+            False -> #("false", state)
           }
+          let response =
+            "{\"ok\": "
+            <> ok
+            <> ", \"pid\": \""
+            <> state.photo.public_id
+            <> "\", \"usage\": "
+            <> int.to_string(new_quota)
+            <> ", \"limit\": "
+            <> int.to_string(state.user.storage_quota)
+            <> "}"
           let _ = mist.send_text_frame(connection, response)
           mist.continue(state)
         }

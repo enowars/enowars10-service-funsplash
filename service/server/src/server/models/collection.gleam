@@ -8,9 +8,13 @@ import youid/uuid.{type Uuid}
 pub type Id =
   Uuid
 
+pub type PublicId =
+  String
+
 pub type Collection {
   Collection(
     id: Id,
+    public_id: PublicId,
     name: String,
     description: Option(String),
     creator: user.Id,
@@ -42,6 +46,7 @@ pub fn from_remove_photo(c: sql.CollectionRemovePhotoRow) -> #(Id, Uuid) {
 pub fn from_create(c: sql.CollectionCreateRow) -> Collection {
   Collection(
     id: c.id,
+    public_id: c.public_id,
     name: c.name,
     description: c.description,
     creator: c.creator,
@@ -52,6 +57,20 @@ pub fn from_create(c: sql.CollectionCreateRow) -> Collection {
 pub fn from_find_by_id(c: sql.CollectionFindByIdRow) -> Collection {
   Collection(
     id: c.id,
+    public_id: c.public_id,
+    name: c.name,
+    description: c.description,
+    creator: c.creator,
+    private: c.private,
+  )
+}
+
+pub fn from_find_by_public_id(
+  c: sql.CollectionFindByPublicIdRow,
+) -> Collection {
+  Collection(
+    id: c.id,
+    public_id: c.public_id,
     name: c.name,
     description: c.description,
     creator: c.creator,
@@ -62,6 +81,7 @@ pub fn from_find_by_id(c: sql.CollectionFindByIdRow) -> Collection {
 pub fn from_update(c: sql.CollectionUpdateRow) -> Collection {
   Collection(
     id: c.id,
+    public_id: c.public_id,
     name: c.name,
     description: c.description,
     creator: c.creator,
@@ -72,6 +92,7 @@ pub fn from_update(c: sql.CollectionUpdateRow) -> Collection {
 pub fn from_user_collections_list(c: sql.UserCollectionsListRow) -> Collection {
   Collection(
     id: c.id,
+    public_id: c.public_id,
     name: c.name,
     description: c.description,
     creator: c.creator,

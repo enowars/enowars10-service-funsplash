@@ -240,6 +240,7 @@ pub fn upload(
       p.show_on_profile,
       size,
       mimetype |> mimetype.shared_to_sql,
+      utils.generate_id(),
     )
     |> utils.update_cache_l0(
       state.photo_cache,

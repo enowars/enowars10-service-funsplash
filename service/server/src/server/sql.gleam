@@ -58,6 +58,7 @@ RETURNING *;
 pub type CollectionCreateRow {
   CollectionCreateRow(
     id: Uuid,
+    public_id: String,
     name: String,
     description: Option(String),
     creator: Uuid,
@@ -75,17 +76,20 @@ pub fn collection_create(
   db: pog.Connection,
   arg_1: String,
   arg_2: String,
-  arg_3: Uuid,
-  arg_4: Bool,
+  arg_3: String,
+  arg_4: Uuid,
+  arg_5: Bool,
 ) -> Result(pog.Returned(CollectionCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use name <- decode.field(1, decode.string)
-    use description <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use private <- decode.field(4, decode.bool)
+    use public_id <- decode.field(1, decode.string)
+    use name <- decode.field(2, decode.string)
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use private <- decode.field(5, decode.bool)
     decode.success(CollectionCreateRow(
       id:,
+      public_id:,
       name:,
       description:,
       creator:,
@@ -93,15 +97,16 @@ pub fn collection_create(
     ))
   }
 
-  "INSERT INTO collections (name, description, creator, private)
-VALUES ($1, nullif($2, ''), $3, $4)
+  "INSERT INTO collections (name, public_id,description, creator, private)
+VALUES ($1, $2, nullif($3, ''), $4, $5)
 RETURNING *;
 "
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
   |> pog.parameter(pog.text(arg_2))
-  |> pog.parameter(pog.text(uuid.to_string(arg_3)))
-  |> pog.parameter(pog.bool(arg_4))
+  |> pog.parameter(pog.text(arg_3))
+  |> pog.parameter(pog.text(uuid.to_string(arg_4)))
+  |> pog.parameter(pog.bool(arg_5))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -152,6 +157,7 @@ RETURNING id;
 pub type CollectionFindByIdRow {
   CollectionFindByIdRow(
     id: Uuid,
+    public_id: String,
     name: String,
     description: Option(String),
     creator: Uuid,
@@ -171,12 +177,14 @@ pub fn collection_find_by_id(
 ) -> Result(pog.Returned(CollectionFindByIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use name <- decode.field(1, decode.string)
-    use description <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use private <- decode.field(4, decode.bool)
+    use public_id <- decode.field(1, decode.string)
+    use name <- decode.field(2, decode.string)
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use private <- decode.field(5, decode.bool)
     decode.success(CollectionFindByIdRow(
       id:,
+      public_id:,
       name:,
       description:,
       creator:,
@@ -191,6 +199,61 @@ LIMIT 1;
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(id)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `collection_find_by_public_id` query
+/// defined in `./src/server/sql/collection_find_by_public_id.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CollectionFindByPublicIdRow {
+  CollectionFindByPublicIdRow(
+    id: Uuid,
+    public_id: String,
+    name: String,
+    description: Option(String),
+    creator: Uuid,
+    private: Bool,
+  )
+}
+
+/// Runs the `collection_find_by_public_id` query
+/// defined in `./src/server/sql/collection_find_by_public_id.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn collection_find_by_public_id(
+  db: pog.Connection,
+  public_id: String,
+) -> Result(pog.Returned(CollectionFindByPublicIdRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use name <- decode.field(2, decode.string)
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use private <- decode.field(5, decode.bool)
+    decode.success(CollectionFindByPublicIdRow(
+      id:,
+      public_id:,
+      name:,
+      description:,
+      creator:,
+      private:,
+    ))
+  }
+
+  "SELECT *
+FROM collections
+WHERE public_id = $1
+LIMIT 1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(public_id))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -324,6 +387,7 @@ RETURNING *;
 pub type CollectionUpdateRow {
   CollectionUpdateRow(
     id: Uuid,
+    public_id: String,
     name: String,
     description: Option(String),
     creator: Uuid,
@@ -347,12 +411,14 @@ pub fn collection_update(
 ) -> Result(pog.Returned(CollectionUpdateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use name <- decode.field(1, decode.string)
-    use description <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use private <- decode.field(4, decode.bool)
+    use public_id <- decode.field(1, decode.string)
+    use name <- decode.field(2, decode.string)
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use private <- decode.field(5, decode.bool)
     decode.success(CollectionUpdateRow(
       id:,
+      public_id:,
       name:,
       description:,
       creator:,
@@ -504,6 +570,7 @@ pub fn photo_create(
   arg_6: Bool,
   arg_7: Int,
   arg_8: Mimetype,
+  arg_9: String,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
@@ -545,7 +612,7 @@ pub fn photo_create(
      SET storage_quota_used = storage_quota_used + $7
      WHERE id = $2
 )
-INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype)
+INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype, public_id)
 VALUES (nullif($1,''),
 	$2,
 	$3,
@@ -553,7 +620,8 @@ VALUES (nullif($1,''),
 	nullif($5,''),
 	$6,
 	$7,
-	$8)
+	$8,
+	$9)
 RETURNING *;
 "
   |> pog.query
@@ -565,6 +633,7 @@ RETURNING *;
   |> pog.parameter(pog.bool(arg_6))
   |> pog.parameter(pog.int(arg_7))
   |> pog.parameter(mimetype_encoder(arg_8))
+  |> pog.parameter(pog.text(arg_9))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -1428,6 +1497,7 @@ WHERE collections.creator = $1 AND collections_photos.photo_id = $2;
 pub type UserCollectionsListRow {
   UserCollectionsListRow(
     id: Uuid,
+    public_id: String,
     name: String,
     description: Option(String),
     creator: Uuid,
@@ -1447,12 +1517,14 @@ pub fn user_collections_list(
 ) -> Result(pog.Returned(UserCollectionsListRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use name <- decode.field(1, decode.string)
-    use description <- decode.field(2, decode.optional(decode.string))
-    use creator <- decode.field(3, uuid_decoder())
-    use private <- decode.field(4, decode.bool)
+    use public_id <- decode.field(1, decode.string)
+    use name <- decode.field(2, decode.string)
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use private <- decode.field(5, decode.bool)
     decode.success(UserCollectionsListRow(
       id:,
+      public_id:,
       name:,
       description:,
       creator:,

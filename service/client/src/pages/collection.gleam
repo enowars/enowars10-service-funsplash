@@ -1,14 +1,18 @@
-import browser
 import api/api_collection
 import auth
+import browser
 import components/photo_card
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
-import lustre/attribute.{class, action, method, placeholder, type_, value, required, checked, for, id}
+import lustre/attribute.{
+  action, checked, class, for, id, method, placeholder, required, type_, value,
+}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{button, div, form, h1, input, label, p, span, textarea}
+import lustre/element/html.{
+  button, div, form, h1, input, label, p, span, textarea,
+}
 import lustre/event
 import rsvp
 import shared/shared_collection
@@ -59,7 +63,10 @@ pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
     ApiReturnedCollection(Ok(collection)) -> {
       case model {
         Loading(id, _, p) -> check_loaded(id, Some(collection), p)
-        Loaded(_, p, cards, ec) -> #(Loaded(collection, p, cards, ec), effect.none())
+        Loaded(_, p, cards, ec) -> #(
+          Loaded(collection, p, cards, ec),
+          effect.none(),
+        )
         _ -> #(model, effect.none())
       }
     }
@@ -108,26 +115,33 @@ pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
         }
         _ -> #(model, effect.none())
       }
-    
-    OpenEditCollection -> case model {
-      Loaded(c, p, cards, _) -> #(Loaded(c, p, cards, True), effect.none())
-      _ -> #(model, effect.none())
-    }
-    CloseEditCollection -> case model {
-      Loaded(c, p, cards, _) -> #(Loaded(c, p, cards, False), effect.none())
-      _ -> #(model, effect.none())
-    }
-    DeleteCollection -> case model {
-      Loaded(c, _, _, _) -> #(model, api_collection.delete_collection(c.id, ApiReturnedDeleteCollection))
-      _ -> #(model, effect.none())
-    }
-    ApiReturnedDeleteCollection(Ok(_)) -> case model {
-      Loaded(c, _, _, _) -> {
-        browser.navigate_to("/users/" <> c.user.username)
-        #(model, effect.none())
+
+    OpenEditCollection ->
+      case model {
+        Loaded(c, p, cards, _) -> #(Loaded(c, p, cards, True), effect.none())
+        _ -> #(model, effect.none())
       }
-      _ -> #(model, effect.none())
-    }
+    CloseEditCollection ->
+      case model {
+        Loaded(c, p, cards, _) -> #(Loaded(c, p, cards, False), effect.none())
+        _ -> #(model, effect.none())
+      }
+    DeleteCollection ->
+      case model {
+        Loaded(c, _, _, _) -> #(
+          model,
+          api_collection.delete_collection(c.id, ApiReturnedDeleteCollection),
+        )
+        _ -> #(model, effect.none())
+      }
+    ApiReturnedDeleteCollection(Ok(_)) ->
+      case model {
+        Loaded(c, _, _, _) -> {
+          browser.navigate_to("/users/" <> c.user.username)
+          #(model, effect.none())
+        }
+        _ -> #(model, effect.none())
+      }
     ApiReturnedDeleteCollection(Error(_)) -> #(model, effect.none())
     CloseAllDropdowns ->
       case model {
@@ -182,7 +196,7 @@ fn collection_view(
   col: shared_collection.Collection,
   photos: List(shared_thumbnail.Thumbnail),
   cards: dict.Dict(String, photo_card.Model),
-    editing_collection: Bool,
+  editing_collection: Bool,
   current_auth: auth.Auth,
 ) -> Element(Message) {
   let is_owner = case current_auth {
@@ -193,37 +207,95 @@ fn collection_view(
   div([class("space-y-8")], [
     case editing_collection {
       True ->
-        form([action("/napi/collections/" <> col.id), method("POST"), class("flex flex-col items-center space-y-4 mb-8 bg-gray-50 p-6 rounded-lg")], [
-          h1([class("text-xl font-bold text-gray-900 mb-2")], [text("Edit Collection")]),
-          div([class("w-full max-w-md")], [
-            p([class("text-xs font-bold text-gray-700 mb-1")], [text("Name")]),
-            input([type_("text"), attribute.name("name"), value(col.name), required(True), class("w-full border border-gray-300 rounded px-3 py-2 text-sm mb-3")]),
-            
-            p([class("text-xs font-bold text-gray-700 mb-1")], [text("Description (optional)")]),
-            textarea([attribute.name("description"), attribute.rows(3), class("w-full border border-gray-300 rounded px-3 py-2 text-sm mb-3")], case col.description {
-              Some(desc) -> desc
-              None -> ""
-            }),
-            
-            div([class("flex items-center gap-2 mb-4")], [
-              input([type_("checkbox"), attribute.name("private"), id("private_collection"), checked(col.private)]),
-              label([for("private_collection"), class("text-sm text-gray-700")], [text("Private Collection")]),
+        form(
+          [
+            action("/napi/collections/" <> col.id),
+            method("POST"),
+            class(
+              "flex flex-col items-center space-y-4 mb-8 bg-gray-50 p-6 rounded-lg",
+            ),
+          ],
+          [
+            h1([class("text-xl font-bold text-gray-900 mb-2")], [
+              text("Edit Collection"),
             ]),
-            
-            div([class("flex items-center justify-between mt-2")], [
-              button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseEditCollection))), class("text-sm text-gray-500 hover:text-black font-medium")], [text("Cancel")]),
-              button([type_("submit"), class("bg-black text-white rounded px-4 py-2 text-sm font-medium hover:bg-gray-800")], [text("Save Changes")]),
+            div([class("w-full max-w-md")], [
+              p([class("text-xs font-bold text-gray-700 mb-1")], [text("Name")]),
+              input([
+                type_("text"),
+                attribute.name("name"),
+                value(col.name),
+                required(True),
+                class(
+                  "w-full border border-gray-300 rounded px-3 py-2 text-sm mb-3",
+                ),
+              ]),
+
+              p([class("text-xs font-bold text-gray-700 mb-1")], [
+                text("Description (optional)"),
+              ]),
+              textarea(
+                [
+                  attribute.name("description"),
+                  attribute.rows(3),
+                  class(
+                    "w-full border border-gray-300 rounded px-3 py-2 text-sm mb-3",
+                  ),
+                ],
+                case col.description {
+                  Some(desc) -> desc
+                  None -> ""
+                },
+              ),
+
+              div([class("flex items-center gap-2 mb-4")], [
+                input([
+                  type_("checkbox"),
+                  attribute.name("private"),
+                  id("private_collection"),
+                  checked(col.private),
+                ]),
+                label(
+                  [for("private_collection"), class("text-sm text-gray-700")],
+                  [text("Private Collection")],
+                ),
+              ]),
+
+              div([class("flex items-center justify-between mt-2")], [
+                button(
+                  [
+                    type_("button"),
+                    event.prevent_default(
+                      event.stop_propagation(event.on_click(CloseEditCollection)),
+                    ),
+                    class("text-sm text-gray-500 hover:text-black font-medium"),
+                  ],
+                  [text("Cancel")],
+                ),
+                button(
+                  [
+                    type_("submit"),
+                    class(
+                      "bg-black text-white rounded px-4 py-2 text-sm font-medium hover:bg-gray-800",
+                    ),
+                  ],
+                  [text("Save Changes")],
+                ),
+              ]),
             ]),
-          ])
-        ])
+          ],
+        )
       False ->
         div([class("flex flex-col items-center text-center space-y-2 mb-8")], [
           h1([class("text-3xl font-bold text-gray-900")], [text(col.name)]),
           p([class("text-sm text-gray-500")], [
-            text("By " <> col.user.first_name <> " (@" <> col.user.username <> ")"),
+            text(
+              "By " <> col.user.first_name <> " (@" <> col.user.username <> ")",
+            ),
           ]),
           case col.description {
-            Some(desc) -> p([class("text-sm text-gray-600 max-w-md")], [text(desc)])
+            Some(desc) ->
+              p([class("text-sm text-gray-600 max-w-md")], [text(desc)])
             None -> element.none()
           },
           case col.private {
@@ -241,11 +313,27 @@ fn collection_view(
           case is_owner {
             True ->
               div([class("flex items-center gap-4 mt-4")], [
-                button([type_("button"), event.on_click(OpenEditCollection), class("text-sm font-medium text-blue-600 hover:text-blue-800")], [text("Edit Collection")]),
-                button([type_("button"), event.on_click(DeleteCollection), class("text-sm font-medium text-red-600 hover:text-red-800")], [text("Delete Collection")]),
+                button(
+                  [
+                    type_("button"),
+                    event.on_click(OpenEditCollection),
+                    class(
+                      "text-sm font-medium text-blue-600 hover:text-blue-800",
+                    ),
+                  ],
+                  [text("Edit Collection")],
+                ),
+                button(
+                  [
+                    type_("button"),
+                    event.on_click(DeleteCollection),
+                    class("text-sm font-medium text-red-600 hover:text-red-800"),
+                  ],
+                  [text("Delete Collection")],
+                ),
               ])
             False -> element.none()
-          }
+          },
         ])
     },
     case photos {

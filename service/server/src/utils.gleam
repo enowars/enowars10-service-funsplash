@@ -1,12 +1,23 @@
 import bravo/uset.{type USet}
+import gleam/bit_array
 import gleam/list
 import gleam/result
+import gleam/string
 import pog
 
 pub fn defer(defer: fn() -> a, first: fn() -> b) -> b {
   let res = first()
   defer()
   res
+}
+
+@external(erlang, "rand", "bytes")
+fn rand_bytes(size: Int) -> BitArray
+
+pub fn generate_id() -> String {
+  rand_bytes(9)
+  |> bit_array.base64_url_encode(False)
+  |> string.slice(at_index: 0, length: 11)
 }
 
 pub fn extend_cache_l2(cache: USet(k, List(v)), key: k, value: v) -> Nil {
@@ -175,17 +186,6 @@ pub fn result_guard(
 ) -> c {
   case requirement {
     Error(_) -> consequence
-    Ok(ok) -> alternative(ok)
-  }
-}
-
-pub fn result_guard_lazy(
-  when requirement: Result(a, b),
-  return consequence: fn() -> c,
-  otherwise alternative: fn(a) -> c,
-) -> c {
-  case requirement {
-    Error(_) -> consequence()
     Ok(ok) -> alternative(ok)
   }
 }

@@ -19,16 +19,18 @@ import shared/shared_collection
 import shared/shared_thumbnail
 import utils.{result_guard}
 import wisp
-import youid/uuid
 
 pub fn photos(
   _request: wisp.Request,
   context: web.Context,
-  collection_id: String,
+  collection_id cid: collection.PublicId,
 ) -> wisp.Response {
-  use cid <- result_guard(uuid.from_string(collection_id), wisp.not_found())
+  use col <- result_guard(
+    collections.get_by_public(context.state, cid),
+    wisp.not_found(),
+  )
   use photos <- result_guard(
-    photos.get_by_collection(context.state, cid),
+    photos.get_by_collection(context.state, col.id),
     wisp.not_found(),
   )
 
@@ -67,12 +69,14 @@ pub fn photos(
 pub fn get(
   request: wisp.Request,
   context: web.Context,
-  collection_id cid: String,
+  public_collection_id cid: collection.PublicId,
 ) -> wisp.Response {
   use <- wisp.require_method(request, http.Get)
-  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
 
-  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use col <- result_guard(
+    collections.get_by_public(context.state, cid),
+    wisp.not_found(),
+  )
   use user <- result_guard(
     users.get_by_id(context.state, col.creator),
     wisp.internal_server_error(),
@@ -119,7 +123,7 @@ pub fn create(request: wisp.Request, context: web.Context) -> wisp.Response {
       _ -> None
     }
 
-    use collection_id <- result.try(
+    use collection <- result.try(
       collections.create(
         context.state,
         req.name,
@@ -131,13 +135,13 @@ pub fn create(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
 
     let _ = case photo_id {
-      Some(pid) -> collections.add_photo(context.state, collection_id, pid)
+      Some(pid) -> collections.add_photo(context.state, collection.id, pid)
       None -> Ok(Nil)
     }
 
     let redirect_to = case req.redirect_to {
       Some(url) if url != "" -> url
-      _ -> "/collections/" <> uuid.to_string(collection_id)
+      _ -> "/collections/" <> collection.public_id
     }
 
     Ok(wisp.redirect(redirect_to))
@@ -152,16 +156,14 @@ pub fn create(request: wisp.Request, context: web.Context) -> wisp.Response {
 pub fn add_photo(
   request: wisp.Request,
   context: web.Context,
-  collection_id cid: String,
+  collection_public_id cid: collection.PublicId,
   photo_public_id pid: String,
 ) -> wisp.Response {
   use <- wisp.require_method(request, http.Post)
   use user <- auth.require_login(context)
 
-  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
-
   use collection <- result_guard(
-    collections.get(context.state, cid),
+    collections.get_by_public(context.state, cid),
     wisp.not_found(),
   )
 
@@ -172,7 +174,7 @@ pub fn add_photo(
     wisp.not_found(),
   )
 
-  case collections.add_photo(context.state, cid, p.id) {
+  case collections.add_photo(context.state, collection.id, p.id) {
     Ok(_) -> wisp.ok()
     Error(collections.NotFound) -> wisp.not_found()
     Error(collections.Forbidden) -> wisp.response(403)
@@ -183,14 +185,16 @@ pub fn add_photo(
 pub fn remove_photo(
   request: wisp.Request,
   context: web.Context,
-  collection_id cid: String,
+  collection_public_id cid: collection.PublicId,
   photo_public_id pid: String,
 ) -> wisp.Response {
   use <- wisp.require_method(request, http.Delete)
   use user <- auth.require_login(context)
 
-  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
-  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use col <- result_guard(
+    collections.get_by_public(context.state, cid),
+    wisp.not_found(),
+  )
 
   use <- bool.guard(col.creator != user.id, wisp.response(403))
 
@@ -199,7 +203,7 @@ pub fn remove_photo(
     wisp.not_found(),
   )
 
-  case collections.remove_photo(context.state, cid, p.id, user.id) {
+  case collections.remove_photo(context.state, col.id, p.id, user.id) {
     Ok(_) -> wisp.ok()
     Error(collections.NotFound) -> wisp.not_found()
     Error(collections.Forbidden) -> wisp.response(403)
@@ -210,12 +214,14 @@ pub fn remove_photo(
 pub fn update(
   request: wisp.Request,
   context: web.Context,
-  collection_id cid: String,
+  collection_pubcli_id cid: collection.PublicId,
 ) -> wisp.Response {
   use user <- auth.require_login(context)
-  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
 
-  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use col <- result_guard(
+    collections.get_by_public(context.state, cid),
+    wisp.not_found(),
+  )
   use <- bool.guard(col.creator != user.id, wisp.response(403))
 
   use formdata <- wisp.require_form(request)
@@ -228,19 +234,19 @@ pub fn update(
       |> result.replace_error(wisp.response(400)),
     )
 
-    use collection_id <- result.try(
+    use collection <- result.try(
       collections.update(
         context.state,
         req.name,
         req.description,
         req.private,
-        cid,
+        col.id,
         user.id,
       )
       |> result.replace_error(wisp.internal_server_error()),
     )
 
-    Ok(wisp.redirect("/collections/" <> uuid.to_string(collection_id)))
+    Ok(wisp.redirect("/collections/" <> collection.public_id))
   }
 
   case result {
@@ -252,19 +258,20 @@ pub fn update(
 pub fn delete(
   _request: wisp.Request,
   context: web.Context,
-  collection_id cid: String,
+  collection_public_id cid: collection.PublicId,
 ) -> wisp.Response {
   use user <- auth.require_login(context)
-  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
 
-  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use col <- result_guard(
+    collections.get_by_public(context.state, cid),
+    wisp.not_found(),
+  )
   use <- bool.guard(col.creator != user.id, wisp.response(403))
 
   use _ <- result_guard(
-    collections.delete(context.state, cid, user.id),
+    collections.delete(context.state, col.id, user.id),
     wisp.internal_server_error(),
   )
 
-  // Redirect to user's profile on success
-  wisp.redirect("/users/" <> uuid.to_string(user.id))
+  wisp.redirect("/users/" <> user.username)
 }

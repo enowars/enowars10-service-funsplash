@@ -2,7 +2,7 @@ import bravo/uset
 import gleam/bool
 import gleam/list
 import gleam/result
-import server/models/collection
+import server/models/collection.{type Collection}
 import server/models/photo
 import server/models/user
 import server/photos
@@ -57,7 +57,7 @@ pub fn get_by_user(
   state: State,
   user_id uid: Uuid,
   is_owner own: Bool,
-) -> Result(List(collection.Collection), Nil) {
+) -> Result(List(Collection), Nil) {
   use collections <- result.try(utils.get_cache_l2(
     state.user_collections_cache,
     state.collection_cache,
@@ -70,10 +70,25 @@ pub fn get_by_user(
   collections |> list.filter(fn(c) { !c.private || own }) |> Ok
 }
 
+pub fn get_by_public(
+  state: State,
+  public_id cid: collection.PublicId,
+) -> Result(Collection, Nil) {
+  utils.get_cache_l1(
+    state.collection_public_cache,
+    state.collection_cache,
+    cid,
+    sql.collection_find_by_public_id(state.db, _),
+    fn(c) { c.id },
+    collection.from_find_by_public_id,
+    Nil,
+  )
+}
+
 pub fn get(
   state: State,
-  collection_id cid: Uuid,
-) -> Result(collection.Collection, Nil) {
+  collection_id cid: collection.Id,
+) -> Result(Collection, Nil) {
   utils.get_cache_l0(
     state.collection_cache,
     cid,
@@ -89,9 +104,16 @@ pub fn create(
   description: String,
   private: Bool,
   user_id uid: user.Id,
-) -> Result(collection.Id, Nil) {
+) -> Result(Collection, Nil) {
   use collection <- result.try(
-    sql.collection_create(state.db, name, description, uid, private)
+    sql.collection_create(
+      state.db,
+      utils.generate_id(),
+      name,
+      description,
+      uid,
+      private,
+    )
     |> utils.update_cache_l0(
       state.collection_cache,
       fn(c) { c.id },
@@ -102,7 +124,7 @@ pub fn create(
 
   utils.extend_cache_l2(state.user_collections_cache, uid, collection.id)
 
-  Ok(collection.id)
+  Ok(collection)
 }
 
 pub fn add_photo(
@@ -154,7 +176,7 @@ pub fn update(
   private: Bool,
   collection_id cid: collection.Id,
   user_id uid: user.Id,
-) -> Result(collection.Id, Nil) {
+) -> Result(Collection, Nil) {
   use collection <- result.try(
     sql.collection_update(state.db, cid, name, description, private, uid)
     |> utils.update_cache_l0(
@@ -165,7 +187,7 @@ pub fn update(
     ),
   )
 
-  Ok(collection.id)
+  Ok(collection)
 }
 
 pub fn delete(

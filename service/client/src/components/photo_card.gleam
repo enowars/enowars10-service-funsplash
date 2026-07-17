@@ -8,7 +8,9 @@ import gleam/option
 import lustre/attribute.{alt, class, href, placeholder, src, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, form, h3, img, input, p, span, textarea}
+import lustre/element/html.{
+  a, button, div, form, h3, img, input, p, span, textarea,
+}
 import lustre/event
 import route
 import rsvp
@@ -51,10 +53,19 @@ pub type Message {
 
 pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
   case msg {
-    CloseDropdown -> #(Model(..model, dropdown_open: False, creating_collection: False), effect.none())
+    CloseDropdown -> #(
+      Model(..model, dropdown_open: False, creating_collection: False),
+      effect.none(),
+    )
     NoOp -> #(model, effect.none())
-    OpenCreateCollection -> #(Model(..model, creating_collection: True), effect.none())
-    CloseCreateCollection -> #(Model(..model, creating_collection: False), effect.none())
+    OpenCreateCollection -> #(
+      Model(..model, creating_collection: True),
+      effect.none(),
+    )
+    CloseCreateCollection -> #(
+      Model(..model, creating_collection: False),
+      effect.none(),
+    )
     ImageLoadError -> #(Model(..model, image_failed: True), effect.none())
     UserClickedLike -> {
       let is_like = !model.thumb.user_liked
@@ -81,7 +92,10 @@ pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
           api_user.fetch_collections(username, ApiReturnedCollections)
         _, _ -> effect.none()
       }
-      #(Model(..model, dropdown_open: new_open, creating_collection: False), eff)
+      #(
+        Model(..model, dropdown_open: new_open, creating_collection: False),
+        eff,
+      )
     }
     ApiReturnedCollections(Ok(collections)) -> {
       #(
@@ -272,28 +286,127 @@ pub fn view(model: Model, current_auth: auth.Auth) -> Element(Message) {
                         case model.creating_collection {
                           True -> [
                             div([class("flex items-center gap-2 mb-4")], [
-                              button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseCreateCollection))), class("text-gray-500 hover:text-black font-bold")], [text("<")]),
-                              h3([class("text-sm font-bold text-gray-800")], [text("Create a new collection")]),
+                              button(
+                                [
+                                  type_("button"),
+                                  event.prevent_default(
+                                    event.stop_propagation(event.on_click(
+                                      CloseCreateCollection,
+                                    )),
+                                  ),
+                                  class(
+                                    "text-gray-500 hover:text-black font-bold",
+                                  ),
+                                ],
+                                [text("<")],
+                              ),
+                              h3([class("text-sm font-bold text-gray-800")], [
+                                text("Create a new collection"),
+                              ]),
                             ]),
-                            form([
-                              attribute.action("/napi/collections"),
-                              attribute.method("POST"),
-                            ], [
-                              input([type_("hidden"), attribute.name("redirect_to"), value("/photos/" <> thumb.public_id)]),
-                              input([type_("hidden"), attribute.name("photo_public_id"), value(thumb.public_id)]),
-                              p([class("text-xs font-bold text-gray-700 mb-1")], [text("Name")]),
-                              input([type_("text"), attribute.name("name"), placeholder("New collection name"), attribute.required(True), class("w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3")]),
-                              p([class("text-xs font-bold text-gray-700 mb-1")], [text("Description (optional)")]),
-                              textarea([attribute.name("description"), attribute.rows(2), class("w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3 resize-none")], ""),
-                              div([class("flex items-center gap-2 mb-4")], [
-                                input([type_("checkbox"), attribute.name("private"), attribute.id("private_collection_" <> thumb.public_id)]),
-                                html.label([attribute.for("private_collection_" <> thumb.public_id), class("text-xs text-gray-700")], [text("Private")]),
-                              ]),
-                              div([class("flex items-center justify-between mt-2")], [
-                                button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(CloseCreateCollection))), class("text-sm text-gray-500 hover:text-black font-medium")], [text("Cancel")]),
-                                button([type_("submit"), class("bg-black text-white rounded px-4 py-1 text-sm font-medium")], [text("Create collection")]),
-                              ]),
-                            ])
+                            form(
+                              [
+                                attribute.action("/napi/collections"),
+                                attribute.method("POST"),
+                              ],
+                              [
+                                input([
+                                  type_("hidden"),
+                                  attribute.name("redirect_to"),
+                                  value("/photos/" <> thumb.public_id),
+                                ]),
+                                input([
+                                  type_("hidden"),
+                                  attribute.name("photo_public_id"),
+                                  value(thumb.public_id),
+                                ]),
+                                p(
+                                  [
+                                    class(
+                                      "text-xs font-bold text-gray-700 mb-1",
+                                    ),
+                                  ],
+                                  [text("Name")],
+                                ),
+                                input([
+                                  type_("text"),
+                                  attribute.name("name"),
+                                  placeholder("New collection name"),
+                                  attribute.required(True),
+                                  class(
+                                    "w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3",
+                                  ),
+                                ]),
+                                p(
+                                  [
+                                    class(
+                                      "text-xs font-bold text-gray-700 mb-1",
+                                    ),
+                                  ],
+                                  [text("Description (optional)")],
+                                ),
+                                textarea(
+                                  [
+                                    attribute.name("description"),
+                                    attribute.rows(2),
+                                    class(
+                                      "w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3 resize-none",
+                                    ),
+                                  ],
+                                  "",
+                                ),
+                                div([class("flex items-center gap-2 mb-4")], [
+                                  input([
+                                    type_("checkbox"),
+                                    attribute.name("private"),
+                                    attribute.id(
+                                      "private_collection_" <> thumb.public_id,
+                                    ),
+                                  ]),
+                                  html.label(
+                                    [
+                                      attribute.for(
+                                        "private_collection_" <> thumb.public_id,
+                                      ),
+                                      class("text-xs text-gray-700"),
+                                    ],
+                                    [text("Private")],
+                                  ),
+                                ]),
+                                div(
+                                  [
+                                    class(
+                                      "flex items-center justify-between mt-2",
+                                    ),
+                                  ],
+                                  [
+                                    button(
+                                      [
+                                        type_("button"),
+                                        event.prevent_default(
+                                          event.stop_propagation(event.on_click(
+                                            CloseCreateCollection,
+                                          )),
+                                        ),
+                                        class(
+                                          "text-sm text-gray-500 hover:text-black font-medium",
+                                        ),
+                                      ],
+                                      [text("Cancel")],
+                                    ),
+                                    button(
+                                      [
+                                        type_("submit"),
+                                        class(
+                                          "bg-black text-white rounded px-4 py-1 text-sm font-medium",
+                                        ),
+                                      ],
+                                      [text("Create collection")],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ]
                           False -> [
                             h3([class("text-sm font-bold text-gray-800 mb-2")], [
@@ -327,7 +440,11 @@ pub fn view(model: Model, current_auth: auth.Auth) -> Element(Message) {
                                     }
                                     button(
                                       [
-                                        event.prevent_default(event.stop_propagation(event.on_click(click_msg))),
+                                        event.prevent_default(
+                                          event.stop_propagation(event.on_click(
+                                            click_msg,
+                                          )),
+                                        ),
                                         class(
                                           "w-full text-left flex items-center justify-between group hover:bg-gray-100 px-2 py-1.5 rounded",
                                         ),
@@ -393,13 +510,28 @@ pub fn view(model: Model, current_auth: auth.Auth) -> Element(Message) {
                                 )
                             },
                             div([class("pt-3 mt-2 border-t border-gray-200")], [
-                              button([type_("button"), event.prevent_default(event.stop_propagation(event.on_click(OpenCreateCollection))), class("w-full text-left flex items-center gap-2 text-sm text-gray-700 hover:text-black font-medium")], [
-                                span([class("text-lg font-normal")], [text("+")]),
-                                text("Create a new collection"),
-                              ])
-                            ])
+                              button(
+                                [
+                                  type_("button"),
+                                  event.prevent_default(
+                                    event.stop_propagation(event.on_click(
+                                      OpenCreateCollection,
+                                    )),
+                                  ),
+                                  class(
+                                    "w-full text-left flex items-center gap-2 text-sm text-gray-700 hover:text-black font-medium",
+                                  ),
+                                ],
+                                [
+                                  span([class("text-lg font-normal")], [
+                                    text("+"),
+                                  ]),
+                                  text("Create a new collection"),
+                                ],
+                              ),
+                            ]),
                           ]
-                        }
+                        },
                       )
                     False -> element.none()
                   },

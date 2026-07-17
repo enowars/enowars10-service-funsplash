@@ -86,11 +86,7 @@ pub fn collection_create_form() -> Form(CollectionCreateRequest) {
 }
 
 pub type CollectionUpdateRequest {
-  CollectionUpdateRequest(
-    name: String,
-    description: String,
-    private: Bool,
-  )
+  CollectionUpdateRequest(name: String, description: String, private: Bool)
 }
 
 pub fn collection_update_form() -> Form(CollectionUpdateRequest) {

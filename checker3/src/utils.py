@@ -5,6 +5,7 @@ import os
 import string
 from photo import Privacy, Photo, Coordinate
 import photo
+import json
 
 # Common charsets for random string generation
 CHARSET_ALPHANUMERIC = string.ascii_lowercase + string.digits
@@ -82,7 +83,7 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
         index = 0
         for i in range(40):
             msg = await photo.censor(conn, p.public_id, [mask])
-            if ":" in msg[0]:
+            if json.loads(msg[0]).get("ok") is False:
                 break
             index += 1
         return index
@@ -93,4 +94,5 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
 
 
 def get_size(msg):
-    return int(msg.split(":")[1])
+    data = json.loads(msg)
+    return data["usage"] - data["limit"]
