@@ -681,11 +681,11 @@ fn photo_view(
                                   let in_collection =
                                     list.contains(
                                       photo.thumbnail.current_user_collections,
-                                      c.id,
+                                      c.public_id,
                                     )
                                   let click_msg = case in_collection {
-                                    True -> RemovePhotoFromCollection(c.id)
-                                    False -> AddPhotoToCollection(c.id)
+                                    True -> RemovePhotoFromCollection(c.public_id)
+                                    False -> AddPhotoToCollection(c.public_id)
                                   }
                                   button(
                                     [

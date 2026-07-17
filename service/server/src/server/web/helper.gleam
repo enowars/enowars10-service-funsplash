@@ -1,15 +1,14 @@
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import server/collections
 import server/models/photo.{type Photo}
 import server/web
-import youid/uuid
+import shared/shared_collection
 
 pub fn current_user_collections(
   context: web.Context,
   photo p: Photo,
-) -> List(String) {
+) -> List(shared_collection.PublicId) {
   case context.user {
     Some(viewer) -> {
       let values: List(String) =
@@ -19,7 +18,6 @@ pub fn current_user_collections(
           viewer.id,
         )
         |> result.unwrap([])
-        |> list.map(uuid.to_string)
       values
     }
     None -> []

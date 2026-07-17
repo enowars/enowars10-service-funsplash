@@ -432,11 +432,11 @@ pub fn view(model: Model, current_auth: auth.Auth) -> Element(Message) {
                                     let in_collection =
                                       list.contains(
                                         thumb.current_user_collections,
-                                        c.id,
+                                        c.public_id,
                                       )
                                     let click_msg = case in_collection {
-                                      True -> RemovePhotoFromCollection(c.id)
-                                      False -> AddPhotoToCollection(c.id)
+                                      True -> RemovePhotoFromCollection(c.public_id)
+                                      False -> AddPhotoToCollection(c.public_id)
                                     }
                                     button(
                                       [

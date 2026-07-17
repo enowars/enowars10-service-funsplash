@@ -27,7 +27,7 @@ pub fn to_shared(
   user u: shared_user.User,
 ) -> shared_collection.Collection {
   shared_collection.Collection(
-    id: c.id |> uuid.to_string,
+    public_id: c.public_id,
     name: c.name,
     private: c.private,
     user: u,

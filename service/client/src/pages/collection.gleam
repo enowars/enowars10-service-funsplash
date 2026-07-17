@@ -130,7 +130,7 @@ pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
       case model {
         Loaded(c, _, _, _) -> #(
           model,
-          api_collection.delete_collection(c.id, ApiReturnedDeleteCollection),
+          api_collection.delete_collection(c.public_id, ApiReturnedDeleteCollection),
         )
         _ -> #(model, effect.none())
       }
@@ -209,7 +209,7 @@ fn collection_view(
       True ->
         form(
           [
-            action("/napi/collections/" <> col.id),
+            action("/napi/collections/" <> col.public_id),
             method("POST"),
             class(
               "flex flex-col items-center space-y-4 mb-8 bg-gray-50 p-6 rounded-lg",

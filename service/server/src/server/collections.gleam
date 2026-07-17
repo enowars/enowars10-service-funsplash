@@ -21,36 +21,22 @@ pub fn get_containing_photo_from_user(
   state state: State,
   photo_id pid: photo.Id,
   user_id uid: user.Id,
-) -> Result(List(collection.Id), Nil) {
-  let cids = case uset.lookup(state.user_collections_cache, uid) {
-    Ok(cids) -> Ok(cids)
-    Error(_) -> {
-      use res <- result.try(sql.user_collections_list(state.db, uid))
-      let cids = res.rows |> list.map(fn(row) { row.id })
-      let _ = uset.insert(state.user_collections_cache, uid, cids)
-      Ok(cids)
-    }
-  }
+) -> Result(List(collection.PublicId), Nil) {
+  use collections <- result.try(get_by_user(state, uid, True))
 
-  case cids {
-    Ok(cids) -> {
-      cids
-      |> list.filter(fn(cid) {
-        case uset.lookup(state.collection_photos_cache, cid) {
-          Ok(pids) -> list.contains(pids, pid)
-          Error(_) -> {
-            let photos = photos.get_by_collection(state, cid)
-            case photos {
-              Ok(photos) -> photos |> list.any(fn(p) { p.id == pid })
-              Error(_) -> False
-            }
-          }
-        }
-      })
-      |> Ok
+  collections
+  |> list.filter_map(fn(c) {
+    let contains_photo = case photos.get_by_collection(state, c.id) {
+      Ok(photos) -> photos |> list.any(fn(p) { p.id == pid })
+      Error(_) -> False
     }
-    Error(_) -> Error(Nil)
-  }
+
+    case contains_photo {
+      True -> Ok(c.public_id)
+      False -> Error(Nil)
+    }
+  })
+  |> Ok
 }
 
 pub fn get_by_user(

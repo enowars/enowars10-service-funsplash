@@ -63,7 +63,7 @@ pub fn to_shared(
   creator: shared_user.User,
   tags: List(String),
   user_liked: Bool,
-  current_user_collections: List(shared_collection.Id),
+  current_user_collections: List(shared_collection.PublicId),
 ) -> shared_photo.Photo {
   shared_photo.Photo(
     thumbnail: to_shared_thumbnail(
@@ -93,7 +93,7 @@ pub fn to_shared_thumbnail(
   p: Photo,
   creator: shared_user.User,
   user_liked: Bool,
-  current_user_collections: List(shared_collection.Id),
+  current_user_collections: List(shared_collection.PublicId),
 ) -> shared_thumbnail.Thumbnail {
   shared_thumbnail.Thumbnail(
     public_id: p.public_id,

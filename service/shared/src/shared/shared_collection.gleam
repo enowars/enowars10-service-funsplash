@@ -4,16 +4,12 @@ import gleam/json
 import gleam/option.{type Option}
 import shared/shared_user
 
-// pub type CollectionPreview {
-//   CollectionPreview(id: String, name: String, private: Bool)
-// }
-
-pub type Id =
+pub type PublicId =
   String
 
 pub type Collection {
   Collection(
-    id: Id,
+    public_id: PublicId,
     name: String,
     private: Bool,
     user: shared_user.User,
@@ -22,9 +18,9 @@ pub type Collection {
 }
 
 pub fn collection_to_json(collection: Collection) -> json.Json {
-  let Collection(id:, name:, user:, description:, private:) = collection
+  let Collection(public_id:, name:, user:, description:, private:) = collection
   json.object([
-    #("id", json.string(id)),
+    #("public_id", json.string(public_id)),
     #("name", json.string(name)),
     #("user", shared_user.user_to_json(user)),
     #("description", case description {
@@ -36,12 +32,12 @@ pub fn collection_to_json(collection: Collection) -> json.Json {
 }
 
 pub fn collection_decoder() -> decode.Decoder(Collection) {
-  use id <- decode.field("id", decode.string)
+  use public_id <- decode.field("public_id", decode.string)
   use name <- decode.field("name", decode.string)
   use user <- decode.field("user", shared_user.user_decoder())
   use description <- decode.field("description", decode.optional(decode.string))
   use private <- decode.field("private", decode.bool)
-  decode.success(Collection(id:, name:, user:, description:, private:))
+  decode.success(Collection(public_id:, name:, user:, description:, private:))
 }
 
 pub type CollectionCreateRequest {

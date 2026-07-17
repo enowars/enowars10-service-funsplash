@@ -14,7 +14,7 @@ pub type Thumbnail {
     privacy: Privacy,
     user_liked: Bool,
     show_on_profile: Bool,
-    current_user_collections: List(shared_collection.Id),
+    current_user_collections: List(shared_collection.PublicId),
   )
 }
 

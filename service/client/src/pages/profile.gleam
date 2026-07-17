@@ -313,7 +313,7 @@ fn profile_view(
               list.map(collections, fn(c) {
                 a(
                   [
-                    route.href(route.Collection(c.id)),
+                    route.href(route.Collection(c.public_id)),
                     class(
                       "block p-6 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 transition-colors duration-200",
                     ),
