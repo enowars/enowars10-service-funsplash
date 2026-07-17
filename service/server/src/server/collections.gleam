@@ -108,7 +108,7 @@ pub fn create(
   use collection <- result.try(
     sql.collection_create(
       state.db,
-      utils.generate_id(),
+      utils.generate_id(state),
       name,
       description,
       uid,

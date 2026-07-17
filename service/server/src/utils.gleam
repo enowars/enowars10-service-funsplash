@@ -1,9 +1,10 @@
 import bravo/uset.{type USet}
-import gleam/bit_array
+import gleam/erlang/process
 import gleam/list
 import gleam/result
-import gleam/string
 import pog
+import server/id_server
+import server/state
 
 pub fn defer(defer: fn() -> a, first: fn() -> b) -> b {
   let res = first()
@@ -11,13 +12,9 @@ pub fn defer(defer: fn() -> a, first: fn() -> b) -> b {
   res
 }
 
-@external(erlang, "rand", "bytes")
-fn rand_bytes(size: Int) -> BitArray
-
-pub fn generate_id() -> String {
-  rand_bytes(9)
-  |> bit_array.base64_url_encode(False)
-  |> string.slice(at_index: 0, length: 11)
+pub fn generate_id(state: state.State) -> String {
+  process.named_subject(state.id_server)
+  |> process.call(1000, id_server.GenerateId)
 }
 
 pub fn extend_cache_l2(cache: USet(k, List(v)), key: k, value: v) -> Nil {

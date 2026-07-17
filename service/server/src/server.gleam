@@ -5,6 +5,7 @@ import mist
 import pog
 import server/censor
 import server/config.{type Config}
+import server/id_server
 import server/router
 import server/state
 import server/web
@@ -22,8 +23,9 @@ fn server(db: pog.Connection, bg_db: pog.Connection, config: Config) -> Nil {
 
   let assert Ok(priv_dir) = wisp.priv_directory("server")
   let static_dir = priv_dir <> "/static"
+  let id_server_name = id_server.start()
 
-  let state = state.init(config.data_dir, static_dir, db)
+  let state = state.init(config.data_dir, static_dir, db, id_server_name)
   state.start_ttl_sweeper(state, 60_000, 720_000)
 
   let handle_request = fn(request: wisp.Request) -> wisp.Response {

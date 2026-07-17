@@ -3,12 +3,13 @@ import bravo/uset.{type USet}
 import gleam/erlang/process
 import gleam/io
 import pog
+import server/id_server
 import server/models/collection
 import server/models/photo.{type Photo}
 import server/models/user.{type User}
 import youid/uuid
 
-pub fn init(data_dir, static_dir, db) -> State {
+pub fn init(data_dir, static_dir, db, id_server_name) -> State {
   let assert Ok(collection_cache) = uset.new("collections_cache", bravo.Public)
   let assert Ok(user_cache) = uset.new("user_cache", bravo.Public)
   let assert Ok(photo_cache) = uset.new("photo_cache", bravo.Public)
@@ -30,6 +31,7 @@ pub fn init(data_dir, static_dir, db) -> State {
     data_dir:,
     static_dir:,
     db:,
+    id_server: id_server_name,
     collection_cache:,
     user_cache:,
     photo_cache:,
@@ -50,6 +52,7 @@ pub type State {
     data_dir: String,
     static_dir: String,
     db: pog.Connection,
+    id_server: process.Name(id_server.IdServerMessage),
     // l0
     collection_cache: CollectionCache,
     user_cache: UserCache,
