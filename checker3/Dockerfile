@@ -1,13 +1,12 @@
-FROM python:3.14-alpine
+FROM python:3.14-slim
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN apk add --no-cache libzbar binutils
-RUN ln -s /usr/lib/libzbar.so.0 /usr/lib/libzbar.so
+RUN apt-get update && apt-get install -y libzbar0 binutils && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/lib/x86_64-linux-gnu/libzbar.so.0 /usr/lib/libzbar.so
 
-# add checker user
-RUN adduser -s /bin/bash -u 1000 checker -D -S
+RUN useradd -m -s /bin/bash checker
 
 WORKDIR /checker
 
