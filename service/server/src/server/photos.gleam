@@ -303,3 +303,85 @@ pub fn upload(
 
   Ok(Nil)
 }
+
+pub fn update(
+  state: State,
+  public_id: String,
+  description: String,
+  location: String,
+  camera: String,
+  privacy: shared_privacy.Privacy,
+  show_on_profile: Bool,
+  tags: List(String),
+  user_id uid: user.Id,
+) -> Result(photo.PublicId, shared_upload.Error) {
+  use photo <- result.try(
+    sql.photo_update(
+      state.db,
+      public_id,
+      description,
+      location,
+      camera,
+      photo.privacy_to_sql(privacy),
+      show_on_profile,
+      uid,
+    )
+    |> utils.update_cache_l0(
+      state.photo_cache,
+      fn(p) { p.id },
+      photo.from_update,
+      shared_upload.InternalError,
+    ),
+  )
+
+  let existing_tags_res = uset.lookup(state.tags_cache, photo.id)
+
+  use _ <- result.try(case existing_tags_res {
+    Ok(existing) if existing == tags -> Ok(Nil)
+    _ -> {
+      use _ <- result.try(
+        sql.photo_remove_all_tags(state.db, photo.id)
+        |> result.replace_error(shared_upload.InternalError),
+      )
+
+      use _ <- result.try(
+        sql.photo_add_tags_batch(state.db, tags, photo.id)
+        |> result.replace_error(shared_upload.InternalError),
+      )
+
+      let _ = uset.insert(state.tags_cache, photo.id, tags)
+      Ok(Nil)
+    }
+  })
+
+  Ok(photo.public_id)
+}
+
+pub fn delete(
+  state: State,
+  public_id: String,
+  user_id uid: user.Id,
+) -> Result(Nil, Nil) {
+  use photo_row <- result.try(
+    sql.photo_delete(state.db, public_id, uid)
+    |> utils.db_limit
+    |> result.replace_error(Nil),
+  )
+
+  let p = photo.from_delete(photo_row)
+
+  let _ = uset.delete_key(state.photo_cache, p.id)
+  let _ = utils.remove_cache_l2(state.user_photos_cache, uid, p.id)
+  let _ = uset.delete_key(state.photo_public_cache, p.public_id)
+  let _ = uset.delete_key(state.asset_cache, p.asset_id)
+  let _ = uset.delete_key(state.tags_cache, p.id)
+
+  let fs_path = state.data_dir <> "/photos/" <> uuid.to_string(p.asset_id)
+  let _ = simplifile.delete(fs_path)
+
+  let censored_path =
+    state.data_dir <> "/photos_premium/" <> uuid.to_string(p.asset_id)
+  let _ = simplifile.delete(censored_path)
+
+  Ok(Nil)
+}

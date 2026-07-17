@@ -206,3 +206,65 @@ pub fn remove_photo(
     Error(collections.InternalError) -> wisp.internal_server_error()
   }
 }
+
+pub fn update(
+  request: wisp.Request,
+  context: web.Context,
+  collection_id cid: String,
+) -> wisp.Response {
+  use user <- auth.require_login(context)
+  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
+
+  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use <- bool.guard(col.creator != user.id, wisp.response(403))
+
+  use formdata <- wisp.require_form(request)
+
+  let result = {
+    use req <- result.try(
+      shared_collection.collection_update_form()
+      |> form.add_values(formdata.values)
+      |> form.run
+      |> result.replace_error(wisp.response(400)),
+    )
+
+    use collection_id <- result.try(
+      collections.update(
+        context.state,
+        req.name,
+        req.description,
+        req.private,
+        cid,
+        user.id,
+      )
+      |> result.replace_error(wisp.internal_server_error()),
+    )
+
+    Ok(wisp.redirect("/collections/" <> uuid.to_string(collection_id)))
+  }
+
+  case result {
+    Ok(response) -> response
+    Error(response) -> response
+  }
+}
+
+pub fn delete(
+  _request: wisp.Request,
+  context: web.Context,
+  collection_id cid: String,
+) -> wisp.Response {
+  use user <- auth.require_login(context)
+  use cid <- result_guard(cid |> uuid.from_string, wisp.not_found())
+
+  use col <- result_guard(collections.get(context.state, cid), wisp.not_found())
+  use <- bool.guard(col.creator != user.id, wisp.response(403))
+
+  use _ <- result_guard(
+    collections.delete(context.state, cid, user.id),
+    wisp.internal_server_error(),
+  )
+
+  // Redirect to user's profile on success
+  wisp.redirect("/users/" <> uuid.to_string(user.id))
+}

@@ -1,6 +1,7 @@
 import bravo
 import bravo/uset.{type USet}
 import gleam/erlang/process
+import gleam/io
 import pog
 import server/models/collection
 import server/models/photo.{type Photo}
@@ -109,6 +110,7 @@ pub fn start_ttl_sweeper(state: State, interval_ms: Int, ttl_ms: Int) {
 
 fn sweeper_loop(state: State, interval_ms: Int, ttl_ms: Int) {
   process.sleep(interval_ms)
+  io.println("starting cache cleanup")
   let now = uuid.time_posix_millisec(uuid.v7())
   let cutoff = now - ttl_ms
 

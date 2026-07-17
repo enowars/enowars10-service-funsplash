@@ -23,7 +23,14 @@ pub fn handle_request(
           user.get_photos(request, context, username)
         ["users", username, "collections"] ->
           user.get_collections(request, context, username)
-        ["photos", public_id] -> photo.get(request, context, public_id)
+        ["photos", public_id] -> {
+          case request.method {
+            http.Get -> photo.get(request, context, public_id)
+            http.Put | http.Post -> photo.update(request, context, public_id)
+            http.Delete -> photo.delete(request, context, public_id)
+            _ -> wisp.method_not_allowed([http.Get, http.Put, http.Delete])
+          }
+        }
         ["login"] -> auth.login(request, context)
         ["logout"] -> auth.logout(request, context)
         ["join"] -> auth.sign_up(request, context)
@@ -35,12 +42,25 @@ pub fn handle_request(
         ["collections", ..path] -> {
           case path {
             [] -> collection.create(request, context)
-            [col_id] -> collection.get(request, context, col_id)
+            [col_id] -> {
+              case request.method {
+                http.Get -> collection.get(request, context, col_id)
+                http.Put | http.Post ->
+                  collection.update(request, context, col_id)
+                http.Delete -> collection.delete(request, context, col_id)
+                _ -> wisp.method_not_allowed([http.Get, http.Put, http.Delete])
+              }
+            }
             [col_id, "photos"] -> collection.photos(request, context, col_id)
-            [col_id, "add", photo_id] ->
-              collection.add_photo(request, context, col_id, photo_id)
-            [col_id, "remove", photo_id] ->
-              collection.remove_photo(request, context, col_id, photo_id)
+            [col_id, "photos", photo_id] -> {
+              case request.method {
+                http.Post ->
+                  collection.add_photo(request, context, col_id, photo_id)
+                http.Delete ->
+                  collection.remove_photo(request, context, col_id, photo_id)
+                _ -> wisp.method_not_allowed([http.Post, http.Delete])
+              }
+            }
             _ -> wisp.not_found()
           }
         }

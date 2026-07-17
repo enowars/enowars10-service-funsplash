@@ -1,6 +1,10 @@
+import formal/form
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option}
+import gleam/list
+import gleam/string
+import shared/shared_privacy
 import shared/shared_stats
 import shared/shared_thumbnail
 
@@ -67,4 +71,58 @@ pub fn photo_decoder() -> decode.Decoder(Photo) {
     created_at:,
     tags:,
   ))
+}
+
+pub type PhotoUpdateRequest {
+  PhotoUpdateRequest(
+    description: String,
+    location: String,
+    camera: String,
+    privacy: shared_privacy.Privacy,
+    show_on_profile: Bool,
+    tags: List(String),
+  )
+}
+
+pub fn photo_update_form() -> form.Form(PhotoUpdateRequest) {
+  form.new({
+    use description <- form.field(
+      "description",
+      form.parse_optional(form.parse_string),
+    )
+    use location <- form.field(
+      "location",
+      form.parse_optional(form.parse_string),
+    )
+    use camera <- form.field(
+      "camera",
+      form.parse_optional(form.parse_string),
+    )
+    use privacy_str <- form.field(
+      "privacy",
+      form.parse_string,
+    )
+    let privacy = shared_privacy.from_string(privacy_str)
+    
+    use show_on_profile <- form.field(
+      "show_on_profile",
+      form.parse_checkbox,
+    )
+    use tags_str <- form.field(
+      "tags",
+      form.parse_optional(form.parse_string),
+    )
+    let tags = string.split(option.unwrap(tags_str, ""), ",") 
+      |> list.map(string.trim) 
+      |> list.filter(fn(t) { t != "" })
+
+    form.success(PhotoUpdateRequest(
+      description: option.unwrap(description, ""),
+      location: option.unwrap(location, ""),
+      camera: option.unwrap(camera, ""),
+      privacy:,
+      show_on_profile:,
+      tags:,
+    ))
+  })
 }

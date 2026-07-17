@@ -17,13 +17,6 @@ pub type CollectionModifyError {
   InternalError
 }
 
-// fn get_containing_photo(
-//   state state: State,
-//   photo_id pid: photo.Id,
-// ) -> List(Collection) {
-//   todo
-// }
-
 pub fn get_containing_photo_from_user(
   state state: State,
   photo_id pid: photo.Id,
@@ -150,6 +143,45 @@ pub fn remove_photo(
   )
 
   utils.remove_cache_l2(state.collection_photos_cache, collection_id, pid)
+
+  Ok(Nil)
+}
+
+pub fn update(
+  state: State,
+  name: String,
+  description: String,
+  private: Bool,
+  collection_id cid: collection.Id,
+  user_id uid: user.Id,
+) -> Result(collection.Id, Nil) {
+  use collection <- result.try(
+    sql.collection_update(state.db, cid, name, description, private, uid)
+    |> utils.update_cache_l0(
+      state.collection_cache,
+      fn(c) { c.id },
+      collection.from_update,
+      Nil,
+    ),
+  )
+
+  Ok(collection.id)
+}
+
+pub fn delete(
+  state: State,
+  collection_id cid: collection.Id,
+  user_id uid: user.Id,
+) -> Result(Nil, Nil) {
+  use _ <- result.try(
+    sql.collection_delete(state.db, cid, uid)
+    |> utils.db_limit
+    |> result.replace_error(Nil),
+  )
+
+  let _ = uset.delete_key(state.collection_cache, cid)
+  let _ = utils.remove_cache_l2(state.user_collections_cache, uid, cid)
+  let _ = uset.delete_key(state.collection_photos_cache, cid)
 
   Ok(Nil)
 }

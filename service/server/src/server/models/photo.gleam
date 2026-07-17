@@ -227,6 +227,46 @@ pub fn from_collection_list(p: sql.CollectionPhotosListRow) -> Photo {
   )
 }
 
+pub fn from_update(p: sql.PhotoUpdateRow) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    creator: p.creator,
+    privacy: p.privacy |> sql_to_privacy,
+    show_on_profile: p.show_on_profile,
+    mimetype: p.mimetype |> mimetype.sql_to_shared,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    file_size: p.file_size,
+    created_at: p.created_at,
+  )
+}
+
+pub fn from_delete(p: sql.PhotoDeleteRow) -> Photo {
+  Photo(
+    id: p.id,
+    public_id: p.public_id,
+    asset_id: p.asset_id,
+    description: p.description,
+    creator: p.creator,
+    privacy: p.privacy |> sql_to_privacy,
+    show_on_profile: p.show_on_profile,
+    mimetype: p.mimetype |> mimetype.sql_to_shared,
+    location: p.location,
+    camera: p.camera,
+    likes_count: p.likes_count,
+    views: p.views,
+    downloads: p.downloads,
+    file_size: p.file_size,
+    created_at: p.created_at,
+  )
+}
+
 pub fn from_find_by_asset_id(p: sql.PhotoFindByAssetIdRow) -> Photo {
   Photo(
     id: p.id,

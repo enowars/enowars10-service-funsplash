@@ -74,3 +74,18 @@ pub fn remove_photo(
   // Let's hope rsvp.delete exists. We grepped it earlier and it does!
   rsvp.delete(url, json.object([]), handler)
 }
+
+pub fn delete_collection(
+  id: String,
+  on_response: fn(Result(Nil, rsvp.Error(String))) -> message,
+) -> Effect(message) {
+  let url = api_base_url() <> "/collections/" <> id
+  let handler =
+    rsvp.expect_text(fn(res) {
+      case res {
+        Ok(_) -> on_response(Ok(Nil))
+        Error(e) -> on_response(Error(e))
+      }
+    })
+  rsvp.delete(url, json.object([]), handler)
+}

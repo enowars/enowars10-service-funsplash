@@ -106,6 +106,43 @@ RETURNING *;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `collection_delete` query
+/// defined in `./src/server/sql/collection_delete.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CollectionDeleteRow {
+  CollectionDeleteRow(id: Uuid)
+}
+
+/// Runs the `collection_delete` query
+/// defined in `./src/server/sql/collection_delete.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn collection_delete(
+  db: pog.Connection,
+  id: Uuid,
+  creator: Uuid,
+) -> Result(pog.Returned(CollectionDeleteRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    decode.success(CollectionDeleteRow(id:))
+  }
+
+  "DELETE FROM collections
+WHERE id = $1 AND creator = $2
+RETURNING id;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(id)))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `collection_find_by_id` query
 /// defined in `./src/server/sql/collection_find_by_id.sql`.
 ///
@@ -274,6 +311,66 @@ RETURNING *;
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(photo_id)))
   |> pog.parameter(pog.text(uuid.to_string(collection_id)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `collection_update` query
+/// defined in `./src/server/sql/collection_update.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CollectionUpdateRow {
+  CollectionUpdateRow(
+    id: Uuid,
+    name: String,
+    description: Option(String),
+    creator: Uuid,
+    private: Bool,
+  )
+}
+
+/// Runs the `collection_update` query
+/// defined in `./src/server/sql/collection_update.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn collection_update(
+  db: pog.Connection,
+  id: Uuid,
+  arg_2: String,
+  arg_3: String,
+  private: Bool,
+  creator: Uuid,
+) -> Result(pog.Returned(CollectionUpdateRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use name <- decode.field(1, decode.string)
+    use description <- decode.field(2, decode.optional(decode.string))
+    use creator <- decode.field(3, uuid_decoder())
+    use private <- decode.field(4, decode.bool)
+    decode.success(CollectionUpdateRow(
+      id:,
+      name:,
+      description:,
+      creator:,
+      private:,
+    ))
+  }
+
+  "UPDATE collections
+SET name = $2, description = $3, private = $4
+WHERE id = $1 AND creator = $5
+RETURNING *;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(id)))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.parameter(pog.text(arg_3))
+  |> pog.parameter(pog.bool(private))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -468,6 +565,89 @@ RETURNING *;
   |> pog.parameter(pog.bool(arg_6))
   |> pog.parameter(pog.int(arg_7))
   |> pog.parameter(mimetype_encoder(arg_8))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_delete` query
+/// defined in `./src/server/sql/photo_delete.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoDeleteRow {
+  PhotoDeleteRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    creator: Uuid,
+    file_size: Int,
+    privacy: PhotoPrivacy,
+    show_on_profile: Bool,
+    mimetype: Mimetype,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photo_delete` query
+/// defined in `./src/server/sql/photo_delete.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_delete(
+  db: pog.Connection,
+  public_id: String,
+  creator: Uuid,
+) -> Result(pog.Returned(PhotoDeleteRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
+    decode.success(PhotoDeleteRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      creator:,
+      file_size:,
+      privacy:,
+      show_on_profile:,
+      mimetype:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "DELETE FROM photos
+WHERE public_id = $1 AND creator = $2
+RETURNING *;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(public_id))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -718,6 +898,27 @@ LIMIT 1;
   |> pog.execute(db)
 }
 
+/// Runs the `photo_remove_all_tags` query
+/// defined in `./src/server/sql/photo_remove_all_tags.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_remove_all_tags(
+  db: pog.Connection,
+  arg_1: Uuid,
+) -> Result(pog.Returned(Nil), pog.QueryError) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "DELETE FROM photos_tags
+WHERE photo_id = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `photo_remove_tag` query
 /// defined in `./src/server/sql/photo_remove_tag.sql`.
 ///
@@ -752,6 +953,100 @@ RETURNING *;
   |> pog.query
   |> pog.parameter(pog.text(tag))
   |> pog.parameter(pog.text(uuid.to_string(photo_id)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `photo_update` query
+/// defined in `./src/server/sql/photo_update.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v4.7.0 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type PhotoUpdateRow {
+  PhotoUpdateRow(
+    id: Uuid,
+    public_id: String,
+    asset_id: Uuid,
+    description: Option(String),
+    creator: Uuid,
+    file_size: Int,
+    privacy: PhotoPrivacy,
+    show_on_profile: Bool,
+    mimetype: Mimetype,
+    location: Option(String),
+    camera: Option(String),
+    likes_count: Int,
+    views: Int,
+    downloads: Int,
+    created_at: Timestamp,
+  )
+}
+
+/// Runs the `photo_update` query
+/// defined in `./src/server/sql/photo_update.sql`.
+///
+/// > 🐿️ This function was generated automatically using v4.7.0 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn photo_update(
+  db: pog.Connection,
+  public_id: String,
+  arg_2: String,
+  arg_3: String,
+  arg_4: String,
+  arg_5: PhotoPrivacy,
+  show_on_profile: Bool,
+  creator: Uuid,
+) -> Result(pog.Returned(PhotoUpdateRow), pog.QueryError) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use public_id <- decode.field(1, decode.string)
+    use asset_id <- decode.field(2, uuid_decoder())
+    use description <- decode.field(3, decode.optional(decode.string))
+    use creator <- decode.field(4, uuid_decoder())
+    use file_size <- decode.field(5, decode.int)
+    use privacy <- decode.field(6, photo_privacy_decoder())
+    use show_on_profile <- decode.field(7, decode.bool)
+    use mimetype <- decode.field(8, mimetype_decoder())
+    use location <- decode.field(9, decode.optional(decode.string))
+    use camera <- decode.field(10, decode.optional(decode.string))
+    use likes_count <- decode.field(11, decode.int)
+    use views <- decode.field(12, decode.int)
+    use downloads <- decode.field(13, decode.int)
+    use created_at <- decode.field(14, pog.timestamp_decoder())
+    decode.success(PhotoUpdateRow(
+      id:,
+      public_id:,
+      asset_id:,
+      description:,
+      creator:,
+      file_size:,
+      privacy:,
+      show_on_profile:,
+      mimetype:,
+      location:,
+      camera:,
+      likes_count:,
+      views:,
+      downloads:,
+      created_at:,
+    ))
+  }
+
+  "UPDATE photos
+SET description = $2, location = $3, camera = $4, privacy = $5, show_on_profile = $6
+WHERE public_id = $1 AND creator = $7
+RETURNING *;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(public_id))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.parameter(pog.text(arg_3))
+  |> pog.parameter(pog.text(arg_4))
+  |> pog.parameter(photo_privacy_encoder(arg_5))
+  |> pog.parameter(pog.bool(show_on_profile))
+  |> pog.parameter(pog.text(uuid.to_string(creator)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }

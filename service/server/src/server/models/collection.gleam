@@ -59,6 +59,16 @@ pub fn from_find_by_id(c: sql.CollectionFindByIdRow) -> Collection {
   )
 }
 
+pub fn from_update(c: sql.CollectionUpdateRow) -> Collection {
+  Collection(
+    id: c.id,
+    name: c.name,
+    description: c.description,
+    creator: c.creator,
+    private: c.private,
+  )
+}
+
 pub fn from_user_collections_list(c: sql.UserCollectionsListRow) -> Collection {
   Collection(
     id: c.id,

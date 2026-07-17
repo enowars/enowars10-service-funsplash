@@ -84,3 +84,32 @@ pub fn collection_create_form() -> Form(CollectionCreateRequest) {
     ))
   })
 }
+
+pub type CollectionUpdateRequest {
+  CollectionUpdateRequest(
+    name: String,
+    description: String,
+    private: Bool,
+  )
+}
+
+pub fn collection_update_form() -> Form(CollectionUpdateRequest) {
+  form.new({
+    use name <- form.field(
+      "name",
+      form.parse_string
+        |> form.check_not_empty,
+    )
+    use description <- form.field(
+      "description",
+      form.parse_optional(form.parse_string),
+    )
+    use private <- form.field("private", form.parse_checkbox)
+
+    form.success(CollectionUpdateRequest(
+      name:,
+      description: option.unwrap(description, ""),
+      private:,
+    ))
+  })
+}

@@ -85,3 +85,18 @@ pub fn src_url(
     _ -> data_url(thumb)
   }
 }
+
+pub fn delete_photo(
+  id: String,
+  on_response: fn(Result(Nil, rsvp.Error(String))) -> message,
+) -> Effect(message) {
+  let url = api_base_url() <> "/photos/" <> id
+  let handler =
+    rsvp.expect_text(fn(res) {
+      case res {
+        Ok(_) -> on_response(Ok(Nil))
+        Error(e) -> on_response(Error(e))
+      }
+    })
+  rsvp.delete(url, json.object([]), handler)
+}

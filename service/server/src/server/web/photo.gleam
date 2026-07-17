@@ -209,3 +209,71 @@ pub fn like(
     Error(_) -> wisp.method_not_allowed([http.Delete, http.Post])
   }
 }
+
+pub fn update(
+  request: wisp.Request,
+  context: web.Context,
+  public_id pid: String,
+) -> wisp.Response {
+  use user <- auth.require_login(context)
+
+  use p <- result_guard(
+    photos.get_by_public(context.state, pid),
+    wisp.not_found(),
+  )
+  use <- bool.guard(p.creator != user.id, wisp.response(403))
+
+  use formdata <- wisp.require_form(request)
+
+  let result = {
+    use req <- result.try(
+      shared_photo.photo_update_form()
+      |> form.add_values(formdata.values)
+      |> form.run
+      |> result.replace_error(wisp.response(400)),
+    )
+
+    use _photo_id <- result.try(
+      photos.update(
+        context.state,
+        pid,
+        req.description,
+        req.location,
+        req.camera,
+        req.privacy,
+        req.show_on_profile,
+        req.tags,
+        user.id,
+      )
+      |> result.replace_error(wisp.internal_server_error()),
+    )
+
+    Ok(wisp.redirect("/photos/" <> pid))
+  }
+
+  case result {
+    Ok(response) -> response
+    Error(response) -> response
+  }
+}
+
+pub fn delete(
+  _request: wisp.Request,
+  context: web.Context,
+  public_id pid: String,
+) -> wisp.Response {
+  use user <- auth.require_login(context)
+
+  use p <- result_guard(
+    photos.get_by_public(context.state, pid),
+    wisp.not_found(),
+  )
+  use <- bool.guard(p.creator != user.id, wisp.response(403))
+
+  use _ <- result_guard(
+    photos.delete(context.state, pid, user.id),
+    wisp.internal_server_error(),
+  )
+
+  wisp.redirect("/users/" <> uuid.to_string(user.id))
+}

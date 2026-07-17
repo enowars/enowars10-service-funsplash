@@ -99,7 +99,7 @@ fn set_cookies(response, request, user: User) {
     uid_cookie,
     user.id |> uuid.to_string,
     wisp.Signed,
-    60 * 10,
+    60 * 20,
   )
   |> wisp.set_cookie(request, uname_cookie, user.username, wisp.Signed, 60 * 10)
 }
