@@ -3,3 +3,4 @@ __pycache__
 Dockerfile
 docker-compose.yaml
 .venv
+**/*egg-info*/

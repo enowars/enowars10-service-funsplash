@@ -82,22 +82,11 @@ pub fn get(
     wisp.internal_server_error(),
   )
 
-  let return = fn() {
-    col
-    |> collection.to_shared(user |> user.to_shared)
-    |> shared_collection.collection_to_json
-    |> json.to_string
-    |> wisp.json_response(200)
-  }
-
-  case col.private {
-    True ->
-      case context.user {
-        Some(u) if u.id == user.id -> return()
-        _ -> wisp.response(403)
-      }
-    False -> return()
-  }
+  col
+  |> collection.to_shared(user |> user.to_shared)
+  |> shared_collection.collection_to_json
+  |> json.to_string
+  |> wisp.json_response(200)
 }
 
 pub fn create(request: wisp.Request, context: web.Context) -> wisp.Response {
