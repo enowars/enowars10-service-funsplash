@@ -67,28 +67,18 @@ pub fn get_data_premium(
 
   use <- bool.guard(photo.privacy != Premium, wisp.not_found())
 
-  // let fs_path =
-  //   context.state.data_dir
-  //   <> case context.user {
-  //     Some(user) if user.id == photo.creator || user.premium == True ->
-  //       "/photos/"
-  //     _ -> "/photos_premium/"
-  //   }
-  //   <> uuid.to_string(photo.asset_id)
-
-  use data <- utils.result_guard(
-    photos.get_data(context.state, photo.asset_id, Premium),
-    wisp.response(500),
-  )
-  let data = case context.user {
-    Some(user) if user.id == photo.creator || user.premium == True -> data
-    _ -> data |> premium.censor
-  }
+  let fs_path =
+    context.state.data_dir
+    <> case context.user {
+      Some(user) if user.id == photo.creator || user.premium == True ->
+        "/photos/"
+      _ -> "/photos_premium/"
+    }
+    <> uuid.to_string(photo.asset_id)
 
   wisp.ok()
   |> wisp.set_header("content-type", "image/png")
-  |> wisp.set_body(data |> bytes_tree.from_bit_array |> wisp.Bytes)
-  // |> wisp.set_body(wisp.File(fs_path, offset: 0, limit: None))
+  |> wisp.set_body(wisp.File(fs_path, offset: 0, limit: None))
 }
 
 pub fn get_data_public(
