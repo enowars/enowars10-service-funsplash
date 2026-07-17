@@ -1,8 +1,8 @@
 services:
   cleanup:
     image: postgres:18-alpine
-    # entrypoint: [ "sh", "/cleanup.sh" ]
-    entrypoint: [ "sleep", "1000" ]
+    entrypoint: [ "sh", "/cleanup.sh" ]
+    # entrypoint: [ "sleep", "1000" ]
     volumes:
       - ./cleanup.sh:/cleanup.sh:ro,z
       - photos_data:${DATA_DIR}:z
@@ -40,8 +40,8 @@ services:
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     env_file:
       - .env
     networks:
