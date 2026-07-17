@@ -152,9 +152,7 @@ def reconstruct_qr(results: list[str], base_size: int, dim: int = 33):
                 if res_idx < len(results):
                     # Oracle: "ok.size:69" means black (0), otherwise white (255)
                     pixels[y * dim + x] = (
-                        0
-                        if results[res_idx] == f"quota_exceeded_by:{base_size}"
-                        else 255
+                        0 if utils.get_size(results[res_idx]) == base_size else 255
                     )
                     res_idx += 1
 

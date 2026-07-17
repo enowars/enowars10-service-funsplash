@@ -11,6 +11,7 @@ def run_in_thread(func: Callable) -> Callable:
     def wrapper(*args, **kwargs) -> threading.Thread:
         def _run_async():
             asyncio.run(func(*args, **kwargs))
+
         print("running in new thread")
         thread = threading.Thread(target=_run_async)
         thread.start()

@@ -92,6 +92,7 @@ async def get_data_public(
     assert_equals(r.status_code, expected_code)
     return r.content
 
+
 async def get_data_private(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
 ):
@@ -129,13 +130,11 @@ async def upload(conn: Connection, cookies, photo: Photo):
         "description": photo.description,
         "location": photo.location,
         "camera": photo.camera,
-        "show_on_pofile": photo.show_on_profile,
+        "privacy": str(photo.privacy),
+        "show_on_profile": "true" if photo.show_on_profile else "false",
+        # "show_on_pofile": photo.show_on_profile,
         "tags": ",".join(photo.tags),
     }
-
-    payload["privacy"] = str(photo.privacy)
-    if photo.show_on_profile:
-        payload["show_on_profile"] = "true"
 
     files = {"photo": ("photo_name", photo.data, "image/png")}
 
