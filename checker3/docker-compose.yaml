@@ -29,7 +29,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: funsplash
       MONGO_INITDB_ROOT_PASSWORD: funsplash
-    mem_limit: 1G
+    mem_limit: 2G
     memswap_limit: 2G
     ulimits:
       core:
