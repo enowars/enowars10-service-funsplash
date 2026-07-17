@@ -71,7 +71,15 @@ async def get_profile(
 ):
     r = await connection.get(f"/napi/users/{username}", cookies=cookies, timeout=15)
     assert_equals(r.status_code, expected_code)
-    return r.json()
+
+    r_photos = await connection.get(
+        f"/napi/users/{username}/photos", cookies=cookies, timeout=15
+    )
+    assert_equals(r_photos.status_code, expected_code)
+
+    data = r.json()
+    data["photos"] = r_photos.json()
+    return data
 
 
 async def login(connection: Connection, user: User, expected_code: int = 303) -> dict:
