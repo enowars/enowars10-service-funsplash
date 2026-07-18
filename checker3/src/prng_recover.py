@@ -69,14 +69,6 @@ async def find_victim_collection(
     if not predictions:
         return None
 
-    sem = asyncio.Semaphore(batch_size)
-
-    async def check_at(idx: int):
-        async with sem:
-            if idx >= len(predictions):
-                return None
-            return await _check_collection(conn, predictions[idx], victim_name)
-
     # Parallel linear scan in batches
     for i in range(0, len(predictions), batch_size):
         batch = predictions[i : i + batch_size]

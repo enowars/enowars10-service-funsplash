@@ -65,11 +65,11 @@ find_offset_at(_T, Obs1, Obs2, Obs3, Offset, _StartOff) ->
                 true ->
                     case compare_9(rand:bytes(9), Obs3) of
                         true -> Offset;
-                        _ -> find_offset_at(wtf, Obs1, Obs2, Obs3, Offset + 1, Offset)
+                        _ -> find_offset_at(_T, Obs1, Obs2, Obs3, Offset + 1, Offset)
                     end;
-                _ -> find_offset_at(wtf, Obs1, Obs2, Obs3, Offset + 1, Offset)
+                _ -> find_offset_at(_T, Obs1, Obs2, Obs3, Offset + 1, Offset)
             end;
-        _ -> find_offset_at(wtf, Obs1, Obs2, Obs3, Offset + 1, Offset)
+        _ -> find_offset_at(_T, Obs1, Obs2, Obs3, Offset + 1, Offset)
     end.
 
 output_predictions(T, Offset) ->
