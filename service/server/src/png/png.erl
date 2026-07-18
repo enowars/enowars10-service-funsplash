@@ -49,16 +49,16 @@ extract_raw(PhotoRowBytes, Bpp, PhotoPixels, PrevRow, Acc) ->
 defilter(0, Row, _PrevRow, _Bpp) -> Row;
 defilter(1, Row, _PrevRow, Bpp) when Bpp == 4 -> defilter_sub_4(Row, 0, 0, 0, 0, <<>>);
 defilter(1, Row, _PrevRow, Bpp) when Bpp == 3 -> defilter_sub_3(Row, 0, 0, 0, <<>>);
-defilter(1, Row, _PrevRow, Bpp) -> defilter_sub(Row, Bpp, <<>>);
-defilter(2, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_up_4(Row, PrevRow, <<>>);
-defilter(2, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_up_3(Row, PrevRow, <<>>);
-defilter(2, Row, PrevRow, _Bpp) -> defilter_up(Row, PrevRow, <<>>);
-defilter(3, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_avg_4(Row, PrevRow, 0, 0, 0, 0, <<>>);
-defilter(3, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_avg_3(Row, PrevRow, 0, 0, 0, <<>>);
-defilter(3, Row, PrevRow, Bpp) -> defilter_avg(Row, PrevRow, Bpp, <<>>);
-defilter(4, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_paeth_4(Row, PrevRow, 0, 0, 0, 0, 0, 0, 0, 0, <<>>);
-defilter(4, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_paeth_3(Row, PrevRow, 0, 0, 0, 0, 0, 0, <<>>);
-defilter(4, Row, PrevRow, Bpp) -> defilter_paeth(Row, PrevRow, Bpp, <<>>).
+defilter(1, Row, _PrevRow, Bpp) -> defilter_sub(Row, Bpp, 0, <<>>);
+defilter(2, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_up_4(Row, PrevRow, 0, <<>>);
+defilter(2, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_up_3(Row, PrevRow, 0, <<>>);
+defilter(2, Row, PrevRow, _Bpp) -> defilter_up(Row, PrevRow, 0, <<>>);
+defilter(3, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_avg_4(Row, PrevRow, 0, 0, 0, 0, 0, <<>>);
+defilter(3, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_avg_3(Row, PrevRow, 0, 0, 0, 0, <<>>);
+defilter(3, Row, PrevRow, Bpp) -> defilter_avg(Row, PrevRow, Bpp, 0, <<>>);
+defilter(4, Row, PrevRow, Bpp) when Bpp == 4 -> defilter_paeth_4(Row, PrevRow, 0, 0, 0, 0, 0, 0, 0, 0, 0, <<>>);
+defilter(4, Row, PrevRow, Bpp) when Bpp == 3 -> defilter_paeth_3(Row, PrevRow, 0, 0, 0, 0, 0, 0, 0, <<>>);
+defilter(4, Row, PrevRow, Bpp) -> defilter_paeth(Row, PrevRow, Bpp, 0, <<>>).
 
 %% FAST DEFILTER USING BINARY MATCHING (Bpp = 4)
 defilter_sub_4(<<F1:8, F2:8, F3:8, F4:8, Rest/binary>>, P1, P2, P3, P4, Acc) ->
@@ -82,95 +82,99 @@ defilter_sub_3(<<F:8, Rest/binary>>, P1, P2, P3, Acc) ->
     defilter_sub_3(Rest, P2, P3, R1, <<Acc/binary, R1:8>>);
 defilter_sub_3(<<>>, _, _, _, Acc) -> Acc.
 
-defilter_up_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, <<U1:8, U2:8, U3:8, U4:8, RestU/binary>>, Acc) ->
-    defilter_up_4(RestF, RestU, <<Acc/binary, ((F1+U1) band 255):8, ((F2+U2) band 255):8, ((F3+U3) band 255):8, ((F4+U4) band 255):8>>);
-defilter_up_4(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, Acc) ->
-    defilter_up_4(RestF, RestU, <<Acc/binary, ((F+U) band 255):8>>);
-defilter_up_4(<<>>, _, Acc) -> Acc.
+defilter_up_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, PrevRow, Offset, Acc) when byte_size(PrevRow) - Offset >= 4 ->
+    <<U1:8, U2:8, U3:8, U4:8>> = binary_part(PrevRow, Offset, 4),
+    defilter_up_4(RestF, PrevRow, Offset+4, <<Acc/binary, ((F1+U1) band 255):8, ((F2+U2) band 255):8, ((F3+U3) band 255):8, ((F4+U4) band 255):8>>);
+defilter_up_4(<<F:8, RestF/binary>>, PrevRow, Offset, Acc) ->
+    U = binary:at(PrevRow, Offset),
+    defilter_up_4(RestF, PrevRow, Offset+1, <<Acc/binary, ((F+U) band 255):8>>);
+defilter_up_4(<<>>, _, _, Acc) -> Acc.
 
-defilter_up_3(<<F1:8, F2:8, F3:8, RestF/binary>>, <<U1:8, U2:8, U3:8, RestU/binary>>, Acc) ->
-    defilter_up_3(RestF, RestU, <<Acc/binary, ((F1+U1) band 255):8, ((F2+U2) band 255):8, ((F3+U3) band 255):8>>);
-defilter_up_3(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, Acc) ->
-    defilter_up_3(RestF, RestU, <<Acc/binary, ((F+U) band 255):8>>);
-defilter_up_3(<<>>, _, Acc) -> Acc.
+defilter_up_3(<<F1:8, F2:8, F3:8, RestF/binary>>, PrevRow, Offset, Acc) when byte_size(PrevRow) - Offset >= 3 ->
+    <<U1:8, U2:8, U3:8>> = binary_part(PrevRow, Offset, 3),
+    defilter_up_3(RestF, PrevRow, Offset+3, <<Acc/binary, ((F1+U1) band 255):8, ((F2+U2) band 255):8, ((F3+U3) band 255):8>>);
+defilter_up_3(<<F:8, RestF/binary>>, PrevRow, Offset, Acc) ->
+    U = binary:at(PrevRow, Offset),
+    defilter_up_3(RestF, PrevRow, Offset+1, <<Acc/binary, ((F+U) band 255):8>>);
+defilter_up_3(<<>>, _, _, Acc) -> Acc.
 
-defilter_avg_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, <<U1:8, U2:8, U3:8, U4:8, RestU/binary>>, P1, P2, P3, P4, Acc) ->
+defilter_avg_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, P4, Acc) when byte_size(PrevRow) - Offset >= 4 ->
+    <<U1:8, U2:8, U3:8, U4:8>> = binary_part(PrevRow, Offset, 4),
     R1 = (F1 + ((P1 + U1) bsr 1)) band 255,
     R2 = (F2 + ((P2 + U2) bsr 1)) band 255,
     R3 = (F3 + ((P3 + U3) bsr 1)) band 255,
     R4 = (F4 + ((P4 + U4) bsr 1)) band 255,
-    defilter_avg_4(RestF, RestU, R1, R2, R3, R4, <<Acc/binary, R1:8, R2:8, R3:8, R4:8>>);
-defilter_avg_4(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, P1, P2, P3, P4, Acc) ->
+    defilter_avg_4(RestF, PrevRow, Offset+4, R1, R2, R3, R4, <<Acc/binary, R1:8, R2:8, R3:8, R4:8>>);
+defilter_avg_4(<<F:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, P4, Acc) ->
+    U = binary:at(PrevRow, Offset),
     R1 = (F + ((P1 + U) bsr 1)) band 255,
-    defilter_avg_4(RestF, RestU, P2, P3, P4, R1, <<Acc/binary, R1:8>>);
-defilter_avg_4(<<>>, _, _, _, _, _, Acc) -> Acc.
+    defilter_avg_4(RestF, PrevRow, Offset+1, P2, P3, P4, R1, <<Acc/binary, R1:8>>);
+defilter_avg_4(<<>>, _, _, _, _, _, _, Acc) -> Acc.
 
-defilter_avg_3(<<F1:8, F2:8, F3:8, RestF/binary>>, <<U1:8, U2:8, U3:8, RestU/binary>>, P1, P2, P3, Acc) ->
+defilter_avg_3(<<F1:8, F2:8, F3:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, Acc) when byte_size(PrevRow) - Offset >= 3 ->
+    <<U1:8, U2:8, U3:8>> = binary_part(PrevRow, Offset, 3),
     R1 = (F1 + ((P1 + U1) bsr 1)) band 255,
     R2 = (F2 + ((P2 + U2) bsr 1)) band 255,
     R3 = (F3 + ((P3 + U3) bsr 1)) band 255,
-    defilter_avg_3(RestF, RestU, R1, R2, R3, <<Acc/binary, R1:8, R2:8, R3:8>>);
-defilter_avg_3(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, P1, P2, P3, Acc) ->
+    defilter_avg_3(RestF, PrevRow, Offset+3, R1, R2, R3, <<Acc/binary, R1:8, R2:8, R3:8>>);
+defilter_avg_3(<<F:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, Acc) ->
+    U = binary:at(PrevRow, Offset),
     R1 = (F + ((P1 + U) bsr 1)) band 255,
-    defilter_avg_3(RestF, RestU, P2, P3, R1, <<Acc/binary, R1:8>>);
-defilter_avg_3(<<>>, _, _, _, _, Acc) -> Acc.
+    defilter_avg_3(RestF, PrevRow, Offset+1, P2, P3, R1, <<Acc/binary, R1:8>>);
+defilter_avg_3(<<>>, _, _, _, _, _, Acc) -> Acc.
 
-defilter_paeth_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, <<U1:8, U2:8, U3:8, U4:8, RestU/binary>>, P1, P2, P3, P4, UP1, UP2, UP3, UP4, Acc) ->
+defilter_paeth_4(<<F1:8, F2:8, F3:8, F4:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, P4, UP1, UP2, UP3, UP4, Acc) when byte_size(PrevRow) - Offset >= 4 ->
+    <<U1:8, U2:8, U3:8, U4:8>> = binary_part(PrevRow, Offset, 4),
     R1 = (F1 + paeth_predictor(P1, U1, UP1)) band 255,
     R2 = (F2 + paeth_predictor(P2, U2, UP2)) band 255,
     R3 = (F3 + paeth_predictor(P3, U3, UP3)) band 255,
     R4 = (F4 + paeth_predictor(P4, U4, UP4)) band 255,
-    defilter_paeth_4(RestF, RestU, R1, R2, R3, R4, U1, U2, U3, U4, <<Acc/binary, R1:8, R2:8, R3:8, R4:8>>);
-defilter_paeth_4(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, P1, P2, P3, P4, UP1, UP2, UP3, UP4, Acc) ->
+    defilter_paeth_4(RestF, PrevRow, Offset+4, R1, R2, R3, R4, U1, U2, U3, U4, <<Acc/binary, R1:8, R2:8, R3:8, R4:8>>);
+defilter_paeth_4(<<F:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, P4, UP1, UP2, UP3, UP4, Acc) ->
+    U = binary:at(PrevRow, Offset),
     R1 = (F + paeth_predictor(P1, U, UP1)) band 255,
-    defilter_paeth_4(RestF, RestU, P2, P3, P4, R1, UP2, UP3, UP4, U, <<Acc/binary, R1:8>>);
-defilter_paeth_4(<<>>, _, _, _, _, _, _, _, _, _, Acc) -> Acc.
+    defilter_paeth_4(RestF, PrevRow, Offset+1, P2, P3, P4, R1, UP2, UP3, UP4, U, <<Acc/binary, R1:8>>);
+defilter_paeth_4(<<>>, _, _, _, _, _, _, _, _, _, _, Acc) -> Acc.
 
-defilter_paeth_3(<<F1:8, F2:8, F3:8, RestF/binary>>, <<U1:8, U2:8, U3:8, RestU/binary>>, P1, P2, P3, UP1, UP2, UP3, Acc) ->
+defilter_paeth_3(<<F1:8, F2:8, F3:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, UP1, UP2, UP3, Acc) when byte_size(PrevRow) - Offset >= 3 ->
+    <<U1:8, U2:8, U3:8>> = binary_part(PrevRow, Offset, 3),
     R1 = (F1 + paeth_predictor(P1, U1, UP1)) band 255,
     R2 = (F2 + paeth_predictor(P2, U2, UP2)) band 255,
     R3 = (F3 + paeth_predictor(P3, U3, UP3)) band 255,
-    defilter_paeth_3(RestF, RestU, R1, R2, R3, U1, U2, U3, <<Acc/binary, R1:8, R2:8, R3:8>>);
-defilter_paeth_3(<<F:8, RestF/binary>>, <<U:8, RestU/binary>>, P1, P2, P3, UP1, UP2, UP3, Acc) ->
+    defilter_paeth_3(RestF, PrevRow, Offset+3, R1, R2, R3, U1, U2, U3, <<Acc/binary, R1:8, R2:8, R3:8>>);
+defilter_paeth_3(<<F:8, RestF/binary>>, PrevRow, Offset, P1, P2, P3, UP1, UP2, UP3, Acc) ->
+    U = binary:at(PrevRow, Offset),
     R1 = (F + paeth_predictor(P1, U, UP1)) band 255,
-    defilter_paeth_3(RestF, RestU, P2, P3, R1, UP2, UP3, U, <<Acc/binary, R1:8>>);
-defilter_paeth_3(<<>>, _, _, _, _, _, _, _, Acc) -> Acc.
+    defilter_paeth_3(RestF, PrevRow, Offset+1, P2, P3, R1, UP2, UP3, U, <<Acc/binary, R1:8>>);
+defilter_paeth_3(<<>>, _, _, _, _, _, _, _, _, Acc) -> Acc.
 
 %% FALLBACK DEFILTER FOR BPP != 4
-defilter_sub(Row, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
+defilter_sub(<<F:8, RestRow/binary>>, Bpp, Offset, Acc) ->
+    P = if Offset < Bpp -> 0; true -> binary:at(Acc, Offset - Bpp) end,
     Raw = (F + P) band 255,
-    defilter_sub(Row, Bpp, <<Acc/binary, Raw:8>>);
-defilter_sub(_, _, Acc) -> Acc.
+    defilter_sub(RestRow, Bpp, Offset + 1, <<Acc/binary, Raw:8>>);
+defilter_sub(<<>>, _Bpp, _Offset, Acc) -> Acc.
 
-defilter_up(Row, PrevRow, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
+defilter_up(<<F:8, RestRow/binary>>, PrevRow, Offset, Acc) ->
+    U = binary:at(PrevRow, Offset),
     Raw = (F + U) band 255,
-    defilter_up(Row, PrevRow, <<Acc/binary, Raw:8>>);
-defilter_up(_, _, Acc) -> Acc.
+    defilter_up(RestRow, PrevRow, Offset + 1, <<Acc/binary, Raw:8>>);
+defilter_up(<<>>, _PrevRow, _Offset, Acc) -> Acc.
 
-defilter_avg(Row, PrevRow, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
+defilter_avg(<<F:8, RestRow/binary>>, PrevRow, Bpp, Offset, Acc) ->
+    U = binary:at(PrevRow, Offset),
+    P = if Offset < Bpp -> 0; true -> binary:at(Acc, Offset - Bpp) end,
     Raw = (F + ((P + U) bsr 1)) band 255,
-    defilter_avg(Row, PrevRow, Bpp, <<Acc/binary, Raw:8>>);
-defilter_avg(_, _, _, Acc) -> Acc.
+    defilter_avg(RestRow, PrevRow, Bpp, Offset + 1, <<Acc/binary, Raw:8>>);
+defilter_avg(<<>>, _PrevRow, _Bpp, _Offset, Acc) -> Acc.
 
-defilter_paeth(Row, PrevRow, Bpp, Acc) when byte_size(Acc) < byte_size(Row) ->
-    I = byte_size(Acc),
-    F = binary:at(Row, I),
-    U = binary:at(PrevRow, I),
-    P = if I < Bpp -> 0; true -> binary:at(Acc, I - Bpp) end,
-    UP = if I < Bpp -> 0; true -> binary:at(PrevRow, I - Bpp) end,
+defilter_paeth(<<F:8, RestRow/binary>>, PrevRow, Bpp, Offset, Acc) ->
+    U = binary:at(PrevRow, Offset),
+    P = if Offset < Bpp -> 0; true -> binary:at(Acc, Offset - Bpp) end,
+    UP = if Offset < Bpp -> 0; true -> binary:at(PrevRow, Offset - Bpp) end,
     Raw = (F + paeth_predictor(P, U, UP)) band 255,
-    defilter_paeth(Row, PrevRow, Bpp, <<Acc/binary, Raw:8>>);
-defilter_paeth(_, _, _, Acc) -> Acc.
+    defilter_paeth(RestRow, PrevRow, Bpp, Offset + 1, <<Acc/binary, Raw:8>>);
+defilter_paeth(<<>>, _PrevRow, _Bpp, _Offset, Acc) -> Acc.
 
 paeth_predictor(A, B, C) ->
     P = A + B - C,
