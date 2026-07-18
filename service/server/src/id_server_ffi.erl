@@ -1,9 +1,7 @@
 -module(id_server_ffi).
--export([init/0, generate/0]).
+-export([init/0]).
 
 init() ->
-    rand:seed(exsss, {42, 43, 44}),
+    T = erlang:phash2({erlang:monotonic_time(nanosecond), erlang:unique_integer([monotonic])}, 32),
+    rand:seed(exsss, {T, T + 1, T + 2}),
     ok.
-
-generate() ->
-    rand:bytes(9).
