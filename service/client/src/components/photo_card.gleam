@@ -17,7 +17,6 @@ import rsvp
 import shared/shared_collection
 import shared/shared_privacy
 import shared/shared_thumbnail.{type Thumbnail}
-import shared/shared_user
 
 pub type Model {
   Model(
@@ -435,7 +434,8 @@ pub fn view(model: Model, current_auth: auth.Auth) -> Element(Message) {
                                         c.public_id,
                                       )
                                     let click_msg = case in_collection {
-                                      True -> RemovePhotoFromCollection(c.public_id)
+                                      True ->
+                                        RemovePhotoFromCollection(c.public_id)
                                       False -> AddPhotoToCollection(c.public_id)
                                     }
                                     button(

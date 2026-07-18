@@ -6,7 +6,7 @@ import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
 import lustre/attribute.{
-  action, checked, class, for, id, method, placeholder, required, type_, value,
+  action, checked, class, for, id, method, required, type_, value,
 }
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -130,7 +130,10 @@ pub fn update(model: Model, msg: Message) -> #(Model, Effect(Message)) {
       case model {
         Loaded(c, _, _, _) -> #(
           model,
-          api_collection.delete_collection(c.public_id, ApiReturnedDeleteCollection),
+          api_collection.delete_collection(
+            c.public_id,
+            ApiReturnedDeleteCollection,
+          ),
         )
         _ -> #(model, effect.none())
       }

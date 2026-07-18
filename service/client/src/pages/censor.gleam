@@ -2,12 +2,10 @@ import api/api_photo
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
-import gleam/list
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/element/svg
 import lustre/event
 import rsvp
 import shared/shared_photo.{type Photo}
@@ -56,7 +54,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
     }
     UserMovedMouse(x, y) -> {
       case model {
-        Loaded(photo, w, h, True) if w > 0 -> {
+        Loaded(_photo, w, _h, True) if w > 0 -> {
           let radius = int.max(w / 100, 1)
           let _ = draw_and_send_censor_mask(x, y, radius)
           #(model, effect.none())

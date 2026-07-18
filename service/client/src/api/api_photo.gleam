@@ -1,10 +1,8 @@
 import auth
 import browser
-import gleam/int
 import gleam/json
 import lustre/effect.{type Effect}
 import rsvp
-import shared/shared_error
 import shared/shared_photo
 import shared/shared_privacy.{Premium, Private, Public}
 import shared/shared_thumbnail
@@ -15,20 +13,6 @@ pub fn api_base_url() -> String {
 
 pub fn images_base_url() -> String {
   browser.window_location_origin() <> "/images"
-}
-
-pub fn fetch_thumbnail(
-  on_response: fn(Result(shared_photo.Photo, rsvp.Error(shared_error.ApiError))) ->
-    message,
-) -> Effect(message) {
-  todo
-}
-
-pub fn fetch_stats(
-  on_response: fn(Result(shared_photo.Photo, rsvp.Error(shared_error.ApiError))) ->
-    message,
-) -> Effect(message) {
-  todo
 }
 
 pub fn fetch(

@@ -1,13 +1,10 @@
 import api/api_user
 import gleam/list
-import gleam/option
 import gleam/string
-import gleam/uri
-import lustre/attribute.{class, placeholder, type_, value}
+import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, h1, h2, input, p}
-import lustre/event
+import lustre/element/html.{a, div, h1, h2, p}
 import route
 import rsvp
 import shared/shared_user

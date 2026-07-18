@@ -26,7 +26,6 @@ import shared/shared_photo
 import shared/shared_privacy
 import shared/shared_stats
 import shared/shared_thumbnail
-import shared/shared_user
 
 // MODEL -----------------------------------------------------------------------
 
@@ -222,7 +221,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         effect.none(),
       )
     }
-    AddPhotoToCollection(cid), Loaded(photo, _, _, _, _, _, ep) -> {
+    AddPhotoToCollection(cid), Loaded(photo, _, _, _, _, _, _ep) -> {
       #(
         model,
         api_collection.add_photo(cid, photo.thumbnail.public_id, fn(res) {
@@ -260,7 +259,7 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
         effect.none(),
       )
     }
-    RemovePhotoFromCollection(cid), Loaded(photo, _, _, _, _, _, ep) -> {
+    RemovePhotoFromCollection(cid), Loaded(photo, _, _, _, _, _, _ep) -> {
       #(
         model,
         api_collection.remove_photo(cid, photo.thumbnail.public_id, fn(res) {
@@ -684,7 +683,8 @@ fn photo_view(
                                       c.public_id,
                                     )
                                   let click_msg = case in_collection {
-                                    True -> RemovePhotoFromCollection(c.public_id)
+                                    True ->
+                                      RemovePhotoFromCollection(c.public_id)
                                     False -> AddPhotoToCollection(c.public_id)
                                   }
                                   button(

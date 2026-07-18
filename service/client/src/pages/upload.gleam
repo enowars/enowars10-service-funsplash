@@ -1,5 +1,4 @@
 import browser
-import gleam/dynamic
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -8,7 +7,7 @@ import lustre/attribute.{class, name, type_, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
 import lustre/element/html.{
-  button, div, h1, input, label, option, p, select, small, textarea,
+  button, div, h1, input, label, option, select, textarea,
 }
 import lustre/event
 import shared/shared_privacy

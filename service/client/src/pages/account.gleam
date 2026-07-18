@@ -7,7 +7,7 @@ import gleam/uri
 import lustre/attribute.{class, name, type_}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{a, button, div, h1, h2, input, label, p, small}
+import lustre/element/html.{a, button, div, h1, h2, input, label, small}
 import shared/shared_account
 import shared/shared_user
 
