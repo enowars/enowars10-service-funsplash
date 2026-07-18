@@ -10,7 +10,7 @@ import os
 from typing import Optional
 import httpx
 
-BURST_SIZE = 3
+BURST_SIZE = 1
 ESCRIPT_PATH = os.path.join(os.path.dirname(__file__), "crack.erl")
 
 
