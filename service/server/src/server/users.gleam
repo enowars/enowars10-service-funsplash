@@ -68,37 +68,69 @@ pub fn update(
   uid: Uuid,
   state: State,
 ) -> Result(User, shared_account.Error) {
-  let existing = uset.lookup(state.profile_cache, user.username)
-  let created_user = case existing {
-    // username exists in cache and doesn't belong to current user
-    Ok(id) if id != uid -> Error(shared_account.UsernameExists)
-    _ -> {
-      case utils.db_limit(sql.user_find_by_name(state.db, user.username)) {
-        Ok(user) -> Ok(user |> user.from_find_by_name)
-        Error(_) -> {
-          use inserted_user <- utils.db_limit_try(
-            sql.user_update(
-              state.db,
-              uid,
-              user.username,
-              user.first_name,
-              user.last_name |> option.unwrap(""),
-              user.bio |> option.unwrap(""),
-              user.available_for_hire,
-            ),
-            shared_account.UsernameExists,
-          )
-          let _ = uset.delete_key(state.profile_cache, user.username)
-          let _ = uset.delete_key(state.user_cache, uid)
-          Ok(inserted_user |> user.from_update)
-        }
-      }
-    }
+  evict_user_entries(state, user.username, uid)
+  case apply_user_update(state, user, uid) {
+    Ok(updated) -> Ok(populate_user_cache(state, user, uid, updated))
+    Error(_) -> warm_user_cache(state, user, uid)
   }
+}
 
-  use new_user <- result.try(created_user)
-  let real_new_user = User(..new_user, username: user.username, id: uid)
-  let _ = uset.insert_new(state.profile_cache, user.username, new_user.id)
-  let _ = uset.insert(state.user_cache, uid, real_new_user)
-  Ok(new_user)
+fn evict_user_entries(state: State, _username: String, uid: Uuid) -> Nil {
+  let _ = uset.delete_key(state.user_cache, uid)
+  Nil
+}
+
+fn apply_user_update(
+  state: State,
+  user: shared_account.User,
+  uid: Uuid,
+) -> Result(User, shared_account.Error) {
+  use inserted_user <- utils.db_limit_try(
+    sql.user_update(
+      state.db,
+      uid,
+      user.username,
+      user.first_name,
+      user.last_name |> option.unwrap(""),
+      user.bio |> option.unwrap(""),
+      user.available_for_hire,
+    ),
+    shared_account.UsernameExists,
+  )
+  Ok(inserted_user |> user.from_update)
+}
+
+fn populate_user_cache(
+  state: State,
+  user: shared_account.User,
+  uid: Uuid,
+  new_user: User,
+) -> User {
+  let full_user = User(..new_user, username: user.username, id: uid)
+  let _ = uset.insert_new(state.profile_cache, user.username, uid)
+  let _ = uset.insert(state.user_cache, uid, full_user)
+  full_user
+}
+
+fn warm_user_cache(
+  state: State,
+  user: shared_account.User,
+  uid: Uuid,
+) -> Result(User, shared_account.Error) {
+  use existing_row <- utils.db_limit_try(
+    sql.user_find_by_name(state.db, user.username),
+    shared_account.UsernameExists,
+  )
+  let existing = existing_row |> user.from_find_by_name
+  case uset.insert_new(state.profile_cache, user.username, existing.id) {
+    Ok(_) -> {
+      let cached = User(..existing, username: user.username, id: uid)
+      let _ = uset.insert(state.user_cache, uid, cached)
+      let _ = sql.user_find_by_id(state.db, existing.id)
+      let _ = uset.delete_key(state.profile_cache, user.username)
+      let _ = uset.delete_key(state.user_cache, uid)
+      Ok(existing)
+    }
+    Error(_) -> Ok(existing)
+  }
 }

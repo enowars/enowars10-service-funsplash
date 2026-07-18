@@ -21,7 +21,6 @@ RUN mkdir -p /build/shared/src /build/client/src /build/server/src \
     && echo "pub fn main() { Nil }" > /build/shared/src/shared.gleam \
     && echo "pub fn main() { Nil }" > /build/client/src/client.gleam \
     && echo '@import "tailwindcss";' > /build/client/src/client.css \
-    # && echo "import argus pub fn main() { let _ = argus.hasher() Nil }" > /build/server/src/server.gleam
     && echo "pub fn main() { Nil }" > /build/server/src/server.gleam
 
 RUN cd /build/client && gleam run -m lustre/dev build

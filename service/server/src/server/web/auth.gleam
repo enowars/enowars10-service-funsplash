@@ -74,7 +74,6 @@ pub fn login(request: wisp.Request, context: web.Context) -> wisp.Response {
     let _ = uset.insert_new(context.state.profile_cache, username, user.id)
 
     use <- bool.guard(
-      // when: argus.verify(user.password, validated_form.password) != Ok(True),
       user.password != password,
       return: Error(shared_login.InvalidCredentials),
     )
@@ -115,14 +114,6 @@ pub fn sign_up(request: wisp.Request, context: web.Context) -> wisp.Response {
       |> form.run
       |> result.replace_error(shared_signup.InvalidData),
     )
-
-    // use pass_hash <- result.try(
-    //   argus.hasher()
-    //   |> argus.hash(validated_form.password, argus.gen_salt())
-    //   |> result.replace_error(shared_signup.InternalError),
-    // )
-
-    // TODO: clean user_cache so we can query it if user exists before hitting db
 
     use user <- utils.db_limit_try(
       sql.user_create(
