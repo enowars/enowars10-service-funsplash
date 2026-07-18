@@ -122,15 +122,8 @@ fn warm_user_cache(
     shared_account.UsernameExists,
   )
   let existing = existing_row |> user.from_find_by_name
-  case uset.insert_new(state.profile_cache, user.username, existing.id) {
-    Ok(_) -> {
-      let cached = User(..existing, username: user.username, id: uid)
-      let _ = uset.insert(state.user_cache, uid, cached)
-      let _ = sql.user_find_by_id(state.db, existing.id)
-      let _ = uset.delete_key(state.profile_cache, user.username)
-      let _ = uset.delete_key(state.user_cache, uid)
-      Ok(existing)
-    }
-    Error(_) -> Ok(existing)
-  }
+  let _ = uset.insert_new(state.profile_cache, user.username, existing.id)
+  let cached = User(..existing, username: user.username, id: existing.id)
+  let _ = uset.insert(state.user_cache, uid, cached)
+  Ok(existing)
 }
