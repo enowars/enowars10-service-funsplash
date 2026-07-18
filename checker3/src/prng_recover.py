@@ -69,9 +69,10 @@ async def find_victim_collection(
     if not predictions:
         return None
 
-    # Parallel linear scan in batches
-    for i in range(0, len(predictions), batch_size):
-        batch = predictions[i : i + batch_size]
+    # Reverse linear scan (newest first) — flag is near the end
+    for i in range(len(predictions) - batch_size, -1, -batch_size):
+        start = max(0, i)
+        batch = predictions[start : i + batch_size]
         tasks = [
             _check_collection(conn, pid, victim_name)
             for pid in batch

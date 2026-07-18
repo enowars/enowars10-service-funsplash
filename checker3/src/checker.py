@@ -454,7 +454,6 @@ async def get_prng_collection_flag(
     assert_in(task.flag, desc, f"flag not found in collection description: {desc}")
 
 
-
 @checker.exploit(2)
 async def exploit_prng(
     task: ExploitCheckerTaskMessage,
@@ -471,7 +470,8 @@ async def exploit_prng(
     observed: list[str] = []
     for _ in range(prng_recover.BURST_SIZE):
         pid = await collection.create(
-            conn, cookies,
+            conn,
+            cookies,
             name=utils.random_string(10, CHARSET_UPPER_ALPHANUMERIC),
             description="",
             private=False,
@@ -500,3 +500,265 @@ async def exploit_prng(
 
 if __name__ == "__main__":
     checker.run()
+
+import missing_tests
+
+
+@checker.putnoise(2)
+async def stub_putnoise_2(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_update_delete(task, db, logger, conn)
+
+
+@checker.getnoise(2)
+async def stub_getnoise_2(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_update_delete(task, db, logger, conn)
+
+
+@checker.putnoise(3)
+async def stub_putnoise_3(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_show_on_profile(task, db, logger, conn)
+
+
+@checker.getnoise(3)
+async def stub_getnoise_3(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_show_on_profile(task, db, logger, conn)
+
+
+@checker.putnoise(4)
+async def stub_putnoise_4(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_login_logout(task, db, logger, conn)
+
+
+@checker.getnoise(4)
+async def stub_getnoise_4(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_login_logout(task, db, logger, conn)
+
+
+@checker.putnoise(5)
+async def stub_putnoise_5(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_censor_visual(task, db, logger, conn)
+
+
+@checker.getnoise(5)
+async def stub_getnoise_5(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_censor_visual(task, db, logger, conn)
+
+
+@checker.putnoise(6)
+async def stub_putnoise_6(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_likes(task, db, logger, conn)
+
+
+@checker.getnoise(6)
+async def stub_getnoise_6(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_likes(task, db, logger, conn)
+
+
+@checker.putnoise(7)
+async def stub_putnoise_7(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_collection_photos(task, db, logger, conn)
+
+
+@checker.getnoise(7)
+async def stub_getnoise_7(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_collection_photos(task, db, logger, conn)
+
+
+@checker.putnoise(8)
+async def stub_putnoise_8(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_tags_update(task, db, logger, conn)
+
+
+@checker.getnoise(8)
+async def stub_getnoise_8(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_tags_update(task, db, logger, conn)
+
+
+@checker.putnoise(9)
+async def stub_putnoise_9(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_update_user_and_password(task, db, logger, conn)
+
+
+@checker.getnoise(9)
+async def stub_getnoise_9(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_update_user_and_password(task, db, logger, conn)
+
+
+@checker.putnoise(10)
+async def stub_putnoise_10(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_private_photo(task, db, logger, conn)
+
+
+@checker.getnoise(10)
+async def stub_getnoise_10(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_private_photo(task, db, logger, conn)
+
+
+@checker.putnoise(11)
+async def stub_putnoise_11(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_user_search(task, db, logger, conn)
+
+
+@checker.getnoise(11)
+async def stub_getnoise_11(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_user_search(task, db, logger, conn)
+
+
+@checker.putnoise(12)
+async def stub_putnoise_12(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_update_collection(task, db, logger, conn)
+
+
+@checker.getnoise(12)
+async def stub_getnoise_12(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_update_collection(task, db, logger, conn)
+
+
+@checker.putnoise(13)
+async def stub_putnoise_13(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_update_photo(task, db, logger, conn)
+
+
+@checker.getnoise(13)
+async def stub_getnoise_13(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_update_photo(task, db, logger, conn)
+
+
+@checker.putnoise(14)
+async def stub_putnoise_14(
+    task: PutnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.putnoise_update_password(task, db, logger, conn)
+
+
+@checker.getnoise(14)
+async def stub_getnoise_14(
+    task: GetnoiseCheckerTaskMessage,
+    db: ChainDB,
+    logger: LoggerAdapter,
+    conn: Connection,
+):
+    await missing_tests.getnoise_update_password(task, db, logger, conn)

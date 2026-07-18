@@ -47,6 +47,23 @@ async def update(
     return
 
 
+async def change_password(
+    connection: Connection,
+    new_password: str,
+    cookies=None,
+    expected_code: int = 303,
+) -> None:
+    r = await connection.post(
+        "/napi/account/password",
+        data={
+            "password": new_password,
+        },
+        cookies=cookies,
+    )
+    assert_equals(r.status_code, expected_code)
+    return
+
+
 async def register(
     connection: Connection,
     user: User,

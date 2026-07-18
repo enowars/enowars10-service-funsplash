@@ -36,3 +36,26 @@ async def get(conn: Connection, public_id: str, cookies=None) -> dict:
     r = await conn.get(f"/napi/collections/{public_id}", cookies=cookies)
     assert_equals(r.status_code, 200)
     return r.json()
+
+
+async def update(
+    conn: Connection,
+    public_id: str,
+    cookies,
+    name: str,
+    description: str = "",
+    private: bool = True,
+) -> None:
+    data = {
+        "name": name,
+        "description": description,
+        "private": "true" if private else "false",
+    }
+    r = await conn.post(
+        f"/napi/collections/{public_id}",
+        data=data,
+        cookies=cookies,
+        follow_redirects=False,
+    )
+    assert_equals(r.status_code, 303, "expected redirect after collection update")
+    return

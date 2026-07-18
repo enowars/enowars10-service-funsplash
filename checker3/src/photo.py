@@ -36,6 +36,7 @@ class Photo:
     views: int = 0
     likes: int = 0
     downloads: int = 0
+    user_liked: bool = False
 
     @classmethod
     def from_dict(cls, data: dict) -> "Photo":
@@ -58,6 +59,7 @@ class Photo:
                 views=s.get("views", 0),
                 likes=s.get("likes", 0),
                 downloads=s.get("downloads", 0),
+                user_liked=bool(t.get("user_liked", False))
             )
         # Otherwise assume it's a Thumbnail (e.g. from profile)
         return cls(
@@ -74,8 +76,8 @@ class Photo:
             views=data.get("views", 0),
             likes=data.get("likes", 0),
             downloads=data.get("downloads", 0),
+            user_liked=bool(data.get("user_liked", False))
         )
-
 
 async def get_data_premium(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
@@ -131,10 +133,11 @@ async def upload(conn: Connection, cookies, photo: Photo):
         "location": photo.location,
         "camera": photo.camera,
         "privacy": str(photo.privacy),
-        "show_on_profile": "true" if photo.show_on_profile else "false",
-        # "show_on_pofile": photo.show_on_profile,
-        "tags": ",".join(photo.tags),
+        "tags": ",".join(photo.tags or []),
     }
+    
+    if photo.show_on_profile:
+        payload["show_on_profile"] = "on"
 
     files = {"photo": ("photo_name", photo.data, "image/png")}
 
@@ -146,6 +149,26 @@ async def upload(conn: Connection, cookies, photo: Photo):
         timeout=httpx.Timeout(15.0, read=None),
     )
 
+    assert_equals(r.status_code, 303)
+
+
+async def update(conn: Connection, cookies, public_id: str, photo: Photo):
+    payload = {
+        "description": photo.description,
+        "location": photo.location,
+        "camera": photo.camera,
+        "privacy": str(photo.privacy),
+        "tags": ",".join(photo.tags or []),
+    }
+    
+    if photo.show_on_profile:
+        payload["show_on_profile"] = "on"
+
+    r = await conn.post(
+        f"/napi/photos/{public_id}",
+        data=payload,
+        cookies=cookies,
+    )
     assert_equals(r.status_code, 303)
 
 
