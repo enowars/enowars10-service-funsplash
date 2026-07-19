@@ -21,7 +21,9 @@ def recover_state(observed: list[str]) -> Optional[list[str]]:
     try:
         result = subprocess.run(
             ["escript", ESCRIPT_PATH, *observed],
-            capture_output=True, text=True,             timeout=60,
+            capture_output=True,
+            text=True,
+            timeout=60,
             env={**os.environ, "ERL_FLAGS": "-sctp"},
         )
     except (subprocess.TimeoutExpired, FileNotFoundError) as e:
@@ -29,7 +31,8 @@ def recover_state(observed: list[str]) -> Optional[list[str]]:
 
     stdout = result.stdout
     clean = "\n".join(
-        l for l in stdout.split("\n")
+        l
+        for l in stdout.split("\n")
         if not any(w in l for w in ("ESOCK", "ESSIO", "sctp", "Warning:", "Warning "))
         and not l.strip().startswith("%")
     )
@@ -73,10 +76,7 @@ async def find_victim_collection(
     for i in range(len(predictions) - batch_size, -1, -batch_size):
         start = max(0, i)
         batch = predictions[start : i + batch_size]
-        tasks = [
-            _check_collection(conn, pid, victim_name)
-            for pid in batch
-        ]
+        tasks = [_check_collection(conn, pid, victim_name) for pid in batch]
         results = await asyncio.gather(*tasks)
         for desc in results:
             if desc:

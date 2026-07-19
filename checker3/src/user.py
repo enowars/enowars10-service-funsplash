@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 from connection import Connection
 from enochecker3.utils import assert_equals
+from enochecker3.utils import MumbleException
 from utils import (
     random_string,
     CHARSET_ALPHANUMERIC,
@@ -92,9 +93,12 @@ async def get_profile(
         f"/napi/users/{username}/photos", cookies=cookies, timeout=15
     )
     assert_equals(r_photos.status_code, expected_code)
+    try:
+        data = r.json()
+        data["photos"] = r_photos.json()
+    except Exception as e:
+        raise MumbleException("couldnt decode json: {e}")
 
-    data = r.json()
-    data["photos"] = r_photos.json()
     return data
 
 

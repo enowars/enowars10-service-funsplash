@@ -59,7 +59,7 @@ class Photo:
                 views=s.get("views", 0),
                 likes=s.get("likes", 0),
                 downloads=s.get("downloads", 0),
-                user_liked=bool(t.get("user_liked", False))
+                user_liked=bool(t.get("user_liked", False)),
             )
         # Otherwise assume it's a Thumbnail (e.g. from profile)
         return cls(
@@ -76,8 +76,9 @@ class Photo:
             views=data.get("views", 0),
             likes=data.get("likes", 0),
             downloads=data.get("downloads", 0),
-            user_liked=bool(data.get("user_liked", False))
+            user_liked=bool(data.get("user_liked", False)),
         )
+
 
 async def get_data_premium(
     conn: Connection, asset_id: str, cookies=None, expected_code: int = 200
@@ -135,7 +136,7 @@ async def upload(conn: Connection, cookies, photo: Photo):
         "privacy": str(photo.privacy),
         "tags": ",".join(photo.tags or []),
     }
-    
+
     if photo.show_on_profile:
         payload["show_on_profile"] = "on"
 
@@ -160,7 +161,7 @@ async def update(conn: Connection, cookies, public_id: str, photo: Photo):
         "privacy": str(photo.privacy),
         "tags": ",".join(photo.tags or []),
     }
-    
+
     if photo.show_on_profile:
         payload["show_on_profile"] = "on"
 
