@@ -177,7 +177,12 @@ async def censor(conn: Connection, public_id: str, masks: list[bytearray]) -> li
     responses: list[str] = []
     uri = f"ws://{addr.ip}:{addr.port}/napi/censor/{public_id}"
 
-    async with websockets.connect(uri, close_timeout=30) as ws:
+    try:
+        ws = await websockets.connect(uri, close_timeout=30)
+    except Exception:
+        raise MumbleException("censor websocket connection failed")
+
+    async with ws:
 
         async def sender():
             for mask in masks:

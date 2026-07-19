@@ -507,7 +507,9 @@ async def putnoise_private_photo(
     # Assert anonymous fetching returns 303 (redirect to login) or 404 for private photos
     r = await conn.get(f"/images/private_photo-{photo_obj.asset_id}", follow_redirects=False)
     if r.status_code not in [303, 404, 401, 403]:
-        raise Exception(f"Private photo should not be accessible anonymously, got status: {r.status_code}")
+        raise MumbleException(
+            f"Private photo should not be accessible anonymously, got status: {r.status_code}"
+        )
 
     await db.set("user", asdict(u))
     await db.set("asset_id", photo_obj.asset_id)

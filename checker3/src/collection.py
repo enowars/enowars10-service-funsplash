@@ -1,5 +1,6 @@
 from connection import Connection
 from enochecker3.utils import assert_equals
+from enochecker3 import MumbleException
 
 
 async def create(
@@ -35,7 +36,10 @@ async def create(
 async def get(conn: Connection, public_id: str, cookies=None) -> dict:
     r = await conn.get(f"/napi/collections/{public_id}", cookies=cookies)
     assert_equals(r.status_code, 200)
-    return r.json()
+    try:
+        return r.json()
+    except Exception as e:
+        raise MumbleException(f"cant decode json {e}")
 
 
 async def update(
