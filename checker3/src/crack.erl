@@ -1,7 +1,3 @@
-#!/usr/bin/env escript
-%% Usage: crack.erl <pid>
-%% Caches found T to /tmp/crack_seed. Subsequent calls skip brute-force.
-
 -module(crack).
 -export([main/1]).
 
@@ -13,17 +9,17 @@
 main([ObsStr]) ->
     Obs = decode_observed(ObsStr),
     {T, _StartOff} = case file:read_file(?CACHE_FILE) of
-        {ok, Bin} ->
-            [TStr, OffStr] = string:tokens(binary_to_list(Bin), " "),
-            {list_to_integer(TStr), list_to_integer(OffStr)};
-        _ -> {not_cached, 0}
-    end,
+			 {ok, Bin} ->
+			     [TStr, OffStr] = string:tokens(binary_to_list(Bin), " "),
+			     {list_to_integer(TStr), list_to_integer(OffStr)};
+			 _ -> {not_cached, 0}
+		     end,
     case T of
         not_cached ->
             case parallel_search(Obs) of
                 {ok, FoundT, Offset} ->
                     file:write_file(?CACHE_FILE,
-                        integer_to_list(FoundT) ++ " " ++ integer_to_list(Offset)),
+				    integer_to_list(FoundT) ++ " " ++ integer_to_list(Offset)),
                     output_predictions(FoundT, Offset);
                 not_found ->
                     io:format("not_found~n")
@@ -34,14 +30,14 @@ main([ObsStr]) ->
                 true ->
                     Offset = find_offset_at(T, Obs, 1),
                     file:write_file(?CACHE_FILE,
-                        integer_to_list(T) ++ " " ++ integer_to_list(Offset)),
+				    integer_to_list(T) ++ " " ++ integer_to_list(Offset)),
                     output_predictions(T, Offset);
                 false ->
                     file:delete(?CACHE_FILE),
                     case parallel_search(Obs) of
                         {ok, FoundT, Off} ->
                             file:write_file(?CACHE_FILE,
-                                integer_to_list(FoundT) ++ " " ++ integer_to_list(Off)),
+					    integer_to_list(FoundT) ++ " " ++ integer_to_list(Off)),
                             output_predictions(FoundT, Off);
                         not_found ->
                             io:format("not_found~n")
@@ -65,16 +61,14 @@ find_offset_at(_T, Obs, Offset, _StartOff) ->
 output_predictions(T, Offset) ->
     History = build_history(T, Offset),
     lists:foreach(
-        fun(State) ->
-            _ = rand:seed(State),
-            io:format("~s~n", [encode(rand:bytes(9))])
-        end,
-        History
-    ).
+      fun(State) ->
+	      _ = rand:seed(State),
+	      io:format("~s~n", [encode(rand:bytes(9))])
+      end,
+      History
+     ).
 
-%% ------------------------------------------------------------
-%% Decode observation
-%% ------------------------------------------------------------
+%% decode
 
 decode_observed(PidStr) ->
     decode_observed(PidStr, 0).
@@ -97,17 +91,15 @@ base64url_char(N) when N < 62 -> N - 52 + $0;
 base64url_char(62) -> $-;
 base64url_char(63) -> $_.
 
-%% ------------------------------------------------------------
-%% Pass 1: parallel search
-%% ------------------------------------------------------------
+%% search
 
 parallel_search(Obs) ->
     Main = self(),
     Chunk = ceil(?MAX_T / ?NUM_WORKERS),
     Workers = [
-        spawn(fun() -> worker(Obs, Start * Chunk, Chunk, Main) end)
-        || Start <- lists:seq(0, ?NUM_WORKERS - 1)
-    ],
+	       spawn(fun() -> worker(Obs, Start * Chunk, Chunk, Main) end)
+	       || Start <- lists:seq(0, ?NUM_WORKERS - 1)
+	      ],
     Result = wait_first(Workers),
     [exit(W, kill) || W <- Workers],
     Result.
@@ -142,15 +134,13 @@ wait_first(Workers) ->
     receive
         {found, T, Offset} -> {ok, T, Offset}
     after 50 ->
-        case lists:any(fun erlang:is_process_alive/1, Workers) of
-            true  -> wait_first(Workers);
-            false -> not_found
-        end
+	    case lists:any(fun erlang:is_process_alive/1, Workers) of
+		true  -> wait_first(Workers);
+		false -> not_found
+	    end
     end.
 
-%% ------------------------------------------------------------
-%% Pass 2: serial history build
-%% ------------------------------------------------------------
+%% history
 
 build_history(T, Offset) ->
     _ = rand:seed(exsss, {T, T + 1, T + 2}),
@@ -163,9 +153,7 @@ build_history(_T, Offset, I, Acc) when I < Offset ->
 build_history(_T, _Offset, _I, Acc) ->
     lists:reverse(Acc).
 
-%% ------------------------------------------------------------
-%% Encoding
-%% ------------------------------------------------------------
+%% encode
 
 encode(Bytes) ->
     Encoded = base64:encode(Bytes, #{mode => urlsafe, padding => false}),

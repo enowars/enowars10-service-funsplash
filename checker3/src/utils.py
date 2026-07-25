@@ -1,3 +1,4 @@
+from enochecker3 import MumbleException
 import qr
 import random
 from connection import Connection
@@ -5,7 +6,6 @@ import os
 import string
 from photo import Privacy, Photo, Coordinate
 import photo
-import json
 import json
 
 # Common charsets for random string generation
@@ -96,5 +96,8 @@ async def fill_user(conn: Connection, p: Photo, dim: int = 33):
 
 
 def get_size(msg):
-    data = json.loads(msg)
-    return data["usage"] - data["limit"]
+    try:
+        data = json.loads(msg)
+        return data["usage"] - data["limit"]
+    except Exception as e:
+        raise MumbleException(f"Cant decode json {e}")

@@ -1,5 +1,3 @@
-from threads import run_in_thread
-import httpx
 import utils
 from dataclasses import asdict
 import user
@@ -157,7 +155,10 @@ async def getnoise_show_on_profile(
     # Access as anonymous user
     r = await conn.get(f"/napi/users/{u.name}/photos")
     assert_equals(r.status_code, 200, "Should be able to get profile photos")
-    photos = r.json()
+    try:
+        photos = r.json()
+    except Exception as e:
+        raise MumbleException(f"couldn't parse photo {e}")
     for p in photos:
         if hidden_desc in p.get("description", ""):
             raise MumbleException(
@@ -208,7 +209,8 @@ async def getnoise_login_logout(
     cookies = await user.login(conn, u)
     col_name = utils.random_string(10)
     col_id = await collection.create(conn, cookies, name=col_name)
-    assert col_id is not None, "Failed to use new session after login"
+    if col_id is None:
+        raise MumbleException("Failed to use new session after login")
 
 
 async def putnoise_censor_visual(
@@ -338,15 +340,10 @@ async def getnoise_likes(
         raise MumbleException("Missing db entry")
 
     cookies = await user.login(conn, u)
-
-    p1_data = await conn.get(f"/napi/photos/{pid}", cookies=cookies)
-    assert_equals(p1_data.status_code, 200, "Could not fetch liked photo")
-    p1 = photo.Photo.from_dict(p1_data.json())
+    p1 = await photo.get(conn, pid, cookies)
     assert_equals(p1.user_liked, True, "Liked photo should be in user likes")
 
-    p2_data = await conn.get(f"/napi/photos/{pid2}", cookies=cookies)
-    assert_equals(p2_data.status_code, 200, "Could not fetch unliked photo")
-    p2 = photo.Photo.from_dict(p2_data.json())
+    p2 = await photo.get(conn, pid2)
     assert_equals(p2.user_liked, False, "Unliked photo is still in user likes")
 
 
@@ -412,8 +409,11 @@ async def getnoise_collection_photos(
     # Verify the photo is in the collection
     photos_resp = await conn.get(f"/napi/collections/{col_id}/photos", cookies=cookies)
     assert_equals(photos_resp.status_code, 200, "Could not fetch collection photos")
-    photos = photos_resp.json()
-    photo_ids = [p.get("public_id") for p in photos]
+    try:
+        photos = photos_resp.json()
+        photo_ids = [p.get("public_id") for p in photos]
+    except Exception:
+        raise MumbleException("couldn't parse photo metadata")
 
     if pid not in photo_ids:
         raise MumbleException("Photo was not successfully added to the collection")
@@ -636,7 +636,11 @@ async def getnoise_user_search(
     r = await conn.get(f"/napi/s/users/{search_query}", follow_redirects=False)
     assert_equals(r.status_code, 200, "User search should succeed")
 
-    users_list = r.json()
+    try:
+        users_list = r.json()
+    except Exception as e:
+        raise MumbleException(f"couldn't parse user_list {e}")
+
     found = False
     for user_obj in users_list:
         if user_obj.get("username") == expected_username:

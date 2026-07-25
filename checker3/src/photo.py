@@ -111,17 +111,17 @@ async def get(
     assert_equals(r.status_code, expected_code)
     try:
         return Photo.from_dict(r.json())
-    except Exception:
-        raise MumbleException("couldnt parse photo metadata")
+    except Exception as e:
+        raise MumbleException(f"couldn't parse photo metadata {e}")
 
 
 def get_by_description_contains(
-    profile_json, contain: str, not_contain: Optional(str) = None
+    profile_json, contain: str, not_contain: Optional[str] = None
 ) -> Photo:
     contain = contain.lower()
     for p in profile_json.get("photos", []):
         description = (p.get("description") or "").lower()
-        if contain in description and (
+        if contain in description.lower() and (
             not_contain is None or not_contain not in description
         ):
             return Photo.from_dict(p)
@@ -187,7 +187,10 @@ async def censor(conn: Connection, public_id: str, masks: list[bytearray]) -> li
 
         async def sender():
             for mask in masks:
-                await ws.send(mask)
+                try:
+                    await ws.send(mask)
+                except Exception as e:
+                    raise MumbleException("Socket closed suddenly {e}")
 
         async def receiver():
             for _ in range(len(masks)):

@@ -3,3 +3,4 @@
 .venv/
 data/
 **/*egg-info*/
+**/.ruff_cache/

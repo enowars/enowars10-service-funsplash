@@ -84,22 +84,45 @@ async def register(
     return dict(r.cookies)
 
 
-async def get_profile(
+async def get(
     connection: Connection, username: str, cookies=None, expected_code: int = 200
 ):
     r = await connection.get(f"/napi/users/{username}", cookies=cookies, timeout=15)
     assert_equals(r.status_code, expected_code)
-    r_photos = await connection.get(
-        f"/napi/users/{username}/photos", cookies=cookies, timeout=15
-    )
-    assert_equals(r_photos.status_code, expected_code)
+
     try:
         data = r.json()
-        data["photos"] = r_photos.json()
     except Exception as e:
-        raise MumbleException("couldnt decode json: {e}")
+        raise MumbleException(f"couldn't decode profile: {e}")
 
     return data
+
+
+async def get_photos(
+    connection: Connection, username: str, cookies=None, expected_code: int = 200
+):
+    r = await connection.get(
+        f"/napi/users/{username}/photos", cookies=cookies, timeout=15
+    )
+    assert_equals(r.status_code, expected_code)
+
+    try:
+        data = r.json()
+    except Exception as e:
+        raise MumbleException(f"couldn't decode photos: {e}")
+
+    return data
+
+
+async def get_profile(
+    connection: Connection, username: str, cookies=None, expected_code: int = 200
+):
+    profile = await get(connection, username, cookies, expected_code)
+    photos = await get_photos(connection, username, cookies, expected_code)
+
+    profile["photos"] = photos
+
+    return profile
 
 
 async def login(connection: Connection, user: User, expected_code: int = 303) -> dict:

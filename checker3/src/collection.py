@@ -29,7 +29,8 @@ async def create(
 
     location = r.headers.get("location", "")
     public_id = location.rsplit("/", 1)[-1]
-    assert public_id, f"could not extract public_id from redirect: {location}"
+    if not public_id:
+        raise MumbleException(f"could not extract public_id from redirect: {location}")
     return public_id
 
 
