@@ -15,7 +15,7 @@ pub type Id =
   Uuid
 
 pub type PublicId =
-  String
+  Uuid
 
 pub type AssetId =
   Uuid
@@ -96,7 +96,7 @@ pub fn to_shared_thumbnail(
   current_user_collections: List(shared_collection.PublicId),
 ) -> shared_thumbnail.Thumbnail {
   shared_thumbnail.Thumbnail(
-    public_id: p.public_id,
+    public_id: p.public_id |> uuid.to_string,
     asset_id: p.asset_id |> uuid.to_string,
     description: p.description,
     creator: creator,

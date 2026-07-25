@@ -19,6 +19,7 @@ import shared/shared_collection
 import shared/shared_thumbnail
 import utils.{result_guard}
 import wisp
+import youid/uuid
 
 pub fn photos(
   _request: wisp.Request,
@@ -104,11 +105,13 @@ pub fn create(request: wisp.Request, context: web.Context) -> wisp.Response {
     )
 
     let photo_id = case req.photo_public_id {
-      Some(id) ->
+      Some(id) -> {
+        use id <- utils.result_guard(uuid.from_string(id), None)
         case photos.get_by_public(context.state, id) {
           Ok(p) -> Some(p.id)
           _ -> None
         }
+      }
       _ -> None
     }
 
@@ -151,6 +154,8 @@ pub fn add_photo(
   use <- wisp.require_method(request, http.Post)
   use user <- auth.require_login(context)
 
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
+
   use collection <- result_guard(
     collections.get_by_public(context.state, cid),
     wisp.not_found(),
@@ -179,6 +184,8 @@ pub fn remove_photo(
 ) -> wisp.Response {
   use <- wisp.require_method(request, http.Delete)
   use user <- auth.require_login(context)
+
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
 
   use col <- result_guard(
     collections.get_by_public(context.state, cid),

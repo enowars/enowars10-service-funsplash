@@ -15,10 +15,11 @@ fn rand_bytes(size: Int) -> BitArray
 pub fn start() -> Name(IdServerMessage) {
   let name = process.new_name("id_server")
 
-  let pid = process.spawn(fn() {
-    init_rand()
-    loop(name)
-  })
+  let pid =
+    process.spawn(fn() {
+      init_rand()
+      loop(name)
+    })
 
   let assert Ok(_) = process.register(pid, name)
   name

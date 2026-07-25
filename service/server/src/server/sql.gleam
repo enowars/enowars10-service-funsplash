@@ -267,7 +267,7 @@ LIMIT 1;
 pub type CollectionPhotosListRow {
   CollectionPhotosListRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -296,7 +296,7 @@ pub fn collection_photos_list(
 ) -> Result(pog.Returned(CollectionPhotosListRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -537,7 +537,7 @@ RETURNING *;
 pub type PhotoCreateRow {
   PhotoCreateRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -570,11 +570,10 @@ pub fn photo_create(
   arg_6: Bool,
   arg_7: Int,
   arg_8: Mimetype,
-  arg_9: String,
 ) -> Result(pog.Returned(PhotoCreateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -612,7 +611,7 @@ pub fn photo_create(
      SET storage_quota_used = storage_quota_used + $7
      WHERE id = $2
 )
-INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype, public_id)
+INSERT INTO photos (description, creator, privacy, location, camera, show_on_profile, file_size, mimetype)
 VALUES (nullif($1,''),
 	$2,
 	$3,
@@ -620,8 +619,7 @@ VALUES (nullif($1,''),
 	nullif($5,''),
 	$6,
 	$7,
-	$8,
-	$9)
+	$8)
 RETURNING *;
 "
   |> pog.query
@@ -633,7 +631,6 @@ RETURNING *;
   |> pog.parameter(pog.bool(arg_6))
   |> pog.parameter(pog.int(arg_7))
   |> pog.parameter(mimetype_encoder(arg_8))
-  |> pog.parameter(pog.text(arg_9))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -647,7 +644,7 @@ RETURNING *;
 pub type PhotoDeleteRow {
   PhotoDeleteRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -672,12 +669,12 @@ pub type PhotoDeleteRow {
 ///
 pub fn photo_delete(
   db: pog.Connection,
-  public_id: String,
+  public_id: Uuid,
   creator: Uuid,
 ) -> Result(pog.Returned(PhotoDeleteRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -715,7 +712,7 @@ WHERE public_id = $1 AND creator = $2
 RETURNING *;
 "
   |> pog.query
-  |> pog.parameter(pog.text(public_id))
+  |> pog.parameter(pog.text(uuid.to_string(public_id)))
   |> pog.parameter(pog.text(uuid.to_string(creator)))
   |> pog.returning(decoder)
   |> pog.execute(db)
@@ -730,7 +727,7 @@ RETURNING *;
 pub type PhotoFindByAssetIdRow {
   PhotoFindByAssetIdRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -759,7 +756,7 @@ pub fn photo_find_by_asset_id(
 ) -> Result(pog.Returned(PhotoFindByAssetIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -812,7 +809,7 @@ LIMIT 1;
 pub type PhotoFindByIdRow {
   PhotoFindByIdRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -841,7 +838,7 @@ pub fn photo_find_by_id(
 ) -> Result(pog.Returned(PhotoFindByIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -894,7 +891,7 @@ LIMIT 1;
 pub type PhotoFindByPublicIdRow {
   PhotoFindByPublicIdRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -919,11 +916,11 @@ pub type PhotoFindByPublicIdRow {
 ///
 pub fn photo_find_by_public_id(
   db: pog.Connection,
-  public_id: String,
+  public_id: Uuid,
 ) -> Result(pog.Returned(PhotoFindByPublicIdRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -962,7 +959,7 @@ WHERE public_id = $1
 LIMIT 1;
 "
   |> pog.query
-  |> pog.parameter(pog.text(public_id))
+  |> pog.parameter(pog.text(uuid.to_string(public_id)))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -1035,7 +1032,7 @@ RETURNING *;
 pub type PhotoUpdateRow {
   PhotoUpdateRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1060,7 +1057,7 @@ pub type PhotoUpdateRow {
 ///
 pub fn photo_update(
   db: pog.Connection,
-  public_id: String,
+  public_id: Uuid,
   arg_2: String,
   arg_3: String,
   arg_4: String,
@@ -1070,7 +1067,7 @@ pub fn photo_update(
 ) -> Result(pog.Returned(PhotoUpdateRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -1109,7 +1106,7 @@ WHERE public_id = $1 AND creator = $7
 RETURNING *;
 "
   |> pog.query
-  |> pog.parameter(pog.text(public_id))
+  |> pog.parameter(pog.text(uuid.to_string(public_id)))
   |> pog.parameter(pog.text(arg_2))
   |> pog.parameter(pog.text(arg_3))
   |> pog.parameter(pog.text(arg_4))
@@ -1129,7 +1126,7 @@ RETURNING *;
 pub type PhotosListByOwnerRow {
   PhotosListByOwnerRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1158,7 +1155,7 @@ pub fn photos_list_by_owner(
 ) -> Result(pog.Returned(PhotosListByOwnerRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -1208,7 +1205,7 @@ WHERE creator = $1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type PhotosListByTagRow {
-  PhotosListByTagRow(public_id: String)
+  PhotosListByTagRow(public_id: Uuid)
 }
 
 /// Runs the `photos_list_by_tag` query
@@ -1222,7 +1219,7 @@ pub fn photos_list_by_tag(
   arg_1: String,
 ) -> Result(pog.Returned(PhotosListByTagRow), pog.QueryError) {
   let decoder = {
-    use public_id <- decode.field(0, decode.string)
+    use public_id <- decode.field(0, uuid_decoder())
     decode.success(PhotosListByTagRow(public_id:))
   }
 
@@ -1246,7 +1243,7 @@ WHERE photos_tags.tag = $1;
 pub type PhotosListByUserRow {
   PhotosListByUserRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1275,7 +1272,7 @@ pub fn photos_list_by_user(
 ) -> Result(pog.Returned(PhotosListByUserRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -1327,7 +1324,7 @@ AND show_on_profile = true;
 ///
 pub type PhotosListByUserCursorDateRow {
   PhotosListByUserCursorDateRow(
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1356,7 +1353,7 @@ pub fn photos_list_by_user_cursor_date(
   arg_3: Timestamp,
 ) -> Result(pog.Returned(PhotosListByUserCursorDateRow), pog.QueryError) {
   let decoder = {
-    use public_id <- decode.field(0, decode.string)
+    use public_id <- decode.field(0, uuid_decoder())
     use asset_id <- decode.field(1, uuid_decoder())
     use description <- decode.field(2, decode.optional(decode.string))
     use creator <- decode.field(3, uuid_decoder())
@@ -1824,7 +1821,7 @@ AND photo_id = $2;
 pub type UserLikesPhotoAddRow {
   UserLikesPhotoAddRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1854,7 +1851,7 @@ pub fn user_likes_photo_add(
 ) -> Result(pog.Returned(UserLikesPhotoAddRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())
@@ -1915,7 +1912,7 @@ RETURNING photos.*;
 pub type UserLikesPhotoRemoveRow {
   UserLikesPhotoRemoveRow(
     id: Uuid,
-    public_id: String,
+    public_id: Uuid,
     asset_id: Uuid,
     description: Option(String),
     creator: Uuid,
@@ -1945,7 +1942,7 @@ pub fn user_likes_photo_remove(
 ) -> Result(pog.Returned(UserLikesPhotoRemoveRow), pog.QueryError) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use public_id <- decode.field(1, decode.string)
+    use public_id <- decode.field(1, uuid_decoder())
     use asset_id <- decode.field(2, uuid_decoder())
     use description <- decode.field(3, decode.optional(decode.string))
     use creator <- decode.field(4, uuid_decoder())

@@ -24,7 +24,7 @@ CREATE TYPE mimetype AS ENUM ('png', 'jpg', 'webp', 'other');
 
 CREATE TABLE photos (
 id UUID PRIMARY KEY DEFAULT uuidv7(),
-public_id VARCHAR(12) NOT NULL UNIQUE,
+public_id UUID NOT NULL UNIQUE DEFAULT uuidv7(),
 asset_id UUID NOT NULL UNIQUE DEFAULT uuidv7(),
 description TEXT,
 creator UUID NOT NULL,

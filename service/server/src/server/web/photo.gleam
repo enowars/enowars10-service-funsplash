@@ -1,6 +1,5 @@
 import formal/form
 import gleam/bool
-import gleam/bytes_tree
 import gleam/http
 import gleam/json
 import gleam/list
@@ -9,7 +8,6 @@ import gleam/result
 import server/models/photo.{type Photo}
 import server/models/user
 import server/photos
-import server/premium
 import server/state.{type State}
 import server/users
 import server/web
@@ -102,10 +100,12 @@ pub fn get_data_public(
 pub fn get(
   _request: wisp.Request,
   context: web.Context,
-  public_id: String,
+  public_id pid: String,
 ) -> wisp.Response {
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
+
   use photo <- utils.result_guard(
-    photos.get_by_public(context.state, public_id),
+    photos.get_by_public(context.state, pid),
     wisp.not_found(),
   )
   use user <- utils.result_guard(
@@ -179,6 +179,8 @@ pub fn like(
   public_id pid: String,
 ) -> wisp.Response {
   use user <- auth.require_login(context)
+
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
   use p <- result_guard(
     photos.get_by_public(context.state, pid),
     wisp.not_found(),
@@ -207,6 +209,7 @@ pub fn update(
 ) -> wisp.Response {
   use user <- auth.require_login(context)
 
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
   use p <- result_guard(
     photos.get_by_public(context.state, pid),
     wisp.not_found(),
@@ -238,7 +241,7 @@ pub fn update(
       |> result.replace_error(wisp.internal_server_error()),
     )
 
-    Ok(wisp.redirect("/photos/" <> pid))
+    Ok(wisp.redirect("/photos/" <> pid |> uuid.to_string))
   }
 
   case result {
@@ -254,6 +257,8 @@ pub fn delete(
 ) -> wisp.Response {
   use user <- auth.require_login(context)
 
+  use pid <- utils.result_guard(uuid.from_string(pid), wisp.not_found())
+
   use p <- result_guard(
     photos.get_by_public(context.state, pid),
     wisp.not_found(),
@@ -265,5 +270,5 @@ pub fn delete(
     wisp.internal_server_error(),
   )
 
-  wisp.redirect("/users/" <> uuid.to_string(user.id))
+  wisp.redirect("/users/" <> user.id |> uuid.to_string)
 }

@@ -18,6 +18,7 @@ import server/web
 import shared/shared_privacy.{Private}
 import shared/shared_upload
 import utils
+import youid/uuid
 
 const ressource_limit = 900
 
@@ -48,6 +49,7 @@ pub fn upgrade(
   // let assert Ok(uid) = auth_cookie |> uuid.from_string
 
   io.println("Connected")
+  let assert Ok(public_id) = uuid.from_string(public_id)
   let assert Ok(photo) = photos.get_by_public(context.state, public_id)
 
   let assert Ok(user) = users.get_by_id(context.state, photo.creator)
@@ -133,9 +135,7 @@ fn handler(
           let response =
             "{\"ok\": "
             <> ok
-            <> ", \"pid\": \""
-            <> state.photo.public_id
-            <> "\", \"usage\": "
+            <> ", \"usage\": "
             <> int.to_string(new_quota)
             <> ", \"limit\": "
             <> int.to_string(state.user.storage_quota)

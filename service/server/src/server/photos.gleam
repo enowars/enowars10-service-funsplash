@@ -240,7 +240,6 @@ pub fn upload(
       p.show_on_profile,
       size,
       mimetype |> mimetype.shared_to_sql,
-      utils.generate_id(state),
     )
     |> utils.update_cache_l0(
       state.photo_cache,
@@ -307,7 +306,7 @@ pub fn upload(
 
 pub fn update(
   state: State,
-  public_id: String,
+  public_id: photo.PublicId,
   description: String,
   location: String,
   camera: String,
@@ -360,7 +359,7 @@ pub fn update(
 
 pub fn delete(
   state: State,
-  public_id: String,
+  public_id: photo.PublicId,
   user_id uid: user.Id,
 ) -> Result(Nil, Nil) {
   use photo_row <- result.try(
