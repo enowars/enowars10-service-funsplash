@@ -7,7 +7,7 @@ import gleam/uri
 import shared/shared_privacy.{type Privacy}
 import youid/uuid.{type Uuid}
 
-pub const max_allowed_size = 1_024_000
+pub const max_allowed_size = 4_024_000
 
 pub type MimeType {
   Png
