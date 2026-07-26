@@ -2,11 +2,12 @@ import bravo/uset
 import gleam/bit_array
 import gleam/bool
 import gleam/list
-import gleam/option
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import server/mimetype
+import server/models/collection.{type Collection}
 import server/models/photo.{type Photo}
-import server/models/user
+import server/models/user.{type User}
 import server/premium
 import server/sql
 import server/state.{type State}
@@ -15,11 +16,11 @@ import shared/shared_privacy.{type Privacy}
 import shared/shared_upload
 import simplifile
 import utils
-import youid/uuid.{type Uuid}
+import youid/uuid
 
 pub fn get_data(
   state: State,
-  asset_id: uuid.Uuid,
+  asset_id: photo.AssetId,
   _privacy: Privacy,
 ) -> Result(BitArray, Nil) {
   let fs_path = state.data_dir <> "/photos/" <> uuid.to_string(asset_id)
@@ -112,17 +113,29 @@ pub fn get_by_username(
 
 pub fn get_by_collection(
   state: State,
-  collection_id cid: Uuid,
+  collection: Collection,
+  user: Option(User),
 ) -> Result(List(Photo), Error) {
-  utils.get_cache_l2(
+  use photos <- result.try(utils.get_cache_l2(
     state.collection_photos_cache,
     state.photo_cache,
-    cid,
+    collection.id,
     sql.collection_photos_list(state.db, _),
     fn(p) { p.id },
     photo.from_collection_list,
     PhotoNotFound,
-  )
+  ))
+  case user {
+    Some(user) if user.id == collection.creator -> Ok(photos)
+    Some(user) ->
+      photos
+      |> list.filter(fn(p) { p.show_on_profile || p.creator == user.id })
+      |> Ok
+    None ->
+      photos
+      |> list.filter(fn(p) { p.show_on_profile })
+      |> Ok
+  }
 }
 
 pub fn get_by_asset(id: photo.AssetId, state: State) -> Result(Photo, Nil) {

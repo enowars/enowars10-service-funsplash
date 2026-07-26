@@ -31,7 +31,7 @@ pub fn photos(
     wisp.not_found(),
   )
   use photos <- result_guard(
-    photos.get_by_collection(context.state, col.id),
+    photos.get_by_collection(context.state, col, context.user),
     wisp.not_found(),
   )
 

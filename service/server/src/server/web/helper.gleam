@@ -12,11 +12,7 @@ pub fn current_user_collections(
   case context.user {
     Some(viewer) -> {
       let values: List(String) =
-        collections.get_containing_photo_from_user(
-          context.state,
-          p.id,
-          viewer.id,
-        )
+        collections.get_containing_photo_from_user(context.state, p.id, viewer)
         |> result.unwrap([])
       values
     }

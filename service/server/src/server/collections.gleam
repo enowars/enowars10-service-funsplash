@@ -1,10 +1,11 @@
 import bravo/uset
 import gleam/bool
 import gleam/list
+import gleam/option.{Some}
 import gleam/result
 import server/models/collection.{type Collection}
 import server/models/photo
-import server/models/user
+import server/models/user.{type User}
 import server/photos
 import server/sql
 import server/state.{type State}
@@ -20,13 +21,13 @@ pub type CollectionModifyError {
 pub fn get_containing_photo_from_user(
   state state: State,
   photo_id pid: photo.Id,
-  user_id uid: user.Id,
+  user user: User,
 ) -> Result(List(collection.PublicId), Nil) {
-  use collections <- result.try(get_by_user(state, uid, True))
+  use collections <- result.try(get_by_user(state, user.id, True))
 
   collections
   |> list.filter_map(fn(c) {
-    let contains_photo = case photos.get_by_collection(state, c.id) {
+    let contains_photo = case photos.get_by_collection(state, c, Some(user)) {
       Ok(photos) -> photos |> list.any(fn(p) { p.id == pid })
       Error(_) -> False
     }
