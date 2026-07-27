@@ -44,7 +44,7 @@ pub fn add_photo(
     <> "/photos/"
     <> photo_public_id
   let handler =
-    rsvp.expect_text(fn(res) {
+    rsvp.expect_ok_response(fn(res) {
       case res {
         Ok(_) -> on_response(Ok(Nil))
         Error(e) -> on_response(Error(e))
@@ -65,7 +65,7 @@ pub fn remove_photo(
     <> "/photos/"
     <> photo_public_id
   let handler =
-    rsvp.expect_text(fn(res) {
+    rsvp.expect_ok_response(fn(res) {
       case res {
         Ok(_) -> on_response(Ok(Nil))
         Error(e) -> on_response(Error(e))
@@ -81,7 +81,7 @@ pub fn delete_collection(
 ) -> Effect(message) {
   let url = api_base_url() <> "/collections/" <> id
   let handler =
-    rsvp.expect_text(fn(res) {
+    rsvp.expect_ok_response(fn(res) {
       case res {
         Ok(_) -> on_response(Ok(Nil))
         Error(e) -> on_response(Error(e))

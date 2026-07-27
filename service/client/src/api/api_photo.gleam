@@ -32,7 +32,7 @@ pub fn like(
 ) -> Effect(message) {
   let url = api_base_url() <> "/like/" <> public_id
   let handler =
-    rsvp.expect_text(fn(res) {
+    rsvp.expect_ok_response(fn(res) {
       case res {
         Ok(_) -> on_response(Ok(Nil))
         Error(e) -> on_response(Error(e))
@@ -76,7 +76,7 @@ pub fn delete_photo(
 ) -> Effect(message) {
   let url = api_base_url() <> "/photos/" <> id
   let handler =
-    rsvp.expect_text(fn(res) {
+    rsvp.expect_ok_response(fn(res) {
       case res {
         Ok(_) -> on_response(Ok(Nil))
         Error(e) -> on_response(Error(e))
