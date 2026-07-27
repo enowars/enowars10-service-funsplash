@@ -52,6 +52,7 @@ pub fn init(id: String) -> #(Model, Effect(Message)) {
 
 pub type Message {
   ApiReturnedPhoto(Result(shared_photo.Photo, rsvp.Error(String)))
+  ApiReturnedLike(Result(Nil, rsvp.Error(String)))
   UserClickedLike
   ToggleDropdown(username: String)
   ApiReturnedCollections(
@@ -172,8 +173,44 @@ pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
           creating_collection,
           ep,
         ),
-        effect.none(),
+        api_photo.like(photo.thumbnail.public_id, new_liked, ApiReturnedLike),
       )
+    }
+    ApiReturnedLike(Ok(_)), _ -> #(model, effect.none())
+    ApiReturnedLike(Error(_)), _ -> {
+      // Revert optimistic update
+      case model {
+        Loaded(
+          photo,
+          liked,
+          dropdown_open,
+          user_collections,
+          image_failed,
+          creating_collection,
+          ep,
+        ) -> {
+          let reverted_liked = !liked
+          let delta = case reverted_liked {
+            True -> 1
+            False -> -1
+          }
+          let reverted_stats =
+            shared_stats.Stats(..photo.stats, likes: photo.stats.likes + delta)
+          #(
+            Loaded(
+              shared_photo.Photo(..photo, stats: reverted_stats),
+              reverted_liked,
+              dropdown_open,
+              user_collections,
+              image_failed,
+              creating_collection,
+              ep,
+            ),
+            effect.none(),
+          )
+        }
+        _ -> #(model, effect.none())
+      }
     }
     ToggleDropdown(username),
       Loaded(photo, liked, dropdown_open, user_collections, image_failed, _, ep)
