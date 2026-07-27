@@ -22,7 +22,6 @@ import youid/uuid
 
 const ressource_limit = 900
 
-// TODO: ets cache parsed images
 pub type State {
   State(
     photo: photo.Photo,
@@ -96,7 +95,6 @@ fn close_socket(state: State) -> Nil {
     io.println("Disconnected")
   })
   let p = state.photo
-  // TODO: check if editing allowed
   {
     use data <- option.map(state.out_photo)
     process.spawn_unlinked(fn() {
