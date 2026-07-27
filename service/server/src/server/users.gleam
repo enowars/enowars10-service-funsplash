@@ -9,7 +9,6 @@ import server/state.{type State}
 import shared/shared_account
 import shared/shared_user.{type Error, NotFound}
 import utils
-import youid/uuid.{type Uuid}
 
 pub fn get_likes(state: State, user_id id: user.Id) -> List(photo.Id) {
   case uset.lookup(state.user_likes_cache, id) {

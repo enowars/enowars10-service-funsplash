@@ -10,7 +10,6 @@ import server/photos
 import server/sql
 import server/state.{type State}
 import utils
-import youid/uuid.{type Uuid}
 
 pub type CollectionModifyError {
   NotFound
@@ -42,7 +41,7 @@ pub fn get_containing_photo_from_user(
 
 pub fn get_by_user(
   state: State,
-  user_id uid: Uuid,
+  user_id uid: user.Id,
   is_owner own: Bool,
 ) -> Result(List(Collection), Nil) {
   use collections <- result.try(utils.get_cache_l2(
