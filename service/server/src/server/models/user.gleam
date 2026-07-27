@@ -11,7 +11,6 @@ pub type UserName =
 pub type Id =
   Uuid
 
-// TODO: think about including list of photo ids and photo cache
 pub type User {
   User(
     id: Uuid,

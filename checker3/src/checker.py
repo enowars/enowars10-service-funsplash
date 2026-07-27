@@ -214,9 +214,6 @@ async def upload_image(
     await db.set("photo", asdict(p2))
 
 
-# TODO: check show_on_profile
-
-
 @run_in_thread
 @checker.getnoise(0)
 async def get_image(
@@ -300,12 +297,7 @@ async def censor_get(
         get_size(msgs[i]) < get_size(msgs[i + 1]) for i in range(len(msgs) - 1)
     )
 
-    # TODO: save image and check if censoring/not censoring worked
-
     assert_equals(is_sorted, True, "something went wrong with the censoring size")
-
-
-# TODO: check login/logout
 
 
 @checker.havoc(0)

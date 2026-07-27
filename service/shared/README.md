@@ -10,7 +10,7 @@ gleam add shared@1
 import shared
 
 pub fn main() -> Nil {
-  // TODO: An example of the project in use
+  // todo: An example of the project in use
 }
 ```
 

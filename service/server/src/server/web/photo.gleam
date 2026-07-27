@@ -84,7 +84,6 @@ pub fn get_data_public(
   context: web.Context,
   asset_id: String,
 ) -> wisp.Response {
-  // TODO: move photo files into privacy dirs /public /private etc. so we dont have to call db here
   use photo <- try_get_asset(asset_id, context.state)
 
   use <- bool.guard(photo.privacy != Public, wisp.not_found())

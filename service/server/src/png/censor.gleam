@@ -15,7 +15,6 @@ pub fn censor_raw(
   mask: BitArray,
   zstream: png.ZStream,
 ) -> Result(png.Photo(BytesTree, Compressed), String) {
-  // TODO: do size check etc. instead of just crashing
   let censored =
     apply_mask(
       photo.idat,

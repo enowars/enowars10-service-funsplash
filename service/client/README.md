@@ -10,7 +10,7 @@ gleam add client@1
 import client
 
 pub fn main() -> Nil {
-  // TODO: An example of the project in use
+  // todo: An example of the project in use
 }
 ```
 
