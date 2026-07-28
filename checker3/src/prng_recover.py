@@ -51,7 +51,7 @@ async def _check_collection(conn, pid: str, victim_name: str) -> Optional[str]:
         r = await conn.get(
             f"/napi/collections/{pid}",
             cookies=None,
-            timeout=httpx.Timeout(1.0, connect=1.0),
+            timeout=httpx.Timeout(3.0, connect=1.0),
         )
         if r.status_code != 200:
             return None

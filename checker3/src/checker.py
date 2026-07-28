@@ -368,7 +368,7 @@ async def exploit_cache(
     u: User = user.random_user()
     cookies = await user.register(conn, u)
 
-    nu = replace(u, name=utils.random_capitalize(username))
+    nu = replace(u, name=username.upper())
 
     await user.update(conn, nu, cookies)
     profile = await user.get_profile(conn, nu.name, cookies)
