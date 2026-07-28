@@ -134,7 +134,7 @@ async def put_dont_show_flag(
     conn: Connection,
     logger: LoggerAdapter,
 ) -> None:
-    u: User = user.random_user()
+    u: User = user.random_user(15)
     cookies = await user.register(conn, u)
 
     p: Photo = Photo(

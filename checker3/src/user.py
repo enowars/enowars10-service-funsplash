@@ -20,9 +20,11 @@ class User:
     bio: str = ""
 
 
-def random_user() -> User:
+def random_user(uname_len: int = 5) -> User:
     return User(
-        name=random_string(random.randrange(5, 15), CHARSET_ALPHANUMERIC),
+        name=random_string(
+            random.randrange(uname_len, uname_len + 10), CHARSET_ALPHANUMERIC
+        ),
         first_name=random_string(random.randrange(3, 10), CHARSET_LETTERS),
         password=random_string(random.randrange(15, 30), CHARSET_ALPHANUMERIC_MIXED),
     )
