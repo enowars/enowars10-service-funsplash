@@ -55,9 +55,9 @@ pub fn search(state: State, username: String) -> List(shared_user.User) {
     use first <- result.try(list.first(res.rows))
     // insert_new fails if already exists so this is safe
     let _ = uset.insert_new(state.profile_cache, first.username, first.id)
-    Ok(
-      list.map(res.rows, fn(row) { row |> user.from_search |> user.to_shared }),
-    )
+
+    list.map(res.rows, fn(row) { row |> user.from_search |> user.to_shared })
+    |> Ok
   }
   |> result.unwrap([])
 }
