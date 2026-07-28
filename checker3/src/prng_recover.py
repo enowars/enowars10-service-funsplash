@@ -73,9 +73,9 @@ async def find_victim_collection(
         return None
 
     # Reverse linear scan (newest first) — flag is near the end
-    for i in range(len(predictions) - batch_size, -1, -batch_size):
-        start = max(0, i)
-        batch = predictions[start : i + batch_size]
+    for i in range(len(predictions), 0, -batch_size):
+        start = max(0, i - batch_size)
+        batch = predictions[start:i]
         tasks = [_check_collection(conn, pid, victim_name) for pid in batch]
         results = await asyncio.gather(*tasks)
         for desc in results:
