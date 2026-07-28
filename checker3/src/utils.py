@@ -16,9 +16,14 @@ CHARSET_UPPER_ALPHANUMERIC = string.ascii_uppercase + string.digits
 
 
 def random_capitalize(text):
-    return "".join(
+    result = "".join(
         char.upper() if random.choice([True, False]) else char.lower() for char in text
     )
+    while result == text:
+        result = "".join(
+            char.upper() if random.choice([True, False]) else char.lower() for char in text
+        )
+    return result
 
 
 def random_string(length: int, charset: str = CHARSET_ALPHANUMERIC) -> str:
