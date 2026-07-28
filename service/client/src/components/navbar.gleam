@@ -65,7 +65,7 @@ pub fn navbar(auth: Auth) -> Element(Message) {
         ),
         a(
           [
-            attribute.href("/users"),
+            attribute.href("/s/users/"),
             class("text-sm font-medium text-gray-600 hover:text-black"),
           ],
           [

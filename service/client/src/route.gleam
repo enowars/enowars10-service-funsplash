@@ -55,7 +55,7 @@ pub fn href(route: Route) -> attribute.Attribute(message) {
     Login(_) -> "/login/"
     Join(_) -> "/join/"
     Upload(_) -> "/upload/"
-    UsersSearch(_) -> "/users/"
+    UsersSearch(username) -> "/s/users/" <> uri.percent_encode(username)
     Account(_) -> "/account"
     AccountPassword(_) -> "/account/password"
     NotFound(uri: _) -> "/404?"
