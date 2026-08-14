@@ -12,6 +12,8 @@ As with all Enowars services, the checker and service are run as separate instan
 
 On the initial build TailwindCSS and  bun are downloaded which might prolong the build time depending on your internet connection.
 
+The required docker images are =postgres:18-alpine=, =gleam:1.17.0-erlang-alpine=
+
 #+begin_src bash
   git clone https://github.com/enowars/enowars10-service-funsplash.git
   cd enowars10-service-funsplash/service
@@ -20,14 +22,13 @@ On the initial build TailwindCSS and  bun are downloaded which might prolong the
 
 ** Checker
 
-The only unusual thing about the checker is that it runs Python version 3.14 with uv rather then the template provided setup.
+The only unusual thing about the checker is that it runs Python version 3.14 with uv rather then the template provided setup. Because of this, Mongo v7 cannot be used and v8 must be used instead.
 
 #+begin_src bash
   git clone https://github.com/enowars/enowars10-service-funsplash.git
   cd enowars10-service-funsplash/checker
   docker compose up --build -d
 #+end_src
-
 
 * Architecture
 
@@ -36,18 +37,68 @@ The only unusual thing about the checker is that it runs Python version 3.14 wit
 The server runs a HTTP-webserver on the port =1337= and the checker uses port =11337=.
 
 ** Browsing the site
-:PROPERTIES:
-:ID:       631aa232-8453-43a9-9469-07ba3cc502a5
-:END:
 
 An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
 
 #+caption: fuzzy searching a user named =feli= returns the existing user =felix=
-[[attachment:Screenshot_20260814_231228.png]]
+[[file:images/Usage/2026-08-14_23-20-41_screenshot.png]]
 
-[[attachment:Screenshot_20260814_231308.png]]
+** Creating an Account
+
+To create an account click =Join= and fill out the registration form. And click =Login= to login with their username and password.
+
+
+#+DOWNLOADED: file:///tmp/Spectacle.WXEJzd/Screenshot_20260814_232735.png @ 2026-08-14 23:28:07
+[[file:images/Usage/2026-08-14_23-28-07_Screenshot_20260814_232735.png]]
+
+
+
+#+DOWNLOADED: file:///tmp/Spectacle.WyFfzC/Screenshot_20260814_232914.png @ 2026-08-14 23:29:22
+[[file:images/Usage/2026-08-14_23-29-22_Screenshot_20260814_232914.png]]
+
+The only mandatory fields are =Username=, =First Name=, and =Password= (the same as unpslash.com). The other fields are inconsequential.
+
+Upon creating an account, users are automatically logged in.
+
+** Uploading a photo
+
+When logged in, users can upload photos with some Metadata.
+
+#+caption: Privacy level dropdown. Private, Premium, and Public.
+[[file:images/Usage/2026-08-14_23-59-20_Screenshot_20260814_235907.png]]
+
+[[file:images/Usage/2026-08-14_23-59-34_Screenshot_20260814_235925.png]]
+
+Photos they have three levels of privacy, =private=, where the photo will be only displayed to the owner, =public=, for photos visible by everyone, and =premium=, visible only by the owner themselves and premium users (which don't exist). This privacy only affects the actual photo, the metadata, such as description will is not affected.
+
+If the option =show on profile= is set, photos (although possibly censored) will appear on the users profile, with their metadata visible to all. If not photos will be only visible on the profile page to the owner but remain visible (however censored according to their privacy level) by their public link.
+
+** Photo privacy
+
+#+caption: The view of an authenticated user on their own profile.
+[[file:images/Usage/2026-08-15_00-35-14_Screenshot_20260815_003459.png]]
+
+#+caption: The view of an un-authenticated user on very same the profile.
+[[file:images/Usage/2026-08-14_23-20-00_screenshot.png]]
+
+The premium photo will get censored on the server with a large black cross in the middle after the upload in a separate directory next to the uncensored photos.
+
+The premium censor mask only works on PNGs. For other images a broken icon will appear instead.
 
 ** Censoring
+:PROPERTIES:
+:ID:       5697aa2e-50ea-4c2f-98f0-c52ebb63d666
+:END:
 
+The same functionality from the premium censor is also available to users to censor images by drawing on them.
 Any user can join the collaborative photo censoring.
-Censoring is being done live on the server and for which the censor-mask and the reply whether the update went ok. This decision is dependent on whether the new updated photo would exceed the storage quota of the photos owner.
+
+Censoring is being done live on the server and for which the communication containing of, the censor-mask and the reply (whether the update went ok), is done over a WebSocket. The decision about a censoring being allowed is dependent on whether the new updated photo would exceed the storage quota of the photos owner.
+Once the WebSocket is closed, the image is saved (if the storage quota is not violated) with the same settings/ metadata as the original, on the original creators profile.
+
+#+DOWNLOADED: file:///home/felix/uni/ctf/Screencasts%20copy/Screencast_20260726_180955.webm @ 2026-08-15 01:36:04
+[[file:images/Usage/2026-08-15_01-36-04_Screencast_20260726_180955.webm]]
+
+Again, only PNGs are supported!
+
+** Cleanup
