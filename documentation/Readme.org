@@ -1,0 +1,53 @@
+#+title: funsplash documentation
+#+author: Felix Dumbeck
+
+=Funsplash= is a clone of the image sharing platform [[https://unsplash.com/][Unsplash]] and meant to replicate the overall feel as well as its core features.
+The entire application is written in the [[https://gleam.run/][Gleam programming language]] with some =ffi= to JavaScript and Erlang. All data storage happens in a Postgres database and photo files are stored on the file-system.
+
+* Installation
+
+As with all Enowars services, the checker and service are run as separate instances.
+
+** Service
+
+On the initial build TailwindCSS and  bun are downloaded which might prolong the build time depending on your internet connection.
+
+#+begin_src bash
+  git clone https://github.com/enowars/enowars10-service-funsplash.git
+  cd enowars10-service-funsplash/service
+  docker compose up --build -d
+#+end_src
+
+** Checker
+
+The only unusual thing about the checker is that it runs Python version 3.14 with uv rather then the template provided setup.
+
+#+begin_src bash
+  git clone https://github.com/enowars/enowars10-service-funsplash.git
+  cd enowars10-service-funsplash/checker
+  docker compose up --build -d
+#+end_src
+
+
+* Architecture
+
+* Usage
+
+The server runs a HTTP-webserver on the port =1337= and the checker uses port =11337=.
+
+** Browsing the site
+:PROPERTIES:
+:ID:       631aa232-8453-43a9-9469-07ba3cc502a5
+:END:
+
+An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
+
+#+caption: fuzzy searching a user named =feli= returns the existing user =felix=
+[[attachment:Screenshot_20260814_231228.png]]
+
+[[attachment:Screenshot_20260814_231308.png]]
+
+** Censoring
+
+Any user can join the collaborative photo censoring.
+Censoring is being done live on the server and for which the censor-mask and the reply whether the update went ok. This decision is dependent on whether the new updated photo would exceed the storage quota of the photos owner.
