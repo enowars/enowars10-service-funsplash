@@ -156,7 +156,7 @@ Users' likes are recorded as well.
 
 ** Cleanup
 
-Every two minutes, a Bash script runs and deletes all database entries and image files older than eleven minutes. This is done for storage reasons.
+Every 100 seconds, a POSIX shell script (=cleanup.sh=) runs and deletes database entries and image files older than eleven minutes. This is done for storage reasons.
 
 Every minute, all entries from the server's ETS (cache) older than twelve minutes are evicted.
 
@@ -222,11 +222,12 @@ Summary of relevant files within:
 ├── photos              - Photo files used by checker to fill users, add noise, etc.
 │   ├── ...
 ├── src
-│   ├── connection.py    - utility funtions
-│   ├── crack.erl        - erlang code for vuln 2
-│   ├── exploit_prng.py  - python code for vuln 2
-│   ├── missing_tests.py - more tests
-│   ├── prng_recover.py  - python code for vuln 2
+│   ├── checker.py       - Main checker code
+│   ├── collection.py    - Utility functions
+│   ├── connection.py    - Utility functions
+│   ├── crack.erl        - Erlang code for PRNG exploit (vuln 3)
+│   ├── missing_tests.py - Additional checker tests
+│   └── prng_recover.py  - Python code for PRNG exploit (vuln 3)
 #+end_example
 
 * Endpoints
@@ -255,27 +256,27 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 
 ** Photos & likes
 
-| Method   | Endpoint                  | Description                                               |
-|----------+---------------------------+-----------------------------------------------------------|
-| =POST=   | =/napi/upload=            | Upload a new photo                                        |
-| =GET=    | =/napi/photos/:public_id= | View photo metadata                                       |
-| =POST=   | =/napi/photos/:public_id= | Update photo details                                      |
-| =DELETE= | =/napi/photos/:public_id= | Delete a photo                                            |
-| =POST=   | =/napi/like/:public_id=   | Like a photo                                              |
-| =DELETE= | =/napi/like/:public_id=   | Remove a like from a photo                                |
-| =WS=     | =/napi/censor/:photo_id=  | WebSocket endpoint to censor a photo using provided masks |
+| Method         | Endpoint                  | Description                                               |
+|----------------+---------------------------+-----------------------------------------------------------|
+| =POST=         | =/napi/upload=            | Upload a new photo                                        |
+| =GET=          | =/napi/photos/:public_id= | View photo metadata                                       |
+| =POST= / =PUT= | =/napi/photos/:public_id= | Update photo details                                      |
+| =DELETE=       | =/napi/photos/:public_id= | Delete a photo                                            |
+| =POST=         | =/napi/like/:public_id=   | Like a photo                                              |
+| =DELETE=       | =/napi/like/:public_id=   | Remove a like from a photo                                |
+| =WS=           | =/napi/censor/:photo_id=  | WebSocket endpoint to censor a photo using provided masks |
 
 ** Collections
 
-| Method   | Endpoint                                 | Description                      |
-|----------+------------------------------------------+----------------------------------|
-| =POST=   | =/napi/collections=                      | Create a new collection          |
-| =GET=    | =/napi/collections/:id=                  | View a collection                |
-| =POST=   | =/napi/collections/:id=                  | Update collection details        |
-| =DELETE= | =/napi/collections/:id=                  | Delete a collection              |
-| =GET=    | =/napi/collections/:id/photos=           | Get photos inside a collection   |
-| =POST=   | =/napi/collections/:id/photos/:photo_id= | Add a photo to a collection      |
-| =DELETE= | =/napi/collections/:id/photos/:photo_id= | Remove a photo from a collection |
+| Method         | Endpoint                                 | Description                      |
+|----------------+------------------------------------------+----------------------------------|
+| =POST=         | =/napi/collections=                      | Create a new collection          |
+| =GET=          | =/napi/collections/:id=                  | View a collection                |
+| =POST= / =PUT= | =/napi/collections/:id=                  | Update collection details        |
+| =DELETE=       | =/napi/collections/:id=                  | Delete a collection              |
+| =GET=          | =/napi/collections/:id/photos=           | Get photos inside a collection   |
+| =POST=         | =/napi/collections/:id/photos/:photo_id= | Add a photo to a collection      |
+| =DELETE=       | =/napi/collections/:id/photos/:photo_id= | Remove a photo from a collection |
 
 ** Images
 
@@ -331,15 +332,14 @@ As a baseline size the attacker should first send an entirely black mask.
 
 *** Fix
 
-By adding random noise to the size, the attacker no longer has a binary base for deciding whether the pixel is black or white.
+By adding random noise to the size calculation, the attacker no longer has a binary base for deciding whether the pixel is black or white.
 
 #+caption: Fixed =server/src/server/censor.gleam=
 #+begin_src diff
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
-  +    let #(rand, _) = random.step(random.int(0,10), random.new_seed(123))
   -    let new_quota = state.user.storage_quota_used + png.size(censored_png)
-  +    let new_quota = state.user.storage_quota_used + png.size(censored_png) + rand
+  +    let new_quota = state.user.storage_quota_used + png.size(censored_png) + int.random(10)
       let #(ok, state) = case new_quota < state.user.storage_quota {
         True -> #("true", State(..state, out_photo: Some(censored_png)))
         False -> #("false", state)
