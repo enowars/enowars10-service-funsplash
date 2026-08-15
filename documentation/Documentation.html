@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2026-08-15 Sat 21:36 -->
+<!-- 2026-08-15 Sat 23:29 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>funsplash documentation</title>
@@ -201,62 +201,62 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents" role="doc-toc">
 <ul>
-<li><a href="#orgde4dcad">1. Installation</a>
+<li><a href="#org8cff112">1. Installation</a>
 <ul>
-<li><a href="#org860d119">1.1. Service</a></li>
-<li><a href="#orge092322">1.2. Checker</a></li>
+<li><a href="#orgbec9876">1.1. Service</a></li>
+<li><a href="#orgeefbed4">1.2. Checker</a></li>
 </ul>
 </li>
-<li><a href="#org6f392c2">2. Usage</a>
+<li><a href="#org6ce7e42">2. Usage</a>
 <ul>
-<li><a href="#orgcdff631">2.1. Browsing the site</a></li>
-<li><a href="#orgc17ebbb">2.2. Creating an Account</a></li>
-<li><a href="#org54510aa">2.3. Uploading a photo</a></li>
-<li><a href="#org8f7c980">2.4. Photo privacy</a></li>
-<li><a href="#orgdf46e7e">2.5. Censoring</a></li>
-<li><a href="#org153fc06">2.6. Editing profiles and photos</a></li>
-<li><a href="#orgd9831db">2.7. Collections and likes</a></li>
-<li><a href="#org046c06b">2.8. Cleanup</a></li>
+<li><a href="#org414b2b6">2.1. Browsing the site</a></li>
+<li><a href="#org2285268">2.2. Creating an Account</a></li>
+<li><a href="#org820373c">2.3. Uploading a photo</a></li>
+<li><a href="#org817880d">2.4. Photo privacy</a></li>
+<li><a href="#orgd1f4092">2.5. Censoring</a></li>
+<li><a href="#org6c2e095">2.6. Editing profiles and photos</a></li>
+<li><a href="#orgd370e31">2.7. Collections and likes</a></li>
+<li><a href="#org27d47b5">2.8. Cleanup</a></li>
 </ul>
 </li>
-<li><a href="#org86086d8">3. File Structure</a>
+<li><a href="#orgb8f4e34">3. File Structure</a>
 <ul>
-<li><a href="#orge09a5a0">3.1. Service</a></li>
-<li><a href="#orgd42d459">3.2. Checker</a></li>
+<li><a href="#orga0bfb03">3.1. Service</a></li>
+<li><a href="#org1031dbe">3.2. Checker</a></li>
 </ul>
 </li>
-<li><a href="#org9e2637b">4. Endpoints</a>
+<li><a href="#org6465106">4. Endpoints</a>
 <ul>
-<li><a href="#orgd457093">4.1. Search &amp; info</a></li>
-<li><a href="#org9e3e7b7">4.2. Account &amp; auth</a></li>
-<li><a href="#org37258ae">4.3. Photos &amp; likes</a></li>
-<li><a href="#org583ea14">4.4. Collections</a></li>
-<li><a href="#orgf3bd927">4.5. Images</a></li>
+<li><a href="#orgd84c988">4.1. Search &amp; info</a></li>
+<li><a href="#org84c5f3e">4.2. Account &amp; auth</a></li>
+<li><a href="#org59515ca">4.3. Photos &amp; likes</a></li>
+<li><a href="#org4ca8cbc">4.4. Collections</a></li>
+<li><a href="#org0cee999">4.5. Images</a></li>
 </ul>
 </li>
-<li><a href="#orgbfeac19">5. Vulnerabilities and Exploits</a>
+<li><a href="#orge581692">5. Vulnerabilities and Exploits</a>
 <ul>
-<li><a href="#org0db1c01">5.1. Side-channel in censor endpoint</a>
+<li><a href="#orgcada1c6">5.1. Side-channel in censor endpoint</a>
 <ul>
-<li><a href="#orgbf29897">5.1.1. Flagstore</a></li>
-<li><a href="#orgdb12492">5.1.2. Vulnerability</a></li>
-<li><a href="#orgcae08c3">5.1.3. Exploit</a></li>
-<li><a href="#org361e87e">5.1.4. Fix</a></li>
+<li><a href="#orgddde682">5.1.1. Flagstore</a></li>
+<li><a href="#orgb7b87e2">5.1.2. Vulnerability</a></li>
+<li><a href="#org0ad2ed8">5.1.3. Exploit</a></li>
+<li><a href="#orgc353734">5.1.4. Fix</a></li>
 </ul>
 </li>
-<li><a href="#orgf72a1cc">5.2. Cache Poison</a>
+<li><a href="#org4a94515">5.2. Cache Poison</a>
 <ul>
-<li><a href="#orgff023ce">5.2.1. Flagstore</a></li>
-<li><a href="#orgddc36f7">5.2.2. Vulnerability / Exploit</a></li>
-<li><a href="#orgcc5289c">5.2.3. Fix</a></li>
+<li><a href="#orgdec8adf">5.2.1. Flagstore</a></li>
+<li><a href="#orgc7d419d">5.2.2. Vulnerability / Exploit</a></li>
+<li><a href="#org3e6e573">5.2.3. Fix</a></li>
 </ul>
 </li>
-<li><a href="#org30b484c">5.3. Not-So-Random Random Numbers</a>
+<li><a href="#org74b8452">5.3. Not-So-Random Random Numbers</a>
 <ul>
-<li><a href="#orge0e88fe">5.3.1. Flagstore</a></li>
-<li><a href="#org4d7fea0">5.3.2. Vulnerability</a></li>
-<li><a href="#org0289a31">5.3.3. Exploit</a></li>
-<li><a href="#org5cd9a1e">5.3.4. Fix</a></li>
+<li><a href="#org040d07b">5.3.1. Flagstore</a></li>
+<li><a href="#org20293e8">5.3.2. Vulnerability</a></li>
+<li><a href="#orgc2a7eb2">5.3.3. Exploit</a></li>
+<li><a href="#orgb82bb3a">5.3.4. Fix</a></li>
 </ul>
 </li>
 </ul>
@@ -270,26 +270,26 @@ The entire application is written in the <a href="https://gleam.run/">Gleam prog
 </p>
 
 <ul class="org-ul">
-<li>Frontend: Gleam with the <code>lustre</code> framework, compiled to JavaScript</li>
-<li>Backend: Gleam with the <code>wisp</code> web framework</li>
+<li>Frontend: Gleam with the <a href="https://github.com/lustre-labs/lustre">lustre</a> framework, compiled to JavaScript</li>
+<li>Backend: Gleam with the <a href="https://gleam-wisp.github.io/wisp/">wisp</a> web framework</li>
 <li>Censoring: Using pure Erlang functions called from Gleam.</li>
-<li>Storage: PostgreSQL database with bindings generated by <code>squirrel</code>. Filesystem for storing photo data using <code>simplefile</code>.</li>
-<li>WebSockets: Uses <code>mist</code> for the WebSocket censor endpoint.</li>
+<li>Storage: PostgreSQL database with bindings generated by <a href="https://github.com/giacomocavalieri/squirrel">squirrel</a>. Filesystem for storing photo data using <a href="https://github.com/bcpeinhardt/simplifile">simplifile</a>.</li>
+<li>WebSockets: Uses <a href="https://github.com/rawhat/mist">mist</a> for the WebSocket censor endpoint.</li>
 </ul>
 
 
 <p>
 All code is available to players during the CTF.
 </p>
-<div id="outline-container-orgde4dcad" class="outline-2">
-<h2 id="orgde4dcad"><span class="section-number-2">1.</span> Installation</h2>
+<div id="outline-container-org8cff112" class="outline-2">
+<h2 id="org8cff112"><span class="section-number-2">1.</span> Installation</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 As with all Enowars services, the checker and service are run as separate instances.
 </p>
 </div>
-<div id="outline-container-org860d119" class="outline-3">
-<h3 id="org860d119"><span class="section-number-3">1.1.</span> Service</h3>
+<div id="outline-container-orgbec9876" class="outline-3">
+<h3 id="orgbec9876"><span class="section-number-3">1.1.</span> Service</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 On the initial build, <code>TailwindCSS</code> and <code>bun</code> are downloaded, which might prolong the build time depending on your internet connection.
@@ -300,22 +300,22 @@ The required Docker images are <code>postgres:18-alpine</code> and <code>gleam:1
 </p>
 
 <div class="org-src-container">
-<pre class="src src-bash">git clone https://github.com/enowars/enowars10-service-funsplash.git
+<label class="org-src-name"><span class="listing-number">Listing 1: </span>Running the service via Docker Compose</label><pre class="src src-bash">git clone https://github.com/enowars/enowars10-service-funsplash.git
 <span style="color: #8f0075;">cd</span> enowars10-service-funsplash/service
 docker compose up --build -d
 </pre>
 </div>
 </div>
 </div>
-<div id="outline-container-orge092322" class="outline-3">
-<h3 id="orge092322"><span class="section-number-3">1.2.</span> Checker</h3>
+<div id="outline-container-orgeefbed4" class="outline-3">
+<h3 id="orgeefbed4"><span class="section-number-3">1.2.</span> Checker</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
 The only unusual thing about the checker is that it runs Python version 3.14 with uv rather than the template-provided setup. Because of this, Mongo v7 cannot be used and v8 must be used instead.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-bash">git clone https://github.com/enowars/enowars10-service-funsplash.git
+<label class="org-src-name"><span class="listing-number">Listing 2: </span>Running the checker via Docker Compose</label><pre class="src src-bash">git clone https://github.com/enowars/enowars10-service-funsplash.git
 <span style="color: #8f0075;">cd</span> enowars10-service-funsplash/checker
 docker compose up --build -d
 </pre>
@@ -323,8 +323,8 @@ docker compose up --build -d
 </div>
 </div>
 </div>
-<div id="outline-container-org6f392c2" class="outline-2">
-<h2 id="org6f392c2"><span class="section-number-2">2.</span> Usage</h2>
+<div id="outline-container-org6ce7e42" class="outline-2">
+<h2 id="org6ce7e42"><span class="section-number-2">2.</span> Usage</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 The server runs an HTTP web server on port <code>1337</code> and the checker uses port <code>11337</code>.
@@ -334,23 +334,23 @@ The server runs an HTTP web server on port <code>1337</code> and the checker use
 It uses a traditional REST API. All API HTTP calls go to <code>/napi...</code>.
 </p>
 </div>
-<div id="outline-container-orgcdff631" class="outline-3">
-<h3 id="orgcdff631"><span class="section-number-3">2.1.</span> Browsing the site</h3>
+<div id="outline-container-org414b2b6" class="outline-3">
+<h3 id="org414b2b6"><span class="section-number-3">2.1.</span> Browsing the site</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
 </p>
 
 
-<div id="org6451fb4" class="figure">
+<div id="org3173dcc" class="figure">
 <p><img src="images/Usage/2026-08-15_16-35-20_Screenshot_20260815_163501.png" alt="2026-08-15_16-35-20_Screenshot_20260815_163501.png" />
 </p>
 <p><span class="figure-number">Figure 1: </span>Fuzzy searching a user named <code>feli</code> returns the existing user <code>felix</code></p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgc17ebbb" class="outline-3">
-<h3 id="orgc17ebbb"><span class="section-number-3">2.2.</span> Creating an Account</h3>
+<div id="outline-container-org2285268" class="outline-3">
+<h3 id="org2285268"><span class="section-number-3">2.2.</span> Creating an Account</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 To create an account, click <code>Join</code> and fill out the registration form. Click <code>Login</code> to log in with a username and password.
@@ -358,14 +358,14 @@ To create an account, click <code>Join</code> and fill out the registration form
 
 
 
-<div id="org56c4842" class="figure">
+<div id="org6375c6c" class="figure">
 <p><img src="images/Usage/2026-08-14_23-28-07_Screenshot_20260814_232735.png" alt="2026-08-14_23-28-07_Screenshot_20260814_232735.png" />
 </p>
 <p><span class="figure-number">Figure 2: </span>Account creation view</p>
 </div>
 
 
-<div id="org31b8202" class="figure">
+<div id="orge4ebd94" class="figure">
 <p><img src="images/Usage/2026-08-14_23-29-22_Screenshot_20260814_232914.png" alt="2026-08-14_23-29-22_Screenshot_20260814_232914.png" />
 </p>
 </div>
@@ -379,29 +379,29 @@ Upon creating an account, users are automatically logged in.
 </p>
 </div>
 </div>
-<div id="outline-container-org54510aa" class="outline-3">
-<h3 id="org54510aa"><span class="section-number-3">2.3.</span> Uploading a photo</h3>
+<div id="outline-container-org820373c" class="outline-3">
+<h3 id="org820373c"><span class="section-number-3">2.3.</span> Uploading a photo</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 When logged in, users can upload photos with metadata.
 </p>
 
 
-<div id="orgab3b108" class="figure">
+<div id="org90cdd95" class="figure">
 <p><img src="images/Usage/2026-08-14_23-59-20_Screenshot_20260814_235907.png" alt="2026-08-14_23-59-20_Screenshot_20260814_235907.png" />
 </p>
 <p><span class="figure-number">Figure 3: </span>Privacy level dropdown. <code>Private</code>, <code>Premium</code>, and <code>Public</code>.</p>
 </div>
 
 
-<div id="org1372f5a" class="figure">
+<div id="org5185566" class="figure">
 <p><img src="images/Usage/2026-08-14_23-59-34_Screenshot_20260814_235925.png" alt="2026-08-14_23-59-34_Screenshot_20260814_235925.png" />
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org8f7c980" class="outline-3">
-<h3 id="org8f7c980"><span class="section-number-3">2.4.</span> Photo privacy</h3>
+<div id="outline-container-org817880d" class="outline-3">
+<h3 id="org817880d"><span class="section-number-3">2.4.</span> Photo privacy</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Photos have three levels of privacy:
@@ -417,30 +417,30 @@ If the option <code>show on profile</code> is set, photos (although possibly cen
 </p>
 
 
-<div id="orgcbadd21" class="figure">
+<div id="org7c899e3" class="figure">
 <p><img src="images/Usage/2026-08-15_00-35-14_Screenshot_20260815_003459.png" alt="2026-08-15_00-35-14_Screenshot_20260815_003459.png" />
 </p>
 <p><span class="figure-number">Figure 4: </span>The view of an authenticated user on their own profile.</p>
 </div>
 
 
-<div id="orgcbd64f7" class="figure">
+<div id="org2e12744" class="figure">
 <p><img src="images/Usage/2026-08-14_23-20-00_screenshot.png" alt="2026-08-14_23-20-00_screenshot.png" />
 </p>
 <p><span class="figure-number">Figure 5: </span>The view of an unauthenticated user on the very same profile.</p>
 </div>
 
 <p>
-The premium photo will get censored on the server with a large black cross in the middle after the upload in a separate directory next to the uncensored photos.
+When a premium photo is uploaded, a censored version (featuring a large black cross) is generated. This censored version is saved in a separate directory alongside the original uncensored photos.
 </p>
 
 <p>
-The premium censor mask only works on PNGs. For other images a broken icon will appear instead.
+The premium censor mask only works on PNGs. For other images, a broken icon will appear instead.
 </p>
 </div>
 </div>
-<div id="outline-container-orgdf46e7e" class="outline-3">
-<h3 id="orgdf46e7e"><span class="section-number-3">2.5.</span> Censoring</h3>
+<div id="outline-container-orgd1f4092" class="outline-3">
+<h3 id="orgd1f4092"><span class="section-number-3">2.5.</span> Censoring</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 The same functionality used for the premium censor is also available to users to censor images by drawing on them.
@@ -453,7 +453,7 @@ Once the WebSocket is closed, the image is saved (if the storage quota is not vi
 </p>
 
 
-<div id="org33877e1" class="figure">
+<div id="org5e6b558" class="figure">
 <p><img src="images/Usage/2026-08-15_01-41-56_Screenshot_20260815_014119.png" alt="2026-08-15_01-41-56_Screenshot_20260815_014119.png" />
 </p>
 <p><span class="figure-number">Figure 6: </span>Screenshot showing the censoring of a photo over a WebSocket.</p>
@@ -465,15 +465,15 @@ Again, only PNGs are supported!
 </p>
 </div>
 </div>
-<div id="outline-container-org153fc06" class="outline-3">
-<h3 id="org153fc06"><span class="section-number-3">2.6.</span> Editing profiles and photos</h3>
+<div id="outline-container-org6c2e095" class="outline-3">
+<h3 id="org6c2e095"><span class="section-number-3">2.6.</span> Editing profiles and photos</h3>
 <div class="outline-text-3" id="text-2-6">
 <p>
 Users can also edit their profile information and photo metadata:
 </p>
 
 
-<div id="org2c9556f" class="figure">
+<div id="orgeaab201" class="figure">
 <p><img src="images/Usage/2026-08-15_01-44-16_Screenshot_20260815_014403.png" alt="2026-08-15_01-44-16_Screenshot_20260815_014403.png" />
 </p>
 </div>
@@ -481,21 +481,21 @@ Users can also edit their profile information and photo metadata:
 
 
 
-<div id="org105c679" class="figure">
+<div id="orgc6de530" class="figure">
 <p><img src="images/Usage/2026-08-15_01-45-18_Screenshot_20260815_014510.png" alt="2026-08-15_01-45-18_Screenshot_20260815_014510.png" />
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgd9831db" class="outline-3">
-<h3 id="orgd9831db"><span class="section-number-3">2.7.</span> Collections and likes</h3>
+<div id="outline-container-orgd370e31" class="outline-3">
+<h3 id="orgd370e31"><span class="section-number-3">2.7.</span> Collections and likes</h3>
 <div class="outline-text-3" id="text-2-7">
 <p>
-Photos can be aggregated in multiple collections.
+Photos can be aggregated into multiple collections.
 </p>
 
 
-<div id="orge7e204e" class="figure">
+<div id="org2c54d38" class="figure">
 <p><img src="images/Usage/2026-08-15_01-50-13_Screenshot_20260815_015002.png" alt="2026-08-15_01-50-13_Screenshot_20260815_015002.png" />
 </p>
 </div>
@@ -505,7 +505,7 @@ Collections can also be 'private'. This is the equivalent of the <code>show on p
 </p>
 
 
-<div id="orgebc0c88" class="figure">
+<div id="org13b2aa0" class="figure">
 <p><img src="images/Usage/2026-08-15_01-50-35_Screenshot_20260815_015030.png" alt="2026-08-15_01-50-35_Screenshot_20260815_015030.png" />
 </p>
 </div>
@@ -515,7 +515,7 @@ To show a user's collections, click <code>Collections</code> on the user's profi
 </p>
 
 
-<div id="org01204da" class="figure">
+<div id="orgd039db9" class="figure">
 <p><img src="images/Usage/2026-08-15_01-55-24_Screenshot_20260815_015433-1.png" alt="2026-08-15_01-55-24_Screenshot_20260815_015433-1.png" />
 </p>
 </div>
@@ -525,14 +525,14 @@ Users' likes are recorded as well.
 </p>
 
 
-<div id="org1a5e03c" class="figure">
+<div id="org71b804d" class="figure">
 <p><img src="images/Usage/2026-08-15_01-58-42_Screenshot_20260815_015808-1.png" alt="2026-08-15_01-58-42_Screenshot_20260815_015808-1.png" />
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org046c06b" class="outline-3">
-<h3 id="org046c06b"><span class="section-number-3">2.8.</span> Cleanup</h3>
+<div id="outline-container-org27d47b5" class="outline-3">
+<h3 id="org27d47b5"><span class="section-number-3">2.8.</span> Cleanup</h3>
 <div class="outline-text-3" id="text-2-8">
 <p>
 Every 100 seconds, a POSIX shell script (<code>cleanup.sh</code>) runs and deletes database entries and image files older than eleven minutes. This is done for storage reasons.
@@ -544,17 +544,17 @@ Every minute, all entries from the server's ETS (cache) older than twelve minute
 </div>
 </div>
 </div>
-<div id="outline-container-org86086d8" class="outline-2">
-<h2 id="org86086d8"><span class="section-number-2">3.</span> File Structure</h2>
+<div id="outline-container-orgb8f4e34" class="outline-2">
+<h2 id="orgb8f4e34"><span class="section-number-2">3.</span> File Structure</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 Summary of relevant files within:
 </p>
 </div>
-<div id="outline-container-orge09a5a0" class="outline-3">
-<h3 id="orge09a5a0"><span class="section-number-3">3.1.</span> Service</h3>
+<div id="outline-container-orga0bfb03" class="outline-3">
+<h3 id="orga0bfb03"><span class="section-number-3">3.1.</span> Service</h3>
 <div class="outline-text-3" id="text-3-1">
-<pre class="example" id="orgc2d5ded">
+<pre class="example" id="org227cbff">
 .
 ├── .env           - environment variables used by Docker deployment
 ├── cleanup.sh     - cleanup script for database and filesystem
@@ -604,10 +604,10 @@ Summary of relevant files within:
 </pre>
 </div>
 </div>
-<div id="outline-container-orgd42d459" class="outline-3">
-<h3 id="orgd42d459"><span class="section-number-3">3.2.</span> Checker</h3>
+<div id="outline-container-org1031dbe" class="outline-3">
+<h3 id="org1031dbe"><span class="section-number-3">3.2.</span> Checker</h3>
 <div class="outline-text-3" id="text-3-2">
-<pre class="example" id="orga538879">
+<pre class="example" id="orgda40f89">
 .
 ├── photos              - Photo files used by checker to fill users, add noise, etc.
 │   ├── ...
@@ -622,15 +622,15 @@ Summary of relevant files within:
 </div>
 </div>
 </div>
-<div id="outline-container-org9e2637b" class="outline-2">
-<h2 id="org9e2637b"><span class="section-number-2">4.</span> Endpoints</h2>
+<div id="outline-container-org6465106" class="outline-2">
+<h2 id="org6465106"><span class="section-number-2">4.</span> Endpoints</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 Endpoints are grouped by feature. Endpoints often require a valid session cookie for authentication.
 </p>
 </div>
-<div id="outline-container-orgd457093" class="outline-3">
-<h3 id="orgd457093"><span class="section-number-3">4.1.</span> Search &amp; info</h3>
+<div id="outline-container-orgd84c988" class="outline-3">
+<h3 id="orgd84c988"><span class="section-number-3">4.1.</span> Search &amp; info</h3>
 <div class="outline-text-3" id="text-4-1">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -677,8 +677,8 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 </table>
 </div>
 </div>
-<div id="outline-container-org9e3e7b7" class="outline-3">
-<h3 id="org9e3e7b7"><span class="section-number-3">4.2.</span> Account &amp; auth</h3>
+<div id="outline-container-org84c5f3e" class="outline-3">
+<h3 id="org84c5f3e"><span class="section-number-3">4.2.</span> Account &amp; auth</h3>
 <div class="outline-text-3" id="text-4-2">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -737,8 +737,8 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 </table>
 </div>
 </div>
-<div id="outline-container-org37258ae" class="outline-3">
-<h3 id="org37258ae"><span class="section-number-3">4.3.</span> Photos &amp; likes</h3>
+<div id="outline-container-org59515ca" class="outline-3">
+<h3 id="org59515ca"><span class="section-number-3">4.3.</span> Photos &amp; likes</h3>
 <div class="outline-text-3" id="text-4-3">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -803,8 +803,8 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 </table>
 </div>
 </div>
-<div id="outline-container-org583ea14" class="outline-3">
-<h3 id="org583ea14"><span class="section-number-3">4.4.</span> Collections</h3>
+<div id="outline-container-org4ca8cbc" class="outline-3">
+<h3 id="org4ca8cbc"><span class="section-number-3">4.4.</span> Collections</h3>
 <div class="outline-text-3" id="text-4-4">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -869,8 +869,8 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 </table>
 </div>
 </div>
-<div id="outline-container-orgf3bd927" class="outline-3">
-<h3 id="orgf3bd927"><span class="section-number-3">4.5.</span> Images</h3>
+<div id="outline-container-org0cee999" class="outline-3">
+<h3 id="org0cee999"><span class="section-number-3">4.5.</span> Images</h3>
 <div class="outline-text-3" id="text-4-5">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -912,38 +912,38 @@ Endpoints are grouped by feature. Endpoints often require a valid session cookie
 </div>
 </div>
 </div>
-<div id="outline-container-orgbfeac19" class="outline-2">
-<h2 id="orgbfeac19"><span class="section-number-2">5.</span> Vulnerabilities and Exploits</h2>
+<div id="outline-container-orge581692" class="outline-2">
+<h2 id="orge581692"><span class="section-number-2">5.</span> Vulnerabilities and Exploits</h2>
 <div class="outline-text-2" id="text-5">
 </div>
-<div id="outline-container-org0db1c01" class="outline-3">
-<h3 id="org0db1c01"><span class="section-number-3">5.1.</span> Side-channel in censor endpoint</h3>
+<div id="outline-container-orgcada1c6" class="outline-3">
+<h3 id="orgcada1c6"><span class="section-number-3">5.1.</span> Side-channel in censor endpoint</h3>
 <div class="outline-text-3" id="text-5-1">
 </div>
-<div id="outline-container-orgbf29897" class="outline-4">
-<h4 id="orgbf29897"><span class="section-number-4">5.1.1.</span> Flagstore</h4>
+<div id="outline-container-orgddde682" class="outline-4">
+<h4 id="orgddde682"><span class="section-number-4">5.1.1.</span> Flagstore</h4>
 <div class="outline-text-4" id="text-5-1-1">
 <p>
 The flag is encoded as a QR code and uploaded as a premium image.
 </p>
 
 
-<div id="orgfb1e30a" class="figure">
+<div id="org5dbd5eb" class="figure">
 <p><img src="images/Vulnerabilities_and_Exploits/2026-08-15_02-11-03_screenshot.png" alt="2026-08-15_02-11-03_screenshot.png" />
 </p>
 <p><span class="figure-number">Figure 7: </span>The view a user, other than the flag planter, has of the flag:</p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgdb12492" class="outline-4">
-<h4 id="orgdb12492"><span class="section-number-4">5.1.2.</span> Vulnerability</h4>
+<div id="outline-container-orgb7b87e2" class="outline-4">
+<h4 id="orgb7b87e2"><span class="section-number-4">5.1.2.</span> Vulnerability</h4>
 <div class="outline-text-4" id="text-5-1-2">
 <p>
 In the censor WebSocket endpoint, the server checks whether the size of the newly censored image exceeds the storage quota and returns the new quota usage or limit status:
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 1: </span><code>server/src/server/censor.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">case</span> <span style="color: #005e8b;">censor</span>.censor_raw<span style="color: #000000;">(</span><span style="color: #005e8b;">state</span>.in_photo, <span style="color: #005e8b;">mask</span>, <span style="color: #005e8b;">state</span>.z_stream<span style="color: #000000;">)</span> <span style="color: #000000;">{</span>
+<label class="org-src-name"><span class="listing-number">Listing 3: </span><code>server/src/server/censor.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">case</span> <span style="color: #005e8b;">censor</span>.censor_raw<span style="color: #000000;">(</span><span style="color: #005e8b;">state</span>.in_photo, <span style="color: #005e8b;">mask</span>, <span style="color: #005e8b;">state</span>.z_stream<span style="color: #000000;">)</span> <span style="color: #000000;">{</span>
   <span style="color: #005f5f;">Ok</span><span style="color: #dd22dd;">(</span><span style="color: #005e8b;">censored_png</span><span style="color: #dd22dd;">)</span> -&gt; <span style="color: #dd22dd;">{</span>
     <span style="color: #531ab6;">let</span> <span style="color: #005e8b;">new_quota</span> = <span style="color: #005e8b;">state</span>.user.storage_quota_used + <span style="color: #005e8b;">png</span>.size<span style="color: #008899;">(</span><span style="color: #005e8b;">censored_png</span><span style="color: #008899;">)</span>
     <span style="color: #531ab6;">let</span> #<span style="color: #008899;">(</span><span style="color: #005e8b;">ok</span>, <span style="color: #005e8b;">state</span><span style="color: #008899;">)</span> = <span style="color: #531ab6;">case</span> <span style="color: #005e8b;">new_quota</span> &lt; <span style="color: #005e8b;">state</span>.user.storage_quota <span style="color: #008899;">{</span>
@@ -971,27 +971,27 @@ Since the size of the image is smallest when it is fully black, a mask that cens
 </p>
 </div>
 </div>
-<div id="outline-container-orgcae08c3" class="outline-4">
-<h4 id="orgcae08c3"><span class="section-number-4">5.1.3.</span> Exploit</h4>
+<div id="outline-container-org0ad2ed8" class="outline-4">
+<h4 id="org0ad2ed8"><span class="section-number-4">5.1.3.</span> Exploit</h4>
 <div class="outline-text-4" id="text-5-1-3">
 <p>
 An attacker can, with around 800 masks over the same WebSocket (ignoring static and irrelevant parts of the QR code such as timing, checksums, and positioning/alignment), gain knowledge about every pixel's binary value and therefore reconstruct the QR code and flag.
 </p>
 
 <p>
-As a baseline size the attacker should first send an entirely black mask.
+As a baseline size, the attacker should first send an entirely black mask.
 </p>
 </div>
 </div>
-<div id="outline-container-org361e87e" class="outline-4">
-<h4 id="org361e87e"><span class="section-number-4">5.1.4.</span> Fix</h4>
+<div id="outline-container-orgc353734" class="outline-4">
+<h4 id="orgc353734"><span class="section-number-4">5.1.4.</span> Fix</h4>
 <div class="outline-text-4" id="text-5-1-4">
 <p>
 By adding random noise to the size calculation, the attacker no longer has a binary base for deciding whether the pixel is black or white.
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 2: </span>Fixed <code>server/src/server/censor.gleam</code></label><pre class="src src-diff">case censor.censor_raw(state.in_photo, mask, state.z_stream) {
+<label class="org-src-name"><span class="listing-number">Listing 4: </span>Fixed <code>server/src/server/censor.gleam</code></label><pre class="src src-diff">case censor.censor_raw(state.in_photo, mask, state.z_stream) {
   Ok(censored_png) -&gt; {
 <span style="color: #aa2222; background-color: #f4d0cf;">-</span><span style="color: #8f1313; background-color: #f4d0cf;">    let new_quota = state.user.storage_quota_used + png.size(censored_png)
 </span><span style="color: #006700; background-color: #c3ebc1;">+</span><span style="color: #005000; background-color: #c3ebc1;">    let new_quota = state.user.storage_quota_used + png.size(censored_png) + int.random(10)
@@ -1017,37 +1017,38 @@ By adding random noise to the size calculation, the attacker no longer has a bin
 </div>
 </div>
 </div>
-<div id="outline-container-orgf72a1cc" class="outline-3">
-<h3 id="orgf72a1cc"><span class="section-number-3">5.2.</span> Cache Poison</h3>
+<div id="outline-container-org4a94515" class="outline-3">
+<h3 id="org4a94515"><span class="section-number-3">5.2.</span> Cache Poison</h3>
 <div class="outline-text-3" id="text-5-2">
 </div>
-<div id="outline-container-orgff023ce" class="outline-4">
-<h4 id="orgff023ce"><span class="section-number-4">5.2.1.</span> Flagstore</h4>
+<div id="outline-container-orgdec8adf" class="outline-4">
+<h4 id="orgdec8adf"><span class="section-number-4">5.2.1.</span> Flagstore</h4>
 <div class="outline-text-4" id="text-5-2-1">
 <p>
-The flag is again encoded as a QR code but uploaded as a public photo with the <code>dont show on profile</code> attribute. Therefore, to gain access to the flag, an attacker needs to know the UUIDv7 link, which, for photos with this attribute, is only available when a user views their own profile.
+The flag is again encoded as a QR code but uploaded as a public photo with the <code>don't show on profile</code> attribute. Therefore, to gain access to the flag, an attacker needs to know the UUIDv7 link, which, for photos with this attribute, is only available when a user views their own profile.
 </p>
 
 
-<div id="org039aacf" class="figure">
+<div id="org74b47a7" class="figure">
 <p><img src="images/Vulnerabilities_and_Exploits/2026-08-15_13-13-14_screenshot.png" alt="2026-08-15_13-13-14_screenshot.png" />
 </p>
+<p><span class="figure-number">Figure 8: </span>Viewing the hidden flag profile</p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgddc36f7" class="outline-4">
-<h4 id="orgddc36f7"><span class="section-number-4">5.2.2.</span> Vulnerability / Exploit</h4>
+<div id="outline-container-orgc7d419d" class="outline-4">
+<h4 id="orgc7d419d"><span class="section-number-4">5.2.2.</span> Vulnerability / Exploit</h4>
 <div class="outline-text-4" id="text-5-2-2">
 <p>
 This vulnerability is the result of two programming errors in different locations <sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup>:
 </p>
 </div>
 <ol class="org-ol">
-<li><a id="org275fca3"></a>Overly Eager Cache Update of Name<br />
+<li><a id="orgf248983"></a>Overly Eager Cache Update of Name<br />
 <div class="outline-text-5" id="text-5-2-2-1">
 <p>
 When a user updates their profile, they can also update their username. For the update operation, the program first checks if the user exists in the cache.
-If yes, the function returns an error. If not, it queries the database for the user by the newly chosen username. If the user doesn't exist, a database update query is made and the newly updated user is returned to update the caches with. If the user exists in the database, it is returned in the same variable for cache updates and invalidation.
+If so, the function returns an error. If not, it queries the database for the user by the newly chosen username. If the user doesn't exist, a database update query is made and the newly updated user is returned to update the caches with. If the user exists in the database, it is returned in the same variable for cache updates and invalidation.
 </p>
 
 <p>
@@ -1058,7 +1059,7 @@ The cache is then updated with this new user using the user-provided username an
 The intended result of an attack would be for an attacker to change their username to that of the victim, so the victim's user entry from the database is used to update the cache with the attacker's <code>uid</code>, resulting in the following cache layout:
 </p>
 
-<pre class="example" id="org6cf5bb5">
+<pre class="example" id="org6c7f273">
 ProfileCache: Attacker username -&gt; Victim uid
 ProfileCache: Victim username -&gt; Victim uid
 UserCache: Victim uid -&gt; {Victim uid, Victim username ...}
@@ -1070,17 +1071,17 @@ The main hindrance to this attack is that if the attacker chooses the victim's u
 </p>
 
 <p>
-To overcome this, a successful attack needs to take advantage of the username in the database being of type <code>CITEXT</code> (case-insensitive text), while the cache key is case-sensitive. So if the attacker's new username equals that of the victim except for the case, the first cache lookup will be empty and the <code>uset.insert_new</code> call will succeed.
+To overcome this, a successful attack needs to take advantage of the username in the database being of type <code>CITEXT</code> (case-insensitive text), while the cache key is case-sensitive. So, if the attacker's new username matches that of the victim except for casing, the first cache lookup will be empty and the <code>uset.insert_new</code> call will succeed.
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 3: </span>The two ETS caches used by this operation</label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">type</span> <span style="color: #005f5f;">UserCache</span> = <span style="color: #005f5f;">USet</span><span style="color: #000000;">(</span><span style="color: #005e8b;">user</span>.<span style="color: #005f5f;">Id</span>, <span style="color: #005f5f;">User</span><span style="color: #000000;">)</span>
+<label class="org-src-name"><span class="listing-number">Listing 5: </span>The two ETS caches used by this operation</label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">type</span> <span style="color: #005f5f;">UserCache</span> = <span style="color: #005f5f;">USet</span><span style="color: #000000;">(</span><span style="color: #005e8b;">user</span>.<span style="color: #005f5f;">Id</span>, <span style="color: #005f5f;">User</span><span style="color: #000000;">)</span>
 <span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">type</span> <span style="color: #005f5f;">ProfileCache</span> = <span style="color: #005f5f;">USet</span><span style="color: #000000;">(</span><span style="color: #005e8b;">user</span>.<span style="color: #005f5f;">UserName</span>, <span style="color: #005e8b;">user</span>.<span style="color: #005f5f;">Id</span><span style="color: #000000;">)</span>
 </pre>
 </div>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 4: </span>The <code>update</code> function in <code>src/server/users.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">fn</span> <span style="color: #721045;">update</span><span style="color: #000000;">(</span>
+<label class="org-src-name"><span class="listing-number">Listing 6: </span>The <code>update</code> function in <code>src/server/users.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">fn</span> <span style="color: #721045;">update</span><span style="color: #000000;">(</span>
   <span style="color: #005e8b;">user</span>: <span style="color: #005e8b;">shared_account</span>.<span style="color: #005f5f;">User</span>, <span style="color: #7f0000;">// provided by the update form that the user fills out</span>
   <span style="color: #005e8b;">uid</span>: <span style="color: #005e8b;">user</span>.<span style="color: #005f5f;">Id</span>,              <span style="color: #7f0000;">// id of currently logged in user</span>
   <span style="color: #005e8b;">state</span>: <span style="color: #005f5f;">State</span>,
@@ -1115,14 +1116,14 @@ To overcome this, a successful attack needs to take advantage of the username in
 </div>
 </div>
 </li>
-<li><a id="org9c4968f"></a>Using Name to Verify if Profile Viewer is Owner<br />
+<li><a id="org39c337d"></a>Using Name to Verify if Profile Viewer is Owner<br />
 <div class="outline-text-5" id="text-5-2-2-2">
 <p>
 When an attacker visits the victim's profile, the context user is loaded with the cache entry for the logged-in user's UID (the attacker's UID from the session cookie). This name is then compared with the name parameter from the URI of the profile being viewed. If they match, all photos are returned. If not, only photos with <code>show_on_profile == True</code> are returned.
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 5: </span><code>server/src/server/web/user.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">fn</span> <span style="color: #721045;">get_photos</span><span style="color: #000000;">(</span>
+<label class="org-src-name"><span class="listing-number">Listing 7: </span><code>server/src/server/web/user.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">pub</span> <span style="color: #531ab6;">fn</span> <span style="color: #721045;">get_photos</span><span style="color: #000000;">(</span>
   _request: <span style="color: #005e8b;">wisp</span>.<span style="color: #005f5f;">Request</span>,
   <span style="color: #005e8b;">context</span>: <span style="color: #005e8b;">web</span>.<span style="color: #005f5f;">Context</span>, <span style="color: #7f0000;">// context.user is cache entry of currently logged in user_id</span>
   <span style="color: #005e8b;">username</span>: <span style="color: #005f5f;">String</span>,             <span style="color: #7f0000;">// username from get param in URI</span>
@@ -1145,16 +1146,16 @@ With a successfully poisoned cache, the attacker can now visit the profile of th
 </p>
 </div>
 </li>
-<li><a id="org6cb8f38"></a>Why is &#x2026; not affected?<br />
+<li><a id="orga8d34a9"></a>Why is &#x2026; not affected?<br />
 <ol class="org-ol">
-<li><a id="orgb32b29e"></a>Photo Privacy<br />
+<li><a id="orgac0c4c6"></a>Photo Privacy<br />
 <div class="outline-text-6" id="text-5-2-2-3-1">
 <p>
-To check if photo data is allowed to be served according to its privacy level, the user id is compared with the user id stored in the creator field of the photo.
+To check if photo data is allowed to be served according to its privacy level, the user ID is compared with the user ID stored in the creator field of the photo.
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 6: </span><code>get_data_private</code> from <code>server/src/server/web/photo.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">use</span> &lt;- <span style="color: #005e8b;">bool</span>.guard<span style="color: #000000;">(</span><span style="color: #005e8b;">photo</span>.creator != <span style="color: #005e8b;">user</span>.id, <span style="color: #005e8b;">wisp</span>.response<span style="color: #dd22dd;">(</span>403<span style="color: #dd22dd;">)</span><span style="color: #000000;">)</span>
+<label class="org-src-name"><span class="listing-number">Listing 8: </span><code>get_data_private</code> from <code>server/src/server/web/photo.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">use</span> &lt;- <span style="color: #005e8b;">bool</span>.guard<span style="color: #000000;">(</span><span style="color: #005e8b;">photo</span>.creator != <span style="color: #005e8b;">user</span>.id, <span style="color: #005e8b;">wisp</span>.response<span style="color: #dd22dd;">(</span>403<span style="color: #dd22dd;">)</span><span style="color: #000000;">)</span>
 </pre>
 </div>
 
@@ -1163,14 +1164,14 @@ Since the UID remains untouched by the cache poison, this is not affected.
 </p>
 </div>
 </li>
-<li><a id="org20f532a"></a>Collections<br />
+<li><a id="org9a0ef25"></a>Collections<br />
 <div class="outline-text-6" id="text-5-2-2-3-2">
 <p>
 When viewing a user's collections, the creator's <code>user_id</code> is compared with the <code>user_id</code> from the signed session cookie of the viewer.
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 7: </span><code>get_collections</code> from <code>server/src/server/web/user.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">use</span> <span style="color: #005e8b;">creator</span> &lt;- <span style="color: #005e8b;">utils</span>.result_guard<span style="color: #000000;">(</span>
+<label class="org-src-name"><span class="listing-number">Listing 9: </span><code>get_collections</code> from <code>server/src/server/web/user.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #531ab6;">use</span> <span style="color: #005e8b;">creator</span> &lt;- <span style="color: #005e8b;">utils</span>.result_guard<span style="color: #000000;">(</span>
   <span style="color: #005e8b;">users</span>.get_by_name<span style="color: #dd22dd;">(</span><span style="color: #005e8b;">context</span>.state, <span style="color: #005e8b;">username</span><span style="color: #dd22dd;">)</span>, <span style="color: #7f0000;">// username of currently viewed profile from URI param</span>
   <span style="color: #005e8b;">wisp</span>.not_found<span style="color: #dd22dd;">()</span>,
 <span style="color: #000000;">)</span>
@@ -1190,8 +1191,8 @@ Since the UID remains untouched by the cache poison, this is not affected.
 </li>
 </ol>
 </div>
-<div id="outline-container-orgcc5289c" class="outline-4">
-<h4 id="orgcc5289c"><span class="section-number-4">5.2.3.</span> Fix</h4>
+<div id="outline-container-org3e6e573" class="outline-4">
+<h4 id="org3e6e573"><span class="section-number-4">5.2.3.</span> Fix</h4>
 <div class="outline-text-4" id="text-5-2-3">
 <p>
 This vulnerability can be fixed in multiple ways in both the <code>update</code> and <code>get_photos</code> functions.
@@ -1202,7 +1203,7 @@ The quickest way would be to return an error if the username already exists in t
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 8: </span>The fixed <code>update</code> function in <code>src/server/users.gleam</code></label><pre class="src src-diff">pub fn update(
+<label class="org-src-name"><span class="listing-number">Listing 10: </span>The fixed <code>update</code> function in <code>src/server/users.gleam</code></label><pre class="src src-diff">pub fn update(
   user: shared_account.User, // provided by the update form the user fills out
   uid: user.Id,              // id of currently logged in user
   state: State,
@@ -1226,17 +1227,17 @@ The quickest way would be to return an error if the username already exists in t
 </div>
 
 <p>
-Alternatively, the function could be written in a more Gleam-like style, reducing its length by half, or the approaches from <a href="#org6cb8f38">5.2.2.3</a> could be applied to the <code>get_photos</code> function.
+Alternatively, the function could be written in a more Gleam-like style, reducing its length by half, or the approaches from <a href="#orga8d34a9">5.2.2.3</a> could be applied to the <code>get_photos</code> function.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org30b484c" class="outline-3">
-<h3 id="org30b484c"><span class="section-number-3">5.3.</span> Not-So-Random Random Numbers</h3>
+<div id="outline-container-org74b8452" class="outline-3">
+<h3 id="org74b8452"><span class="section-number-3">5.3.</span> Not-So-Random Random Numbers</h3>
 <div class="outline-text-3" id="text-5-3">
 </div>
-<div id="outline-container-orge0e88fe" class="outline-4">
-<h4 id="orge0e88fe"><span class="section-number-4">5.3.1.</span> Flagstore</h4>
+<div id="outline-container-org040d07b" class="outline-4">
+<h4 id="org040d07b"><span class="section-number-4">5.3.1.</span> Flagstore</h4>
 <div class="outline-text-4" id="text-5-3-1">
 <p>
 The flag is stored in the description of a private collection. To view a private collection, an attacker needs to know its public ID, which, for private collections, is only available when a user views their own profile.
@@ -1247,15 +1248,15 @@ However, in contrast to photos with <code>show_on_profile =</code> False=, colle
 </p>
 
 
-<div id="org876d3f9" class="figure">
+<div id="orgf492b5a" class="figure">
 <p><img src="images/Vulnerabilities_and_Exploits/2026-08-15_16-18-17_screenshot.png" alt="2026-08-15_16-18-17_screenshot.png" />
 </p>
-<p><span class="figure-number">Figure 8: </span>Private collection with flag as the description</p>
+<p><span class="figure-number">Figure 9: </span>Private collection with flag as the description</p>
 </div>
 </div>
 </div>
-<div id="outline-container-org4d7fea0" class="outline-4">
-<h4 id="org4d7fea0"><span class="section-number-4">5.3.2.</span> Vulnerability</h4>
+<div id="outline-container-org20293e8" class="outline-4">
+<h4 id="org20293e8"><span class="section-number-4">5.3.2.</span> Vulnerability</h4>
 <div class="outline-text-4" id="text-5-3-2">
 <p>
 The random IDs are generated by a single process (running throughout the entire lifetime of the server).
@@ -1267,7 +1268,7 @@ To do this, it uses the <code>rand</code> function from the Erlang standard libr
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 9: </span><code>server/src/server/id_server.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #a0132f;">@external</span><span style="color: #000000;">(</span><span style="color: #005e8b;">erlang</span>, <span style="color: #3548cf;">"rand"</span>, <span style="color: #3548cf;">"bytes"</span><span style="color: #000000;">)</span>
+<label class="org-src-name"><span class="listing-number">Listing 11: </span><code>server/src/server/id_server.gleam</code></label><pre class="src src-gleam-ts"><span style="color: #a0132f;">@external</span><span style="color: #000000;">(</span><span style="color: #005e8b;">erlang</span>, <span style="color: #3548cf;">"rand"</span>, <span style="color: #3548cf;">"bytes"</span><span style="color: #000000;">)</span>
 <span style="color: #531ab6;">fn</span> <span style="color: #721045;">rand_bytes</span><span style="color: #000000;">(</span><span style="color: #005e8b;">size</span>: <span style="color: #005f5f;">Int</span><span style="color: #000000;">)</span> -&gt; <span style="color: #005f5f;">BitArray</span>
 </pre>
 </div>
@@ -1281,7 +1282,7 @@ The second argument of <code>32</code> is intended to be read as the hash length
 </p>
 
 <div class="org-src-container">
-<label class="org-src-name"><span class="listing-number">Listing 10: </span><code>server/src/id_server_ffi.erl</code></label><pre class="src src-erlang-ts"><span style="color: #721045;">init</span><span style="color: #000000;">()</span> -&gt;
+<label class="org-src-name"><span class="listing-number">Listing 12: </span><code>server/src/id_server_ffi.erl</code></label><pre class="src src-erlang-ts"><span style="color: #721045;">init</span><span style="color: #000000;">()</span> -&gt;
     <span style="color: #005e8b;">T</span> = erlang:<span style="color: #721045;">phash2</span><span style="color: #000000;">(</span><span style="color: #dd22dd;">{</span>erlang:<span style="color: #721045;">monotonic_time</span><span style="color: #008899;">(</span>nanosecond<span style="color: #008899;">)</span>, erlang:<span style="color: #721045;">unique_integer</span><span style="color: #008899;">(</span><span style="color: #972500;">[</span>monotonic<span style="color: #972500;">]</span><span style="color: #008899;">)</span><span style="color: #dd22dd;">}</span>, 32<span style="color: #000000;">)</span>,
     rand:<span style="color: #721045;">seed</span><span style="color: #000000;">(</span>exsss, <span style="color: #dd22dd;">{</span><span style="color: #005e8b;">T</span>, <span style="color: #005e8b;">T</span> + 1, <span style="color: #005e8b;">T</span> + 2<span style="color: #dd22dd;">}</span><span style="color: #000000;">)</span>,
     ok.
@@ -1289,8 +1290,8 @@ The second argument of <code>32</code> is intended to be read as the hash length
 </div>
 </div>
 </div>
-<div id="outline-container-org0289a31" class="outline-4">
-<h4 id="org0289a31"><span class="section-number-4">5.3.3.</span> Exploit</h4>
+<div id="outline-container-orgc2a7eb2" class="outline-4">
+<h4 id="orgc2a7eb2"><span class="section-number-4">5.3.3.</span> Exploit</h4>
 <div class="outline-text-4" id="text-5-3-3">
 <p>
 First, an attacker has to take a measurement hash by creating a collection.
@@ -1308,8 +1309,8 @@ If the attacker spawns one Erlang process for each possible seed value, a hit of
 </p>
 </div>
 </div>
-<div id="outline-container-org5cd9a1e" class="outline-4">
-<h4 id="org5cd9a1e"><span class="section-number-4">5.3.4.</span> Fix</h4>
+<div id="outline-container-orgb82bb3a" class="outline-4">
+<h4 id="orgb82bb3a"><span class="section-number-4">5.3.4.</span> Fix</h4>
 <div class="outline-text-4" id="text-5-3-4">
 <p>
 Addressing all of the shortcomings described in the vulnerability section could suffice as a fix.
@@ -1319,6 +1320,13 @@ What needs to be kept in mind, however, is that even with a random seed, the <co
 <p>
 The fix requiring the least amount of work, however, is to insert a UUIDv7 as a default value in <code>init.sql</code> for the public ID and remove all random number generation from the server code.
 </p>
+
+<div class="org-src-container">
+<label class="org-src-name"><span class="listing-number">Listing 13: </span>Applying the fix to an existing database</label><pre class="src src-sql"><span style="color: #531ab6;">ALTER</span> <span style="color: #531ab6;">TABLE</span> <span style="color: #721045;">collections</span>
+<span style="color: #531ab6;">ALTER</span> <span style="color: #531ab6;">COLUMN</span> public_id <span style="color: #531ab6;">TYPE</span> <span style="color: #721045;">UUID</span> <span style="color: #531ab6;">USING</span> uuidv7<span style="color: #000000;">()</span>,
+<span style="color: #531ab6;">ALTER</span> <span style="color: #531ab6;">COLUMN</span> public_id <span style="color: #531ab6;">SET</span> <span style="color: #531ab6;">DEFAULT</span> <span style="color: #721045;">uuidv7</span><span style="color: #000000;">()</span>;
+</pre>
+</div>
 </div>
 </div>
 </div>
@@ -1336,7 +1344,7 @@ Some comments in the code were inserted only for the purpose of this documentati
 </div></div>
 <div id="postamble" class="status">
 <p class="author">Author: Felix Dumbeck</p>
-<p class="date">Created: 2026-08-15 Sat 21:36</p>
+<p class="date">Created: 2026-08-15 Sat 23:29</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
