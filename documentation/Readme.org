@@ -30,11 +30,11 @@ The only unusual thing about the checker is that it runs Python version 3.14 wit
   docker compose up --build -d
 #+end_src
 
-* Architecture
-
 * Usage
 
 The server runs a HTTP-webserver on the port =1337= and the checker uses port =11337=.
+
+It uses a traditional REST API. All API HTTP calls go to =/napi...=. File
 
 ** Browsing the site
 
@@ -48,12 +48,9 @@ An unauthenticated user has permissions to search for other users, view their pr
 To create an account click =Join= and fill out the registration form. And click =Login= to login with their username and password.
 
 
-#+DOWNLOADED: file:///tmp/Spectacle.WXEJzd/Screenshot_20260814_232735.png @ 2026-08-14 23:28:07
+
 [[file:images/Usage/2026-08-14_23-28-07_Screenshot_20260814_232735.png]]
 
-
-
-#+DOWNLOADED: file:///tmp/Spectacle.WyFfzC/Screenshot_20260814_232914.png @ 2026-08-14 23:29:22
 [[file:images/Usage/2026-08-14_23-29-22_Screenshot_20260814_232914.png]]
 
 The only mandatory fields are =Username=, =First Name=, and =Password= (the same as unpslash.com). The other fields are inconsequential.
@@ -69,11 +66,14 @@ When logged in, users can upload photos with some Metadata.
 
 [[file:images/Usage/2026-08-14_23-59-34_Screenshot_20260814_235925.png]]
 
-Photos they have three levels of privacy, =private=, where the photo will be only displayed to the owner, =public=, for photos visible by everyone, and =premium=, visible only by the owner themselves and premium users (which don't exist). This privacy only affects the actual photo, the metadata, such as description will is not affected.
+** Photo privacy
+
+Photos they have three levels of privacy
++ =private=, where the photo will be only displayed to the owner
++ =public=, for photos visible by everyone
++ =premium=, visible only by the owner themselves and premium users (which don't exist). This privacy only affects the actual photo, the metadata, such as description will is not affected.
 
 If the option =show on profile= is set, photos (although possibly censored) will appear on the users profile, with their metadata visible to all. If not photos will be only visible on the profile page to the owner but remain visible (however censored according to their privacy level) by their public link.
-
-** Photo privacy
 
 #+caption: The view of an authenticated user on their own profile.
 [[file:images/Usage/2026-08-15_00-35-14_Screenshot_20260815_003459.png]]
@@ -94,11 +94,121 @@ The same functionality from the premium censor is also available to users to cen
 Any user can join the collaborative photo censoring.
 
 Censoring is being done live on the server and for which the communication containing of, the censor-mask and the reply (whether the update went ok), is done over a WebSocket. The decision about a censoring being allowed is dependent on whether the new updated photo would exceed the storage quota of the photos owner.
-Once the WebSocket is closed, the image is saved (if the storage quota is not violated) with the same settings/ metadata as the original, on the original creators profile.
+Once the WebSocket is closed, the image is saved (if the storage quota is not violated) with the same settings/ metadata as the original, on the original creators profile. Only the string =(censored)= is appended to the description.
 
-#+DOWNLOADED: file:///home/felix/uni/ctf/Screencasts%20copy/Screencast_20260726_180955.webm @ 2026-08-15 01:36:04
-[[file:images/Usage/2026-08-15_01-36-04_Screencast_20260726_180955.webm]]
+#+caption: Screenshot showing the censoring of a photo over a WebSocket.
+[[file:images/Usage/2026-08-15_01-41-56_Screenshot_20260815_014119.png]]
+
 
 Again, only PNGs are supported!
 
+** Editing of profile and photos
+
+Users can also edit their profile information and photo metadata:
+
+#+DOWNLOADED: file:///tmp/Spectacle.IclxWT/Screenshot_20260815_014403.png @ 2026-08-15 01:44:16
+[[file:images/Usage/2026-08-15_01-44-16_Screenshot_20260815_014403.png]]
+
+
+
+#+DOWNLOADED: file:///tmp/Spectacle.ipXUxs/Screenshot_20260815_014510.png @ 2026-08-15 01:45:18
+[[file:images/Usage/2026-08-15_01-45-18_Screenshot_20260815_014510.png]]
+
+** Collections and likes
+
+Photos can be aggregated in multiple collections.
+
+#+DOWNLOADED: file:///tmp/Spectacle.ipXUxs/Screenshot_20260815_015002.png @ 2026-08-15 01:50:13
+[[file:images/Usage/2026-08-15_01-50-13_Screenshot_20260815_015002.png]]
+
+Collections can also be 'private'. This is the equivalent of the [[=show on profile=][show on profile]] setting for photos.
+
+[[file:images/Usage/2026-08-15_01-50-35_Screenshot_20260815_015030.png]]
+
+To show a users collections click collections on the users profile:
+
+[[file:images/Usage/2026-08-15_01-55-24_Screenshot_20260815_015433-1.png]]
+
+Users likes are recorded as well.
+[[file:images/Usage/2026-08-15_01-58-42_Screenshot_20260815_015808-1.png]]
 ** Cleanup
+
+Every two minutes a Bash script runs and deletes all database entries and image files older then eleven minutes. This is done for storage reasons.
+
+Every minute all entries from the servers ETS (cache) older then twelve minutes are evicted.
+
+* Architecture
+
+* Vulnerabilities and Exploits
+** Side-channel in censor endpoint
+*** Flagstore
+:PROPERTIES:
+:ID:       b9ed3132-9e94-498d-8181-c35dba3f912a
+:END:
+The flag is encoded as a QR code and uploaded as a premium image.
+This is the view a user, other then the flag planter, has of the flag:
+[[file:images/Vulnerabilities_and_Exploits/2026-08-15_02-11-03_screenshot.png]]
+
+*** Vulnerability
+In the censor WebSocket endpoint, the server checks if the size of the newly censored image is over the storage quota and returns the remaining quota or the amount of how much over the user would be:
+
+#+begin_src gleam-ts
+  case censor.censor_raw(state.in_photo, mask, state.z_stream) {
+    Ok(censored_png) -> {
+      let new_quota = state.user.storage_quota_used + png.size(censored_png)
+      let #(ok, state) = case new_quota < state.user.storage_quota {
+        True -> #("true", State(..state, out_photo: Some(censored_png)))
+        False -> #("false", state)
+      }
+      let response =
+        "{\"ok\": "
+          <> ok
+          <> ", \"usage\": "
+          <> int.to_string(new_quota)
+          <> ", \"limit\": "
+          <> int.to_string(state.user.storage_quota)
+          <> "}"
+      let _ = mist.send_text_frame(connection, response)
+      mist.continue(state)
+    }
+    // ...
+  }
+#+end_src
+
+Since the size of the image is smallest, when its fully black, a mask, that censors everything but one pixel, will result in a larger image then a fully black image, if and only if, the uncensored pixel is not black (i.e. the resulting image not being uniformly black).
+
+*** Exploit
+
+So an attacker can, with around 800 masks over the same WebSocket (ignoring static and irrelevant parts of the QR-code such as timing, checksums, and positioning and alignment), gain knowledge about every pixels binary value and therefore reconstruct the QR-code and flag.
+
+As a baseline size the attacker should first send an entirely black mask.
+
+*** Fix
+
+By adding random noise to the size, the attacker no longer has a binary base for deciding whether the pixel is black or white.
+
+#+begin_src diff
+  case censor.censor_raw(state.in_photo, mask, state.z_stream) {
+    Ok(censored_png) -> {
+  +    let #(rand, _) = random.step(random.int(0,10), random.new_seed(123))
+  +    let new_quota = state.user.storage_quota_used + png.size(censored_png) + rand
+      let #(ok, state) = case new_quota < state.user.storage_quota {
+        True -> #("true", State(..state, out_photo: Some(censored_png)))
+        False -> #("false", state)
+      }
+      let response =
+        "{\"ok\": "
+          <> ok
+          <> ", \"usage\": "
+          <> int.to_string(new_quota)
+          <> ", \"limit\": "
+          <> int.to_string(state.user.storage_quota)
+          <> "}"
+      let _ = mist.send_text_frame(connection, response)
+      mist.continue(state)
+    }
+    // ...
+  }
+#+end_src
+** Cache Poison
+** Not-So-Random Random Numbers
