@@ -1,1 +1,5 @@
-[[https://htmlpreview.github.io/?https://github.com/enowars/enowars10-service-funsplash/blob/main/documentation/Documentation.html][Documentation]] 
+* Funsplash
+
+An image-sharing platform service written in Gleam, with a Python enochecker3 checker. This repository is an Attack/Defense CTF challenge with three intended flagstores, played in the ENOWARS 10 competition.
+
+[[https://htmlpreview.github.io/?https://github.com/enowars/enowars10-service-funsplash/blob/main/documentation/Documentation.html][Documentation]]
