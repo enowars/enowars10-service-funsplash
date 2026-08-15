@@ -12,13 +12,6 @@ funsplash is a web application that allows users to:
 - Download uploaded images
 - Censor premium images via a websocket API
 
-## Architecture
-
-- **Backend**: Gleam with the `wisp` web framework
-- **Frontend**: Gleam with the `lustre` framework, compiled to JavaScript
-- **Storage**: PostgreSQL database for users, photos, and collections. Filesystem for storing photo data.
-- **Websockets**: Uses `mist` for the websocket censor endpoint.
-
 ## Services
 
 The Docker container exposes the following services:
