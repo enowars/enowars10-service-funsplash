@@ -1,3 +1,3 @@
-Since GitHubs org-mode renderer displays =.org= files incorrectly please view the [[file:Documentation.org][Documentation.org]] in a different editor or view the [[file:Documentation.html][Documentation.html]] or =Documentation.pdf= generated from the =.org= file.
+Since GitHubs org-mode renderer displays =.org= files incorrectly please view the [[file:Documentation.org][Documentation.org]] in a different editor or view the [[https://htmlpreview.github.io/?https://github.com/enowars/enowars10-service-funsplash/blob/main/documentation/Documentation.html][Documentation.html]] (recommended) or =Documentation.pdf= generated from the =.org= file.
 
 #+caption: unless you can read this
