@@ -40,7 +40,7 @@ It uses a traditional REST API. All API HTTP calls go to =/napi...=. File
 
 An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
 
-#+caption: fuzzy searching a user named =feli= returns the existing user =felix=
+#+description: fuzzy searching a user named =feli= returns the existing user =felix=
 [[file:images/Usage/2026-08-14_23-20-41_screenshot.png]]
 
 ** Creating an Account
@@ -152,7 +152,7 @@ This is the view a user, other then the flag planter, has of the flag:
 *** Vulnerability
 In the censor WebSocket endpoint, the server checks if the size of the newly censored image is over the storage quota and returns the remaining quota or the amount of how much over the user would be:
 
-#+begin_src gleam-ts
+#+begin_src gleam
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
       let new_quota = state.user.storage_quota_used + png.size(censored_png)
