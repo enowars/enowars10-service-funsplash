@@ -41,7 +41,7 @@ It uses a traditional REST API. All API HTTP calls go to =/napi...=. File
 An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
 
 #+caption: fuzzy searching a user named =feli= returns the existing user =felix=
-[[file:images/Usage/2026-08-14_23-20-41_screenshot.png]]
+[[file:images/Usage/2026-08-15_16-35-20_Screenshot_20260815_163501.png]]
 
 ** Creating an Account
 
