@@ -1,7 +1,18 @@
 #+title: funsplash documentation
 #+author: Felix Dumbeck
+#+BIND: org-export-allow-bind t
+#+BIND: org-latex-minted-langs ((gleam-ts "gleam") (erlang-ts "erlang") (bash "bash") (diff "diff"))
 #+LATEX_HEADER: \usepackage{minted}
-
+#+LATEX_HEADER: \usemintedstyle{friendly}
+#+LATEX_HEADER: \setminted{fontsize=\small,frame=lines,breaklines=true}
+#+LATEX_HEADER: \usepackage[export]{adjustbox}
+#+LATEX_HEADER: \let\oldincludegraphics\includegraphics
+#+LATEX_HEADER: \renewcommand{\includegraphics}[2][]{\oldincludegraphics[#1,max height=0.5\textheight,max width=0.9\linewidth,keepaspectratio]{#2}}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{251C}{\mbox{|--}}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{2500}{-}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{2502}{|}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{2514}{\mbox{`--}}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{00A0}{~}
 
 =Funsplash= is a clone of the image sharing platform [[https://unsplash.com/][Unsplash]] and meant to replicate the overall feel as well as its core features.
 The entire application is written in the [[https://gleam.run/][Gleam programming language]] with some =ffi= to JavaScript and Erlang. All data storage happens in a PostgreSQL database and photo files are stored on the file-system.
