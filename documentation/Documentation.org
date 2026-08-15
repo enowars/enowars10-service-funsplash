@@ -138,6 +138,75 @@ Every two minutes a Bash script runs and deletes all database entries and image 
 
 Every minute all entries from the servers ETS (cache) older then twelve minutes are evicted.
 
+* File Structure
+
+Summary of relevant files within:
+
+** Service
+
+#+begin_example
+.
+├── .env           - environment variables used by Docker deployment
+├── cleanup.sh     - cleanup script for database and filesystem
+├── client
+│   ├── Makefile   - for building the frontend without docker and copying its result into the server priv dir
+│   ├── src        - Gleam Lustre SPA frontend
+│   │   ├── ...
+├── Dockerfile     - Dockerfile for full-stakc Gleam build
+├── server         - Backend
+│   ├── .env       - env for local (dockerless) development
+│   ├── gleam.toml - Dependencies for server
+│   ├── init.sql   - Postgres initialization file
+│   ├── priv       - Location for built frontend
+│   ├── src
+│   │   ├── id_server_ffi.erl  - 'random' number generation for public id collections
+│   │   ├── png                - decoding, defiltering, and censoring of PNGs in Erlang and the Gleam ffi bindings
+│   │   │   ├── censor.erl
+│   │   │   ├── censor.gleam
+│   │   │   ├── compression.erl
+│   │   │   ├── fast_png.c     - unused C file to confuse reviewers
+│   │   │   ├── fast_png.erl
+│   │   │   ├── png.erl
+│   │   │   └── png.gleam
+│   │   ├── server
+│   │   │   ├── censor.gleam      - WebSocket logic for live censoring
+│   │   │   ├── collections.gleam - Buisness logic for collections
+│   │   │   ├── config.gleam      - Load config from env
+│   │   │   ├── id_server.gleam   - 'random' number generation for public id collections binding to erl file
+│   │   │   ├── mimetype.gleam    - Detect mimetypes of images
+│   │   │   ├── models            - Type declarations
+│   │   │   │   ├── ...
+│   │   │   ├── photos.gleam      - Buisness logic for photos
+│   │   │   ├── premium.gleam     - Apply premium censor mask to premium photos
+│   │   │   ├── router.gleam      - routes api requests to functions in ./web
+│   │   │   ├── sql               - SQL queries
+│   │   │   │   ├── ...
+│   │   │   ├── sql.gleam         - Auto generated Gleam funtions for SQL queries
+│   │   │   ├── state.gleam       - Stores 'state' such as caches, db connections etc.
+│   │   │   ├── users.gleam       - Buisness logic for users
+│   │   │   ├── web               - Functions serving http requests forwarded by router
+│   │   │   │   ├── ...
+│   │   │   └── web.gleam         - Middleware and stores Context containing state and currently logged in user
+│   │   ├── server.gleam          - Starts server and routes websocket requests to censor.gleam and http requests to router.gleam
+│   │   └── utils.gleam           - utility functions
+└── shared           - shared types between server and client, automatically generated json decoders and html Form input validation used on both front and backend
+    ├── ....
+#+end_example
+
+** Checker
+#+begin_example
+.
+├── photos              - photo files used by checker to fill user, add noise etc.
+│   ├── ...
+├── src
+│   ├── checker.py       - main checker code
+│   ├── collection.py    - utility funtions
+│   ├── connection.py    - utility funtions
+│   ├── crack.erl        - erlang code for vuln 2
+│   ├── exploit_prng.py  - python code for vuln 2
+│   ├── missing_tests.py - more tests
+│   ├── prng_recover.py  - python code for vuln 2
+#+end_example
 * Architecture
 * Vulnerabilities and Exploits
 ** Side-channel in censor endpoint
@@ -151,6 +220,7 @@ The flag is encoded as a QR code and uploaded as a premium image.
 *** Vulnerability
 In the censor WebSocket endpoint, the server checks if the size of the newly censored image is over the storage quota and returns the remaining quota or the amount of how much over the user would be:
 
+#+caption: =server/src/server/censor.gleam=
 #+begin_src gleam-ts
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
@@ -185,7 +255,7 @@ As a baseline size the attacker should first send an entirely black mask.
 *** Fix
 
 By adding random noise to the size, the attacker no longer has a binary base for deciding whether the pixel is black or white.
-
+#+caption: Fixed =server/src/server/censor.gleam=
 #+begin_src diff
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
@@ -219,7 +289,7 @@ The flag is again encoded as a QR code but uploaded as a public photo with the =
 
 *** Vulnerability/ Exploit
 
-This vulnerability is the result of two programming errors in different locations:
+This vulnerability is the result of two programming errors in different locations [fn:1]:
 
 **** Overly Eager Cache Update of Name
 
@@ -248,7 +318,7 @@ To overcome this a successful attack needs to take advantage of the username in 
   pub type ProfileCache = USet(user.UserName, user.Id)
 #+end_src
 
-#+caption: The =update= function in =src/server/users.gleam= [fn:1]
+#+caption: The =update= function in =src/server/users.gleam= 
 #+begin_src gleam-ts
   pub fn update(
     user: shared_account.User, // provided by the update form the user fills out
@@ -424,7 +494,6 @@ What needs to kept in mind however is that, even with a random seed, the =xsss= 
 
 The fix requiring the least amount of work however is to insert a uuidv7 as a default value in the =init.sql= for the public id and removing all random number generation from the server code.
 
-* asdf
 * Footnotes
 
-[fn:1] Some comments were only inserted for the purpose of this documentation.  
+[fn:1] Some comments in the code were only inserted for the purpose of this documentation and are not contained withing the actual code.

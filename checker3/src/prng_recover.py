@@ -1,9 +1,3 @@
-"""
-PRNG-predictable vuln: calls an Erlang escript that brute-forces the
-dynamic seed T for rand:seed(exsss, {T, T+1, T+2}) via 3 observations.
-Uses exponential + binary search to minimize HTTP requests.
-"""
-
 import asyncio
 import subprocess
 import os
