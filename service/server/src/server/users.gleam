@@ -73,7 +73,7 @@ pub fn update(
     Ok(id) if id != uid -> Error(shared_account.UsernameExists)
     _ -> {
       case utils.db_limit(sql.user_find_by_name(state.db, user.username)) {
-        Ok(user) -> Ok(user |> user.from_find_by_name)
+        Ok(user) -> user |> user.from_find_by_name |> Ok
         Error(_) -> {
           use inserted_user <- utils.db_limit_try(
             sql.user_update(
@@ -89,7 +89,7 @@ pub fn update(
           )
           let _ = uset.delete_key(state.profile_cache, user.username)
           let _ = uset.delete_key(state.user_cache, uid)
-          Ok(inserted_user |> user.from_update)
+          inserted_user |> user.from_update |> Ok
         }
       }
     }

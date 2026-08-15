@@ -71,7 +71,6 @@ pub fn get_photos(
   context: web.Context,
   username: String,
 ) -> wisp.Response {
-  // alternative do with by_user(id)
   use photos <- utils.result_guard(
     case context.user {
       Some(user) if user.username == username ->

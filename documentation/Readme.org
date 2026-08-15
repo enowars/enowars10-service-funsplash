@@ -40,7 +40,7 @@ It uses a traditional REST API. All API HTTP calls go to =/napi...=. File
 
 An unauthenticated user has permissions to search for other users, view their profiles, and view their photos.
 
-#+description: fuzzy searching a user named =feli= returns the existing user =felix=
+#+caption: fuzzy searching a user named =feli= returns the existing user =felix=
 [[file:images/Usage/2026-08-14_23-20-41_screenshot.png]]
 
 ** Creating an Account
@@ -61,7 +61,7 @@ Upon creating an account, users are automatically logged in.
 
 When logged in, users can upload photos with some Metadata.
 
-#+caption: Privacy level dropdown. Private, Premium, and Public.
+#+caption: Privacy level dropdown. =Private=, =Premium=, and =Public=.
 [[file:images/Usage/2026-08-14_23-59-20_Screenshot_20260814_235907.png]]
 
 [[file:images/Usage/2026-08-14_23-59-34_Screenshot_20260814_235925.png]]
@@ -121,7 +121,7 @@ Photos can be aggregated in multiple collections.
 #+DOWNLOADED: file:///tmp/Spectacle.ipXUxs/Screenshot_20260815_015002.png @ 2026-08-15 01:50:13
 [[file:images/Usage/2026-08-15_01-50-13_Screenshot_20260815_015002.png]]
 
-Collections can also be 'private'. This is the equivalent of the [[=show on profile=][show on profile]] setting for photos.
+Collections can also be 'private'. This is the equivalent of the =show on profile= setting for photos.
 
 [[file:images/Usage/2026-08-15_01-50-35_Screenshot_20260815_015030.png]]
 
@@ -142,17 +142,16 @@ Every minute all entries from the servers ETS (cache) older then twelve minutes 
 * Vulnerabilities and Exploits
 ** Side-channel in censor endpoint
 *** Flagstore
-:PROPERTIES:
-:ID:       b9ed3132-9e94-498d-8181-c35dba3f912a
-:END:
+
 The flag is encoded as a QR code and uploaded as a premium image.
-This is the view a user, other then the flag planter, has of the flag:
+
+#+caption: The view a user, other then the flag planter, has of the flag:
 [[file:images/Vulnerabilities_and_Exploits/2026-08-15_02-11-03_screenshot.png]]
 
 *** Vulnerability
 In the censor WebSocket endpoint, the server checks if the size of the newly censored image is over the storage quota and returns the remaining quota or the amount of how much over the user would be:
 
-#+begin_src gleam
+#+begin_src gleam-ts
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
       let new_quota = state.user.storage_quota_used + png.size(censored_png)
@@ -191,6 +190,7 @@ By adding random noise to the size, the attacker no longer has a binary base for
   case censor.censor_raw(state.in_photo, mask, state.z_stream) {
     Ok(censored_png) -> {
   +    let #(rand, _) = random.step(random.int(0,10), random.new_seed(123))
+  -    let new_quota = state.user.storage_quota_used + png.size(censored_png)
   +    let new_quota = state.user.storage_quota_used + png.size(censored_png) + rand
       let #(ok, state) = case new_quota < state.user.storage_quota {
         True -> #("true", State(..state, out_photo: Some(censored_png)))
@@ -211,4 +211,183 @@ By adding random noise to the size, the attacker no longer has a binary base for
   }
 #+end_src
 ** Cache Poison
+*** Flagstore
+
+The flag is again encoded as a QR code but uploaded as a public photo with the =dont show on profile= attribute. Therefore, to gain access to the flag, an attacker needs to know the uuidv7 link, which, for photos with this attribute, is only available when a user views their own profile.
+
+[[file:images/Vulnerabilities_and_Exploits/2026-08-15_13-13-14_screenshot.png]]
+
+*** Vulnerability/ Exploit
+
+This vulnerability is the result of two programming errors in different locations:
+
+**** Overly Eager Cache Update of Name
+
+When a user updates their profile, they can also update their username. For the update operation, the program first checks if the user exists in the cache.
+If yes, the function returns an error. If not, it queries the database for the user by the newly chosen username. If the user doesn't exist, a database update query is made and the newly updated user is returned to update the caches with. If the user exists in the database, it is returned in the same variable for cache updates and invalidation.
+
+The cache is then updated with this new user using the user provided username, and user-id from the logged in user.
+
+The intended result of an attack would be for an attacker to change their username to that of the victim, so the victims user entry from the database is used to update the cache with the attackers =uid=, resulting in the following cache layout:
+
+#+caption: Cache layout after successful attack
+#+begin_example
+ProfileCache: Attacker username -> Victim uid
+ProfileCache: Victim username -> Victim uid
+UserCache: Victim uid -> {Victim uid, Victim username ...}
+UserCache: Attacker uid -> {Attacker uid, Attacker username}
+#+end_example
+
+The only hindrances of this attack is, that if the attacker chooses the victims username, the first cache lookup will succeed and the function will fail and that the cache with the username as its key is is updated with =uset.insert_new=, meaning it will only complete the insertion if no entry with the same key exists.
+
+To overcome this a successful attack needs to take advantage of the username in the database being of type =CITEXT= (case insensitive text), while the cache key is case sensitive. So if the attackers new username equals that of the victim, except for the case, the first cache lookup will be empty and the =uset.insert_new= will succeed.
+
+#+caption: The two ETS caches used by this operation
+#+begin_src gleam-ts
+  pub type UserCache = USet(user.Id, User)
+  pub type ProfileCache = USet(user.UserName, user.Id)
+#+end_src
+
+#+caption: The =update= function in =src/server/users.gleam= [fn:1]
+#+begin_src gleam-ts
+  pub fn update(
+    user: shared_account.User, // provided by the update form the user fills out
+    uid: user.Id,		     // id of currently logged in user
+    state: State,
+  ) -> Result(User, shared_account.Error) {
+    let existing = uset.lookup(state.profile_cache, user.username)
+    let created_user = case existing {
+      // username exists in cache and doesn't belong to current user
+      Ok(id) if id != uid -> Error(shared_account.UsernameExists)
+      _ -> {
+        case utils.db_limit(sql.user_find_by_name(state.db, user.username)) {
+          Ok(user) -> user |> user.from_find_by_name |> Ok
+          Error(_) -> {
+            use inserted_user <- utils.db_limit_try(
+              sql.user_update(...),
+              shared_account.UsernameExists,
+            )
+            let _ = uset.delete_key(state.profile_cache, user.username)
+            let _ = uset.delete_key(state.user_cache, uid)
+            inserted_user |> user.from_update |> Ok
+          }
+        }
+      }
+    }
+    // update caches
+    use new_user <- result.try(created_user)
+    let real_new_user = User(..new_user, username: user.username, id: uid)
+    let _ = uset.insert_new(state.profile_cache, user.username, new_user.id)
+    let _ = uset.insert(state.user_cache, uid, real_new_user)
+    Ok(new_user)
+  }
+#+end_src
+
+**** Using Name to Verify if Profile Viewer is Owner
+
+When an attacker visits the victims profile, context user is loaded with the cache entry for the logged in users UID (attackers UID from the session cookie). This name is then compared with the one from the name parameter from the URI of the profile being viewed. If they match, all photos are returned. If not, only photos with ~show_on_profile == True~ are returned.
+
+#+caption: =server/src/server/web/user.gleam=
+#+begin_src gleam-ts
+  pub fn get_photos(
+    _request: wisp.Request,
+    context: web.Context,	// context.user is cache entry of currently logged in user_id
+    username: String,		// username from get param in URI
+  ) -> wisp.Response {
+    use photos <- utils.result_guard(
+      case context.user {
+        Some(user) if user.username == username ->
+          photos.get_by_username(context.state, username, True) // returns all photos of a user
+        _ -> photos.get_by_username(context.state, username, False) // excludes photos with show_on_proflie == False
+      },
+      wisp.not_found(),
+    )
+    // ...
+  }
+#+end_src
+
+
+With a successfully poisoned cache the attacker can now visit the profile of the victim with the same variation of case in the username as in the cache poison, causing the ~if user.username == username~ to be true and being served all the victims photos. Including the flag.
+
+**** Why is ... not affected?
+***** Photo Privacy
+
+To check if photo data is allowed to be served according to its privacy level, the user id is compared with the user id stored in the creator field of the photo.
+
+#+caption: =get_data_private= from =server/src/server/web/photo.gleam=
+#+begin_src gleam-ts
+  use <- bool.guard(photo.creator != user.id, wisp.response(403))
+#+end_src
+
+Since the UID remains untouched by the cache poison, this is not affected.
+
+***** Collections
+
+When viewing a users collections, the creators =user_id= is compared with the =user_id= from the signed session cookie of the viewer.
+
+#+caption: =get_collections= from =server/src/server/web/user.gleam=
+#+begin_src gleam-ts
+  use creator <- utils.result_guard(
+    users.get_by_name(context.state, username), // username of currently viewd profile from URI param
+    wisp.not_found(),
+  )
+  let is_owner = case context.user { // cached user from lookup by uid from signed session cookie
+    Some(user) if user.id == creator.id -> True
+    _ -> False
+  }
+#+end_src
+
+Since the UID remains untouched by the cache poison, this is not affected.
+
+*** Fix
+
+This vulnerability can be fixed in multiple ways in both the =update= and =get_photos= functions.
+
+The quickest way would be to return an error if the username already exists in the database.
+
+#+caption: The fixed =update= function in =src/server/users.gleam=
+#+begin_src diff
+  pub fn update(
+    user: shared_account.User, // provided by the update form the user fills out
+    uid: user.Id,		     // id of currently logged in user
+    state: State,
+  ) -> Result(User, shared_account.Error) {
+    let existing = uset.lookup(state.profile_cache, user.username)
+    let created_user = case existing {
+      // username exists in cache and doesn't belong to current user
+      Ok(id) if id != uid -> Error(shared_account.UsernameExists)
+      _ -> {
+        case utils.db_limit(sql.user_find_by_name(state.db, user.username)) {
+  -       Ok(user) -> user |> user.from_find_by_name |> Ok
+  +       Ok(_) -> Error(shared_account.UsernameExists)
+          Error(_) -> {
+            use inserted_user <- utils.db_limit_try(
+              sql.user_update(...),
+              shared_account.UsernameExists,
+            )
+  	  // ...
+  }
+#+end_src
+
+Alternately the function could be written more gleam-like, reducing its length by half or the approaches from [[Why is ... not affected?]] could be applied to the =get_photos= function.
+
 ** Not-So-Random Random Numbers
+*** Flagstore
+
+The flag is stored in the description of a private collection. To view a private collection, an attacker needs to know its public id, which is which, for private collections, is only available when a user views their own profile.
+
+However, in contrast to photos with =show_on_profile == False=, collections don't use a uuidv7 generated in Postgres but consists of nine 'random' URL encoded bytes.
+
+#+caption: Private collection with flag as the description
+[[file:images/Vulnerabilities_and_Exploits/2026-08-15_16-18-17_screenshot.png]]
+
+
+*** Vulnerability
+
+
+
+*** Fix
+
+* Footnotes
+
+[fn:1] Some comments were only inserted for the purpose of this documentation.  
